@@ -1,0 +1,540 @@
+<!doctype html>
+<!--
+  PROTOTYPE – throwaway. Question: "How does an Organizer go from forwarding a Flyer to published Events with the least friction?"
+  Three structurally different variants, switchable via ?variant=A|B|C and the floating bar (or ← →); scenario via ?s=<id>.
+    A  Alles im Chat          – one summary per Event with [Passt][Ändern][Weglassen]; corrections typed into the chat.
+    B  Link zur Webseite      – the bot only acknowledges and sends a link; everything is checked on a web confirm page.
+    C  Chat fragt, Web korrigiert – blocking questions as chat buttons, then one summary [Veröffentlichen][Ändern][Verwerfen];
+                                "Ändern" opens the web page.
+  WhatsApp Cloud API limits honoured: ≤3 reply buttons, ≤20 chars each; a URL button is its own message (cta_url),
+  never mixed with reply buttons; free-form messages only as replies inside the 24h window.
+  Scenarios use real sample Flyers (assets/flyers, git-ignored – serve with the dancer-overview-prototype launch entry).
+  Organizer names, the Kater Bar address and the existing Events are made up.
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE · Organizer confirmation flow</title>
+<style>
+  :root { --bg:#f6f4f1; --ink:#1d1a17; --mute:#6f6861; --line:#e4dfd8; --accent:#c2185b; --wa:#075e54; --wabg:#efe7dd; --out:#d9fdd3; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#d9d4cd; font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:var(--ink); padding-bottom:70px; }
+  button { font:inherit; cursor:pointer; }
+  .wrap { display:flex; gap:16px; padding:16px; align-items:flex-start; flex-wrap:wrap; justify-content:center; }
+  .panel { width:340px; background:#fff; border-radius:12px; padding:14px; }
+  .panel h1 { font-size:16px; margin:0 0 4px; }
+  .panel h2 { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--mute); margin:16px 0 6px; }
+  .panel p { margin:4px 0; }
+  .tabs { display:flex; flex-wrap:wrap; gap:4px; }
+  .tabs button { border:1px solid var(--line); background:#fff; border-radius:999px; padding:3px 9px; font-size:12px; }
+  .tabs button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .desc { background:#fff8e1; border:1px solid #f0dc9a; border-radius:8px; padding:8px 10px; font-size:13px; margin-top:8px; }
+  .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; text-align:center; }
+  .metrics div { background:var(--bg); border-radius:8px; padding:6px 2px; }
+  .metrics b { display:block; font-size:18px; }
+  .metrics span { font-size:11px; color:var(--mute); }
+  .store { font-size:12px; }
+  .store .ev { border:1px solid var(--line); border-radius:8px; padding:6px 8px; margin:4px 0; }
+  .store .st { float:right; font-size:11px; font-weight:600; padding:0 6px; border-radius:4px; background:#eee; }
+  .st.pub { background:#e6f4ea; color:#1e6b2f; } .st.drop { background:#fde2e2; color:#a30000; } .st.tip { background:#e8f0fe; color:#1a4fb4; }
+  .reset { border:1px solid var(--line); background:#fff; border-radius:8px; padding:4px 10px; font-size:12px; }
+
+  .phone { width:375px; height:740px; background:var(--wabg); border-radius:28px; border:8px solid #1d1a17; overflow:hidden; display:flex; flex-direction:column; }
+  .phone .bar { background:var(--wa); color:#fff; padding:10px 12px; display:flex; gap:10px; align-items:center; }
+  .phone .bar .av { width:32px; height:32px; border-radius:50%; background:#fff; color:var(--wa); display:grid; place-items:center; font-weight:700; }
+  .phone .bar small { display:block; opacity:.8; font-size:11px; }
+  .chat { flex:1; overflow-y:auto; padding:10px 8px; display:flex; flex-direction:column; gap:6px; }
+  .msg { max-width:85%; padding:6px 9px; border-radius:8px; background:#fff; white-space:pre-wrap; box-shadow:0 1px 0 rgba(0,0,0,.08); }
+  .msg.user { align-self:flex-end; background:var(--out); }
+  .msg.sys { align-self:center; background:#fff3c4; font-size:12px; text-align:center; }
+  .msg img { width:100%; border-radius:6px; display:block; margin-bottom:4px; }
+  .msg .tpl { font-size:10px; color:#a30000; font-weight:600; margin-bottom:3px; }
+  .btns { display:flex; flex-direction:column; gap:3px; max-width:85%; }
+  .btns button { background:#fff; border:none; border-radius:8px; padding:7px; color:#0a7cff; box-shadow:0 1px 0 rgba(0,0,0,.08); }
+  .btns button:disabled { color:#aaa; cursor:default; }
+  .btns .hint { font-size:10px; color:var(--mute); padding-left:4px; }
+  .composer { display:flex; gap:6px; padding:8px; background:#f0f0f0; }
+  .composer input { flex:1; border:none; border-radius:18px; padding:8px 12px; font:inherit; }
+  .composer button { border:none; border-radius:18px; padding:0 12px; background:var(--wa); color:#fff; }
+  .composer button.flyer { background:#fff; color:var(--wa); border:1px solid var(--wa); }
+
+  .web { background:#fff; }
+  .web .bar { background:#fff; color:var(--ink); border-bottom:1px solid var(--line); }
+  .web .url { font-size:11px; color:var(--mute); }
+  .page { flex:1; overflow-y:auto; padding:12px; background:var(--bg); }
+  .page .fl { width:90px; float:right; border-radius:6px; margin:0 0 6px 8px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; margin:10px 0; clear:both; }
+  .card.dropped { opacity:.45; }
+  .card h3 { margin:0 0 6px; font-size:14px; display:flex; justify-content:space-between; gap:6px; }
+  .card label { display:block; font-size:11px; color:var(--mute); margin-top:6px; }
+  .card input { width:100%; border:1px solid var(--line); border-radius:6px; padding:5px 7px; font:inherit; }
+  .card input.unc { background:#fff8e1; border-color:#e0b100; }
+  .card input.miss { background:#fde2e2; border-color:#d33; }
+  .card .why { font-size:11px; color:#8a6d00; }
+  .card .why.r { color:#a30000; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+  .q { background:#e8f0fe; border:1px solid #b6ccf6; border-radius:10px; padding:10px; margin:10px 0; }
+  .q .opts { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .q button, .card .chipb { border:1px solid #1a4fb4; background:#fff; color:#1a4fb4; border-radius:999px; padding:3px 10px; font-size:12px; }
+  .series { font-size:12px; background:var(--bg); border-radius:6px; padding:6px; margin-top:6px; }
+  .pub { display:block; width:100%; padding:11px; border:none; border-radius:10px; background:var(--accent); color:#fff; font-weight:600; margin-top:8px; }
+  .pub:disabled { background:#bbb; }
+  .done { background:#e6f4ea; border-radius:10px; padding:12px; white-space:pre-wrap; }
+  .webempty { padding:40px 20px; text-align:center; color:var(--mute); }
+
+  .switcher { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); background:#1d1a17; color:#fff; border-radius:999px; padding:6px 8px; display:flex; gap:8px; align-items:center; box-shadow:0 4px 16px rgba(0,0,0,.3); z-index:50; font-size:13px; }
+  .switcher button { background:none; border:none; color:#fff; font-size:18px; padding:0 8px; }
+  @media (max-width:800px){ .panel, .phone { width:100%; max-width:400px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel" id="panel"></div>
+  <div class="phone" id="chatPhone"></div>
+  <div class="phone web" id="webPhone"></div>
+</div>
+<div class="switcher" id="switcher"></div>
+
+<script>
+// ===================== Pure module: confirmation flow (no DOM) =====================
+const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const WDL = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+const FIELD = { title:'Titel', date:'Datum', start:'Beginn', end:'Ende', intro:'Intro class', venue:'Ort', styles:'Stile', price:'Preis' };
+const ICON = { Party:'🎉', Workshop:'🎓', Festival:'🎪' };
+const DAYS_AHEAD = 84; // Series generate Events 12 weeks ahead
+
+const dt = s => new Date(s + 'T12:00:00');
+const iso = x => `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
+const addDays = (s, n) => { const x = dt(s); x.setDate(x.getDate() + n); return iso(x); };
+const fmt = s => { if (!s) return '??'; const x = dt(s); return `${WD[x.getDay()]} ${String(x.getDate()).padStart(2,'0')}.${String(x.getMonth()+1).padStart(2,'0')}.`; };
+
+function parseDate(text, today) {
+  const m = text.match(/(\d{1,2})\.(\d{1,2})\.?(\d{2,4})?/); if (!m) return null;
+  let y = m[3] ? +m[3] : +today.slice(0,4); if (y < 100) y += 2000;
+  let s = iso(new Date(y, +m[2]-1, +m[1], 12));
+  if (!m[3] && s < today) s = iso(new Date(y+1, +m[2]-1, +m[1], 12));
+  return s;
+}
+
+function seriesDates(series, today) {
+  const end = addDays(today, DAYS_AHEAD), out = new Set((series.dates || []).filter(x => x >= today && x <= end));
+  const r = series.rule;
+  if (r && r.kind === 'nth') {
+    const t = dt(today);
+    for (let i = 0; i < 4; i++) {
+      let c = 0;
+      for (let day = 1; day <= 31; day++) {
+        const z = new Date(t.getFullYear(), t.getMonth() + i, day, 12);
+        if (z.getMonth() !== (t.getMonth() + i) % 12) break;
+        if (z.getDay() === r.wd && ++c === r.n) { const s = iso(z); if (s >= today && s <= end) out.add(s); break; }
+      }
+    }
+  }
+  if (r && r.kind === 'every' && r.anchor) for (let s = r.anchor; s <= end; s = addDays(s, 7 * r.n)) if (s >= today) out.add(s);
+  return [...out].sort();
+}
+function nextWeekdays(today, wd, k) { const out = []; for (let s = today; out.length < k; s = addDays(s, 1)) if (dt(s).getDay() === wd) out.push(s); return out; }
+function ruleText(r) {
+  if (!r) return '?';
+  if (r.kind === 'nth') return `jeden ${r.n}. ${WDL[r.wd]} im Monat`;
+  if (r.kind === 'every') return r.n === 1 ? `jeden ${WDL[r.wd]}` : `alle ${r.n} Wochen ${WDL[r.wd].toLowerCase()}s`;
+  return `„${r.text}" (prüft der Admin)`;
+}
+const link = (kind, title) => `kalender.example/${kind}/` + [...title].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36).slice(0, 6);
+const live = s => s.events.filter(e => !e.dropped);
+
+function evText(s, e) {
+  const L = [`*${e.title}*`, `${ICON[e.type]} ${e.type} · ${e.styles.join(', ')}`];
+  if (e.series) {
+    const ds = seriesDates(e.series, s.today);
+    L.push(`↻ ${ruleText(e.series.rule)}`);
+    L.push(`📅 ${ds.length ? ds.slice(0, 4).map(fmt).join(', ') + (ds.length > 4 ? ' …' : '') : '??'}`);
+  } else L.push(`📅 ${fmt(e.date)}`);
+  L.push(`🕘 ${e.intro ? `Intro class ${e.intro} · Party ` : ''}${e.start || '??'}${e.end ? '–' + e.end : ''}`);
+  L.push(`📍 ${e.venue.name}${e.venue.city ? ', ' + e.venue.city : ''}`);
+  if (e.price) L.push(`💶 ${e.price}`);
+  for (const [f, note] of Object.entries(e.uncertain)) L.push(`⚠️ ${FIELD[f]} bitte prüfen: ${note}`);
+  return L.join('\n');
+}
+
+function buildQueue(s) {
+  const q = [];
+  if (s.scn.repost) q.push({ k:'repost' });
+  s.events.forEach((e, i) => {
+    if (e.series && e.series.ambiguous && !e.series.rule) q.push({ k:'rule', ev:i });
+    if (e.missing.includes('start')) q.push({ k:'time', ev:i });
+    if (!e.venue.known) q.push({ k:'venue', ev:i });
+    if (e.overlap) q.push({ k:'overlap', ev:i });
+  });
+  return q;
+}
+
+function init(scn, variant) {
+  const s = { variant, scn, today: scn.today, events: structuredClone(scn.events), msgs: [], queue: [], awaiting: null,
+              phase: 'start', webOpen: false, flyers: 0, own: null, repost: null, applied: false, series: null,
+              m: { taps: 0, typed: 0, web: 0, bot: 0 } };
+  if (scn.reminder) {
+    s.phase = 'reminder';
+    s.msgs.push({ from:'sys', text:`${fmt(s.today)} – 8 Wochen ohne Lebenszeichen von „Salsa Disco". Das 24h-Fenster ist längst zu.` });
+    bot(s, { template:true, text:'Läuft *Salsa Disco* (jeden 2. Samstag im Monat, Kulturzentrum Schlachthof) weiter?',
+             buttons:[{ label:'Ja, läuft weiter', act:{ k:'remind', v:'yes' } }, { label:'Serie beenden', act:{ k:'remind', v:'end' } }] });
+  }
+  return s;
+}
+function bot(s, msg) { s.msgs.push({ from:'bot', ...msg }); s.m.bot++; }
+function user(s, msg) { s.msgs.push({ from:'user', ...msg }); }
+
+function dispatch(prev, a) {
+  const s = structuredClone(prev);
+  switch (a.type) {
+    case 'send_flyer': user(s, { flyer:true }); onFlyer(s); break;
+    case 'tap': s.m.taps++; s.msgs[a.msg].used = true; if (!a.act.url) user(s, { text: a.label }); onAct(s, a.act); break;
+    case 'text': s.m.typed++; user(s, { text: a.text }); onText(s, a.text); break;
+    case 'web_field': { s.m.typed++; const e = s.events[a.ev]; setField(s, e, a.f, a.v);
+      if (a.f === 'start') s.queue = s.queue.filter(q => !(q.k === 'time' && q.ev === a.ev)); break; }
+    case 'web_answer': s.m.taps++; s.queue = s.queue.filter(q => !(q.k === a.q.k && q.ev === a.q.ev)); answer(s, a.q, a.v, true); break;
+    case 'web_toggle': s.m.taps++; s.events[a.ev].dropped = !s.events[a.ev].dropped; break;
+    case 'web_publish': s.m.taps++; publish(s); break;
+  }
+  return s;
+}
+
+function onFlyer(s) {
+  s.flyers++;
+  if (s.scn.sender.first && s.flyers === 1)
+    bot(s, { text:'Hallo! 👋 Ich bin der Bot vom Tanzkalender Kassel/Göttingen. Ich lese Flyer mit KI aus – bitte prüf, was ich erkenne.\nDatenschutz: kalender.example/datenschutz · Mensch erreichen: „Admin" schreiben · Abmelden: STOP' });
+  if (!s.scn.sender.registered) {
+    if (s.own === 'tip') return tipThanks(s);
+    if (s.own === 'own') return bot(s, { text:'Deine Bewerbung liegt noch beim Admin. Schick den Flyer gern nochmal, sobald du freigeschaltet bist.' });
+    return bot(s, { text:'Danke! Ist das deine eigene Veranstaltung?',
+      buttons:[{ label:'Ja, meine', act:{ k:'own', v:'own' } }, { label:'Nein, ist ein Tipp', act:{ k:'own', v:'tip' } }] });
+  }
+  proceed(s);
+}
+function proceed(s) {
+  const n = s.events.length, e = s.events[0];
+  const what = n > 1 ? `${n} Events` : e.series ? 'eine Serie' : '1 Event';
+  bot(s, { text:`Danke, ${s.scn.sender.name}! Ich habe ${what} auf dem Flyer erkannt.` });
+  s.queue = buildQueue(s);
+  if (s.variant === 'B') {
+    s.phase = 'web';
+    return bot(s, { text:'Bitte kurz prüfen und veröffentlichen:', cta:{ label:'Prüfen ↗', act:{ k:'open', url:true } } });
+  }
+  next(s);
+}
+
+function next(s) {
+  if (s.queue.length) { s.phase = 'asking'; return ask(s, s.queue.shift()); }
+  if (s.variant === 'A') {
+    const i = s.events.findIndex(e => !e.dropped && !e.ok);
+    if (i < 0) return live(s).length ? publish(s) : bot(s, { text:'Ok, nichts eingetragen.' });
+    s.phase = 'summary';
+    return bot(s, { text: evText(s, s.events[i]), buttons:[
+      { label:'Passt ✅', act:{ k:'ok', ev:i } }, { label:'Ändern ✏️', act:{ k:'edit', ev:i } }, { label:'Weglassen', act:{ k:'drop', ev:i } }] });
+  }
+  if (s.variant === 'C') {
+    if (!live(s).length) return bot(s, { text:'Ok, nichts eingetragen.' });
+    s.phase = 'summary';
+    return bot(s, { text:'So trage ich es ein:\n\n' + live(s).map(e => evText(s, e)).join('\n\n'), buttons:[
+      { label:'Veröffentlichen', act:{ k:'publish' } }, { label:'Ändern ✏️', act:{ k:'webedit' } }, { label:'Verwerfen', act:{ k:'discard' } }] });
+  }
+}
+
+function ask(s, q) {
+  const e = s.events[q.ev];
+  if (q.k === 'repost') {
+    const o = s.scn.repost;
+    return bot(s, { text:`Den kenne ich schon: „${o.title}" am ${fmt(o.date)} hast du am ${fmt(o.posted)} eingetragen.\nNeu auf diesem Flyer: ${o.diff}.\nIst das ein Update?`,
+      buttons:[{ label:'Ja, Update', act:{ k:'ans', q, v:'update' } }, { label:'Nein, neues Event', act:{ k:'ans', q, v:'new' } }] });
+  }
+  if (q.k === 'rule') return bot(s, { text:`Auf dem Flyer steht „${e.series.ambiguous.text}". Was heißt das?`,
+    buttons:[{ label:'Alle 2 Wochen', act:{ k:'ans', q, v:'every' } }, { label:`2. ${WD[e.series.ambiguous.wd]} im Monat`, act:{ k:'ans', q, v:'nth' } }, { label:'Anders …', act:{ k:'ans', q, v:'other' } }] });
+  if (q.k === 'anchor') {
+    const [a, b] = nextWeekdays(s.today, e.series.rule.wd, 2);
+    return bot(s, { text:'Und wann ist der nächste Termin?',
+      buttons:[{ label:fmt(a), act:{ k:'ans', q, v:a } }, { label:fmt(b), act:{ k:'ans', q, v:b } }, { label:'Anderes Datum', act:{ k:'ans', q, v:'other' } }] });
+  }
+  if (q.k === 'time') {
+    const b = e.timeSuggest ? [{ label:e.timeSuggest.label, act:{ k:'ans', q, v:e.timeSuggest.v } }] : [];
+    return bot(s, { text:`Für „${e.title}" am ${fmt(e.date)} finde ich keine Anfangszeit. Wann geht's los?\n(Ohne Uhrzeit kann ich es nicht eintragen.)`,
+      buttons:[...b, { label:'Andere Uhrzeit', act:{ k:'ans', q, v:'other' } }, { label:'Event weglassen', act:{ k:'ans', q, v:'drop' } }] });
+  }
+  if (q.k === 'venue') return bot(s, { text:`„${e.venue.name}" kenne ich noch nicht. Ist es das hier?\n📍 ${e.venue.guess}`,
+    buttons:[{ label:'Ja, genau', act:{ k:'ans', q, v:'yes' } }, { label:'Nein, andere Adresse', act:{ k:'ans', q, v:'no' } }] });
+  if (q.k === 'overlap') {
+    const o = e.overlap;
+    return bot(s, { text:`Achtung: Am ${fmt(e.date)} ist in „${e.venue.name}" schon „${o.title}" eingetragen (${o.by}, ab ${o.time}).`,
+      buttons:[{ label:'Ist dasselbe', act:{ k:'ans', q, v:'same' } }, { label:'Beide behalten', act:{ k:'ans', q, v:'both' } }, { label:'Meins weglassen', act:{ k:'ans', q, v:'drop' } }] });
+  }
+}
+
+// Returns true when the answer needs a typed follow-up (chat) instead of continuing.
+function answer(s, q, v, fromWeb) {
+  const e = s.events[q.ev];
+  if (q.k === 'repost') s.repost = v;
+  if (q.k === 'rule') {
+    const wd = e.series.ambiguous.wd;
+    if (v === 'nth') { e.series.rule = { kind:'nth', n:2, wd }; e.date = seriesDates(e.series, s.today)[0]; }
+    if (v === 'every') { e.series.rule = { kind:'every', n:2, wd, anchor:null }; s.queue.unshift({ k:'anchor', ev:q.ev }); }
+    if (v === 'other') return wait(s, { k:'ruleText', ev:q.ev }, 'Beschreib mir kurz den Rhythmus, z. B. „jeden 1. und 3. Mittwoch".');
+  }
+  if (q.k === 'anchor') {
+    if (v === 'other') return wait(s, { k:'anchorText', ev:q.ev }, 'Schick mir das Datum, z. B. 21.10.');
+    e.series.rule.anchor = v; e.date = v;
+  }
+  if (q.k === 'time') {
+    if (v === 'drop') e.dropped = true;
+    else if (v === 'other') return wait(s, { k:'field', ev:q.ev, f:'start' }, 'Schick mir die Uhrzeit, z. B. 21:00.');
+    else setField(s, e, 'start', v);
+  }
+  if (q.k === 'venue') {
+    if (v === 'yes') { e.venue.known = true; e.venue.city = e.venue.guessCity; }
+    else return wait(s, { k:'address', ev:q.ev }, 'Schick mir die Adresse (Straße, Ort).');
+  }
+  if (q.k === 'overlap') { e.overlapAnswer = v; if (v === 'drop') e.dropped = true; }
+  if (!fromWeb) next(s);
+}
+function wait(s, aw, text) { s.awaiting = aw; bot(s, { text }); return true; }
+
+function setField(s, e, f, v) {
+  if (f === 'date') v = parseDate(v, s.today) || v;
+  if (f === 'venue') e.venue = { ...e.venue, name: v };
+  else if (f === 'styles') e.styles = v.split(/,\s*/);
+  else e[f] = v;
+  e.missing = e.missing.filter(x => x !== f);
+  delete e.uncertain[f];
+}
+
+function onAct(s, a) {
+  if (a.k === 'own') {
+    s.own = a.v;
+    if (a.v === 'tip') return tipThanks(s);
+    bot(s, { text:'Super! Dann bewirb dich kurz als Veranstalter*in, der Admin schaltet dich frei.', cta:{ label:'Bewerben ↗', act:{ k:'apply', url:true } } });
+    return bot(s, { text:'Danach schick mir den Flyer einfach nochmal – dann trage ich ihn ein. (Ich melde mich nicht von selbst.)' });
+  }
+  if (a.k === 'apply') { s.applied = true; return s.msgs.push({ from:'sys', text:'Bewerbungsformular öffnet sich im Browser (nicht Teil dieses Prototyps).' }); }
+  if (a.k === 'ans') return answer(s, a.q, a.v, false);
+  if (a.k === 'ok') { s.events[a.ev].ok = true; return next(s); }
+  if (a.k === 'drop') { s.events[a.ev].dropped = true; return next(s); }
+  if (a.k === 'edit') return bot(s, { text:'Was soll ich ändern?', list:{ label:'Feld wählen', rows: Object.keys(FIELD).map(f => ({ label:FIELD[f], act:{ k:'pick', ev:a.ev, f } })) } });
+  if (a.k === 'pick') return wait(s, { k:'field', ev:a.ev, f:a.f }, `Schick mir den neuen Wert für *${FIELD[a.f]}*.`);
+  if (a.k === 'publish') return publish(s);
+  if (a.k === 'discard') { s.events.forEach(e => e.dropped = true); return bot(s, { text:'Ok, nichts eingetragen.' }); }
+  if (a.k === 'webedit') { s.phase = 'web'; return bot(s, { text:'Hier kannst du alles bearbeiten:', cta:{ label:'Bearbeiten ↗', act:{ k:'open', url:true } } }); }
+  if (a.k === 'open') { s.webOpen = true; s.m.web++; return; }
+  if (a.k === 'remind') {
+    s.phase = 'done';
+    return bot(s, { text: a.v === 'yes' ? `Danke! Ich trage weiter ein, mindestens bis ${fmt(addDays(s.today, DAYS_AHEAD))}` : 'Ok, die Serie endet. Die Termine ab heute sind raus.' });
+  }
+}
+
+function onText(s, text) {
+  const aw = s.awaiting;
+  if (!aw) return bot(s, { text:'Schick mir einfach einen Flyer (Bild oder Text) 🙂' });
+  s.awaiting = null;
+  const e = s.events[aw.ev];
+  if (aw.k === 'field') setField(s, e, aw.f, text);
+  if (aw.k === 'address') { e.venue.known = true; e.venue.guess = text; }
+  if (aw.k === 'ruleText') e.series.rule = { kind:'text', text };
+  if (aw.k === 'anchorText') { const d = parseDate(text, s.today); e.series.rule.anchor = d; e.date = d; }
+  next(s);
+}
+
+function tipThanks(s) {
+  s.phase = 'done';
+  bot(s, { text:'Danke für den Tipp! 🙏 Der Admin schaut drüber, dann erscheint er im Kalender als „von der Community hinzugefügt".' });
+}
+
+function publish(s) {
+  s.phase = 'published';
+  const ev = live(s);
+  ev.forEach(e => e.published = true);
+  const lines = ev.map(e => e.series
+    ? `↻ *${e.title}* (${ruleText(e.series.rule)}, ${seriesDates(e.series, s.today).length} Termine)\nSerie ändern/beenden: ${link('s', e.title)}\nEinzeltermine: ${link('s', e.title)}#termine`
+    : `*${e.title}*, ${fmt(e.date)}\nÄndern/absagen: ${link('e', e.title)}`);
+  const extra = [];
+  if (s.repost === 'update') extra.push('Das bestehende Event ist aktualisiert, dein alter Link gilt weiter.');
+  if (ev.some(e => e.overlapAnswer === 'same')) extra.push('Den Community-Eintrag nimmt der Admin raus.');
+  bot(s, { text:`✅ Ist online!\n\n${lines.join('\n\n')}${extra.length ? '\n\n' + extra.join('\n') : ''}\n\nDie Links sind privat – nicht weiterleiten.` });
+}
+
+// ===================== Scenarios (real sample Flyers) =====================
+const FL = f => '../assets/flyers/' + encodeURIComponent(`WhatsApp Image 2026-${f}.jpeg`);
+const V = (name, city, extra) => ({ name, city, known: true, ...extra });
+const SCN = [
+  { id:'happy', title:'1 · Einfach', flyer:FL('10-14 at 09.07.01'), today:'2026-10-14', sender:{ registered:true, name:'Marta' },
+    desc:'F10 Sabakizz: one Party, known Venue, end past midnight, nothing uncertain. The baseline: how many taps does the easy case cost?',
+    events:[{ type:'Party', title:'Sabakizz – Ritmo de la noche', date:'2026-10-17', start:'21:30', end:'02:00', venue:V('Tanzschule Tango Zero','Kassel'),
+      styles:['Salsa','Bachata','Kizomba'], price:'10 € / ermäßigt 5 €', missing:[], uncertain:{} }] },
+  { id:'series', title:'2 · Serie mit Terminen', flyer:FL('10-09 at 10.02.00'), today:'2026-10-09', sender:{ registered:true, name:'Jorge' },
+    desc:'F06 Salsa Disco: a Series rule "jeden 2. Samstag im Monat" plus three listed dates; the time is printed only on the first. Watch how the rule is confirmed in plain words.',
+    events:[{ type:'Party', title:'Salsa Disco', start:'21:30', venue:V('Kulturzentrum Schlachthof','Kassel'), styles:['Salsa'], price:'',
+      series:{ rule:{ kind:'nth', n:2, wd:6 }, dates:['2026-10-10','2026-11-14','2026-12-12'] }, date:'2026-10-10',
+      missing:[], uncertain:{ start:'nur beim 1. Termin angegeben' } }] },
+  { id:'ambiguous', title:'3 · Unklare Serie, neuer Ort', flyer:FL('10-07 at 08.12.27'), today:'2026-10-07', sender:{ registered:true, first:true, name:'Lena' },
+    desc:'F02 Kater Bar: "jeden 2. Mittwoch" (every other week, or the 2nd of the month?), no date at all, a Venue nobody knows yet. Also Lena\'s first message ever, so the bot\'s first reply carries the AI disclosure. Try "Alle 2 Wochen" to see the follow-up date question.',
+    events:[{ type:'Party', title:'Sensual Bachata Wednesday', date:'', start:'20:30', intro:'20:00',
+      venue:{ name:'Kater Bar', known:false, guess:'Kater Bar, Friedrich-Ebert-Str. 1 (erfunden), 34117 Kassel', guessCity:'Kassel' },
+      styles:['Bachata'], price:'', series:{ rule:null, ambiguous:{ text:'jeden 2. Mittwoch', wd:3 }, dates:[] }, missing:[], uncertain:{} }] },
+  { id:'notime', title:'4 · Keine Anfangszeit', flyer:FL('10-11 at 19.02.59'), today:'2026-10-11', sender:{ registered:true, name:'Tobias' },
+    desc:'F07 La Clave: the Intro class (21:15–22:00) is on the Flyer, the Party start isn\'t. No start time, no Event, so the bot has to ask. Also a Series ("jeden 3. Freitag") and no year.',
+    events:[{ type:'Party', title:'La Clave', date:'2026-10-16', start:'', intro:'21:15', venue:V('Tanzschule Seyler','Kassel'),
+      styles:['Salsa','Bachata','Kizomba'], price:'10 € / Studierende 5 €', series:{ rule:{ kind:'nth', n:3, wd:5 }, dates:['2026-10-16'] },
+      timeSuggest:{ label:'22:00 (nach Kurs)', v:'22:00' }, missing:['start'], uncertain:{ date:'kein Jahr auf dem Flyer' } }] },
+  { id:'two', title:'5 · Zwei Events, eins vage', flyer:FL('10-16 at 08.45.12'), today:'2026-10-16', sender:{ registered:true, name:'Anke' },
+    desc:'F12 Latin Social: a main Party plus a save-the-date (05.12, Weihnachtsfeier) with no time. Can the Organizer publish one and skip or complete the other without friction?',
+    events:[
+      { type:'Party', title:'Latin Social', date:'2026-11-07', start:'21:30', intro:'20:30', venue:V('Kulturzentrum Färberei','Kassel'),
+        styles:['Salsa','Bachata'], price:'ab 5 €*', missing:[], uncertain:{ price:'„*" verweist auf eine Fußnote' } },
+      { type:'Party', title:'Latin Social – Weihnachtsfeier', date:'2026-12-05', start:'', venue:V('Kulturzentrum Färberei','Kassel'),
+        styles:['Salsa','Bachata'], price:'', timeSuggest:{ label:'21:30 wie immer', v:'21:30' }, missing:['start'], uncertain:{ venue:'nicht genannt, vom Haupt-Event übernommen' } }] },
+  { id:'repost', title:'6 · Flyer nochmal (Update)', flyer:FL('10-19 at 09.23.12'), today:'2026-10-19', sender:{ registered:true, name:'Carlos' },
+    desc:'F17 La Noche de la Salsa: an updated version of F03, which Carlos already posted on 8 Oct. Same date and address, new venue name and start time. Update the existing Event (old edit link stays) or create a new one?',
+    repost:{ title:'La Noche de la Salsa', date:'2026-10-24', posted:'2026-10-08', diff:'Ort „Gaststätte AC Theke" statt „Los Muchachos", Beginn 20:00 statt 21:00' },
+    events:[{ type:'Party', title:'La Noche de la Salsa', date:'2026-10-24', start:'20:00', venue:V('Gaststätte AC Theke','Kassel'),
+      styles:['Salsa'], price:'5 €', missing:[], uncertain:{} }] },
+  { id:'overlap', title:'7 · Doppelt? (Community)', flyer:FL('10-13 at 07.49.39'), today:'2026-10-13', sender:{ registered:true, name:'Sven' },
+    desc:'F09 Latin Dance After Work: a Dancer already tipped this Party (approved by the Admin, shown as "von der Community hinzugefügt"). Duplicates are warned about, never merged automatically. Does "Ist dasselbe → Admin removes the Tip" feel right?',
+    events:[{ type:'Party', title:'Latin Dance After Work', date:'2026-10-15', start:'20:30', intro:'19:30', venue:V('Startup Bar','Kassel'),
+      styles:['Salsa','Bachata'], price:'frei', overlap:{ title:'Latin Afterwork', by:'von der Community', time:'19:30' }, missing:[], uncertain:{} }] },
+  { id:'stranger', title:'8 · Unbekannte Nummer', flyer:FL('10-14 at 18.03.26'), today:'2026-10-14', sender:{ registered:false, first:true, name:'' },
+    desc:'F11 Salsa en Sótano sent by a number the bot doesn\'t know. AI disclosure, then "Ist das deine Veranstaltung?". The answer is remembered: send the Flyer a second time to see it skip the question. Same in all variants.',
+    events:[{ type:'Party', title:'Salsa en Sótano', date:'2026-10-14', start:'21:00', venue:V('Nörgelbuff','Göttingen'),
+      styles:['Salsa'], price:'5 € / frei mit Kulturticket', missing:[], uncertain:{} }] },
+  { id:'reminder', title:'9 · „Läuft das noch?"', flyer:null, today:'2026-12-04', reminder:true, sender:{ registered:true, name:'Jorge' },
+    desc:'The data model asks Organizers "still running?" 8 weeks after a Series\' last sign of life. That is the bot writing FIRST, outside the 24h window, so it needs a paid utility template (research says the MVP needs none). Alternatives: no chat reminder (Series just runs out; the Admin view lists Series about to end), or ask only when the Organizer next writes. Same in all variants.',
+    events:[] },
+];
+
+// ===================== Page shell (throwaway) =====================
+const VARIANTS = { A:'Alles im Chat', B:'Link zur Webseite', C:'Chat fragt, Web korrigiert' };
+const params = new URLSearchParams(location.search);
+let variant = VARIANTS[params.get('variant')] ? params.get('variant') : 'A';
+let scn = SCN.find(x => x.id === params.get('s')) || SCN[0];
+let S = init(scn, variant);
+const h = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const wa = s => h(s).replace(/\*([^*\n]+)\*/g, '<b>$1</b>');
+
+function go(a) { S = dispatch(S, a); render(); }
+function setUrl() { params.set('variant', variant); params.set('s', scn.id); history.replaceState(null, '', '?' + params); }
+function reset() { S = init(scn, variant); setUrl(); render(); }
+
+function render() { renderPanel(); renderChat(); renderWeb(); renderSwitcher(); }
+
+function renderPanel() {
+  const st = e => e.published ? (S.scn.sender.registered ? '<span class="st pub">veröffentlicht</span>' : '')
+    : e.dropped ? '<span class="st drop">weggelassen</span>' : '<span class="st">Entwurf</span>';
+  const store = S.scn.reminder ? '<p class="muted">Serie „Salsa Disco", letztes Lebenszeichen 09.10.</p>'
+    : S.own === 'tip' ? `<div class="store"><div class="ev"><span class="st tip">Tipp → Admin-Warteschlange</span><b>${h(S.events[0].title)}</b></div><p>Antwort gemerkt für diese Nummer: Tipp</p></div>`
+    : S.own === 'own' ? `<div class="store"><p>Antwort gemerkt: eigene Veranstaltung. Bewerbung ${S.applied ? 'abgeschickt' : 'offen'}. Flyer wird aufgehoben.</p></div>`
+    : `<div class="store">${S.events.map(e => `<div class="ev">${st(e)}<b>${h(e.title)}</b><br>
+        ${e.series ? '↻ ' + h(ruleText(e.series.rule)) + ' · ' + seriesDates(e.series, S.today).length + ' Termine' : fmt(e.date)}
+        · ${h(e.start || '??')} · ${h(e.venue.name)}${e.venue.known ? '' : ' (unbekannt)'}
+        ${Object.keys(e.uncertain).length ? '<br>⚠️ ' + Object.keys(e.uncertain).map(f => FIELD[f]).join(', ') : ''}
+        ${e.missing.length && !e.dropped ? '<br>❌ fehlt: ' + e.missing.map(f => FIELD[f]).join(', ') : ''}</div>`).join('')}
+        ${S.repost ? `<p>Repost: ${S.repost === 'update' ? 'bestehendes Event aktualisieren' : 'neues Event'}</p>` : ''}</div>`;
+  document.getElementById('panel').innerHTML = `
+    <h1>Organizer confirmation flow</h1>
+    <p class="muted">PROTOTYPE. How does an Organizer get from forwarding a Flyer to published Events with the least friction? Pick a scenario, send the Flyer, tap through, then flip variants (bar at the bottom, or ← →).</p>
+    <h2>Scenario</h2>
+    <div class="tabs">${SCN.map(x => `<button class="${x.id === scn.id ? 'on' : ''}" data-s="${x.id}">${h(x.title)}</button>`).join('')}</div>
+    <div class="desc">${h(scn.desc)}</div>
+    <h2>Friction so far <button class="reset" id="reset">↺ Neu starten</button></h2>
+    <div class="metrics"><div><b>${S.m.taps}</b><span>Taps</span></div><div><b>${S.m.typed}</b><span>Getippt</span></div>
+      <div><b>${S.m.web}</b><span>Web­seite</span></div><div><b>${S.m.bot}</b><span>Bot-Msgs</span></div></div>
+    <h2>Was gespeichert würde</h2>${store}`;
+  document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { scn = SCN.find(x => x.id === b.dataset.s); reset(); });
+  document.getElementById('reset').onclick = reset;
+}
+
+function renderChat() {
+  const out = [];
+  S.msgs.forEach((m, i) => {
+    if (m.from === 'sys') return out.push(`<div class="msg sys">${h(m.text)}</div>`);
+    if (m.flyer) return out.push(`<div class="msg user"><img src="${scn.flyer}" alt="Flyer" onerror="this.outerHTML='[Flyer-Bild]'">${h(m.text || '')}</div>`);
+    out.push(`<div class="msg ${m.from}">${m.template ? '<div class="tpl">VORLAGE · außerhalb 24h · kostet</div>' : ''}${wa(m.text)}</div>`);
+    const btn = (b, j, kind) => `<button data-m="${i}" data-${kind}="${j}" ${m.used || (kind !== 'c' && i !== lastInteractive()) ? 'disabled' : ''}>${h(b.label)}</button>`;
+    if (m.buttons) out.push(`<div class="btns">${m.buttons.map((b, j) => btn(b, j, 'b')).join('')}</div>`);
+    if (m.list) out.push(`<div class="btns"><span class="hint">☰ ${h(m.list.label)} (Liste)</span>${m.list.rows.map((b, j) => btn(b, j, 'l')).join('')}</div>`);
+    if (m.cta) out.push(`<div class="btns">${btn(m.cta, 0, 'c')}</div>`);
+  });
+  const canSend = S.phase === 'start' || (S.phase === 'done' && !S.scn.sender.registered);
+  document.getElementById('chatPhone').innerHTML = `
+    <div class="bar"><div class="av">TK</div><div><b>Tanzkalender-Bot</b><small>Variante ${variant}: ${VARIANTS[variant]}</small></div></div>
+    <div class="chat" id="chat">${out.join('') || '<div class="msg sys">Leite den Flyer an den Bot weiter ↓</div>'}</div>
+    <div class="composer">${S.scn.reminder ? '' : `<button class="flyer" id="sendFlyer" ${canSend ? '' : 'disabled'}>📎 Flyer</button>`}
+      <input id="txt" placeholder="${S.awaiting ? 'Antwort tippen …' : 'Nachricht'}"><button id="send">➤</button></div>`;
+  const chat = document.getElementById('chat'); chat.scrollTop = chat.scrollHeight;
+  chat.querySelectorAll('button[data-m]').forEach(b => b.onclick = () => {
+    const m = S.msgs[+b.dataset.m];
+    const item = b.dataset.b != null ? m.buttons[+b.dataset.b] : b.dataset.l != null ? m.list.rows[+b.dataset.l] : m.cta;
+    go({ type:'tap', msg:+b.dataset.m, label:item.label, act:item.act });
+  });
+  const f = document.getElementById('sendFlyer'); if (f) f.onclick = () => go({ type:'send_flyer' });
+  const txt = document.getElementById('txt');
+  const send = () => { if (txt.value.trim()) go({ type:'text', text:txt.value.trim() }); };
+  document.getElementById('send').onclick = send;
+  txt.onkeydown = e => { if (e.key === 'Enter') send(); };
+  if (S.awaiting) txt.focus();
+}
+// Only the newest message with reply buttons/list is answerable (older ones are spent).
+function lastInteractive() { for (let i = S.msgs.length - 1; i >= 0; i--) if (S.msgs[i].buttons || S.msgs[i].list) return i; return -1; }
+
+function renderWeb() {
+  const el = document.getElementById('webPhone');
+  const bar = `<div class="bar"><div><b>Events prüfen</b><div class="url">🔒 kalender.example/c/x7Kq2… (privat)</div></div></div>`;
+  if (!S.webOpen) { el.innerHTML = bar + `<div class="page webempty">Web-Bestätigungsseite<br><br>${variant === 'A' ? 'Variante A nutzt keine Webseite.' : 'Öffnet sich, wenn im Chat auf den Link getippt wird.'}</div>`; return; }
+  if (S.phase === 'published') {
+    el.innerHTML = bar + `<div class="page"><div class="done">${wa(S.msgs.filter(m => m.from === 'bot').pop().text)}</div></div>`; return;
+  }
+  const qs = S.queue.filter(q => q.k !== 'time');
+  const qHtml = q => {
+    const e = S.events[q.ev], o = (v, l) => `<button data-q="${q.k}" data-qev="${q.ev ?? ''}" data-v="${h(v)}">${h(l)}</button>`;
+    if (q.k === 'repost') return `<div class="q">Diesen Flyer kennen wir: „${h(S.scn.repost.title)}" am ${fmt(S.scn.repost.date)}. Neu: ${h(S.scn.repost.diff)}.<div class="opts">${o('update', 'Bestehendes aktualisieren')}${o('new', 'Neues Event')}</div></div>`;
+    if (q.k === 'rule') return `<div class="q">„${h(e.series.ambiguous.text)}" heißt …<div class="opts">${o('every', 'alle 2 Wochen')}${o('nth', `2. ${WDL[e.series.ambiguous.wd]} im Monat`)}</div></div>`;
+    if (q.k === 'anchor') return `<div class="q">Nächster Termin?<div class="opts">${nextWeekdays(S.today, e.series.rule.wd, 3).map(d => o(d, fmt(d))).join('')}</div></div>`;
+    if (q.k === 'venue') return `<div class="q">Neuer Ort „${h(e.venue.name)}" – stimmt die Adresse?<br>📍 ${h(e.venue.guess)}<div class="opts">${o('yes', 'Ja')}</div><label style="font-size:11px">oder Adresse eingeben</label><input data-addr="${q.ev}" style="width:100%"></div>`;
+    if (q.k === 'overlap') return `<div class="q">Am ${fmt(e.date)} ist in „${h(e.venue.name)}" schon „${h(e.overlap.title)}" (${h(e.overlap.by)}).<div class="opts">${o('same', 'Ist dasselbe')}${o('both', 'Beide behalten')}</div></div>`;
+  };
+  const inp = (i, e, f, val) => {
+    const cls = e.missing.includes(f) ? 'miss' : e.uncertain[f] ? 'unc' : '';
+    const why = e.missing.includes(f) ? `<div class="why r">fehlt – ohne ${FIELD[f]} kein Eintrag</div>` : e.uncertain[f] ? `<div class="why">⚠️ ${h(e.uncertain[f])}</div>` : '';
+    return `<div><label>${FIELD[f]}</label><input class="${cls}" data-ev="${i}" data-f="${f}" value="${h(val ?? e[f] ?? '')}">${why}</div>`;
+  };
+  const cards = S.events.map((e, i) => `<div class="card ${e.dropped ? 'dropped' : ''}">
+      <h3><span>${ICON[e.type]} ${h(e.title)}</span><label style="margin:0;color:var(--ink)"><input type="checkbox" data-tog="${i}" ${e.dropped ? '' : 'checked'} style="width:auto"> eintragen</label></h3>
+      ${inp(i, e, 'title')}
+      ${e.series ? `<div class="series">↻ <b>${h(ruleText(e.series.rule))}</b><br>${seriesDates(e.series, S.today).map(fmt).join(', ') || 'Termine erst nach Klärung oben'}<br><span class="muted">Jeder Termin bekommt einen eigenen Link; die Serie einen gemeinsamen.</span></div>` : inp(i, e, 'date', e.date ? fmt(e.date) + e.date.slice(0,4) : '')}
+      <div class="row2">${e.intro ? inp(i, e, 'intro') : ''}${inp(i, e, 'start')}${inp(i, e, 'end')}</div>
+      ${inp(i, e, 'venue', e.venue.name)}${inp(i, e, 'styles', e.styles.join(', '))}${inp(i, e, 'price')}</div>`).join('');
+  const blocked = qs.length || live(S).some(e => e.missing.length) || !live(S).length;
+  el.innerHTML = bar + `<div class="page">
+      <img class="fl" src="${scn.flyer}" alt="" onerror="this.remove()">
+      <p><b>Hallo ${h(S.scn.sender.name)}!</b> Das haben wir auf deinem Flyer erkannt. Gelb = bitte prüfen, rot = fehlt.</p>
+      ${qs.map(qHtml).join('')}${cards}
+      <button class="pub" id="pub" ${blocked ? 'disabled' : ''}>${live(S).length} veröffentlichen</button>
+      ${blocked ? '<p class="muted" style="font-size:12px">Erst die blauen Fragen beantworten und rote Felder füllen (oder Event abwählen).</p>' : ''}</div>`;
+  el.querySelectorAll('[data-q]').forEach(b => b.onclick = () => go({ type:'web_answer', q:{ k:b.dataset.q, ev: b.dataset.qev === '' ? undefined : +b.dataset.qev }, v:b.dataset.v }));
+  el.querySelectorAll('[data-addr]').forEach(x => x.onchange = () => {
+    const i = +x.dataset.addr; S.events[i].venue.guess = x.value; go({ type:'web_answer', q:{ k:'venue', ev:i }, v:'yes' });
+  });
+  el.querySelectorAll('[data-f]').forEach(x => x.onchange = () => go({ type:'web_field', ev:+x.dataset.ev, f:x.dataset.f, v:x.value }));
+  el.querySelectorAll('[data-tog]').forEach(x => x.onchange = () => go({ type:'web_toggle', ev:+x.dataset.tog }));
+  const p = document.getElementById('pub'); if (p) p.onclick = () => go({ type:'web_publish' });
+}
+
+function renderSwitcher() {
+  const keys = Object.keys(VARIANTS);
+  document.getElementById('switcher').innerHTML = `<button id="prev">‹</button><span>${variant} · ${VARIANTS[variant]}</span><button id="nextv">›</button>`;
+  const cycle = d => { variant = keys[(keys.indexOf(variant) + d + keys.length) % keys.length]; reset(); };
+  document.getElementById('prev').onclick = () => cycle(-1);
+  document.getElementById('nextv').onclick = () => cycle(1);
+  window.onkeydown = e => { if (e.target.matches('input, textarea, [contenteditable]')) return;
+    if (e.key === 'ArrowLeft') cycle(-1); if (e.key === 'ArrowRight') cycle(1); };
+}
+
+reset();
+</script>
+</body>
+</html>

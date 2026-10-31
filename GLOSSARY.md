@@ -19,7 +19,7 @@ The name an Organizer's Events are shown under; may be a brand (e.g. "Salsa Kass
 _Avoid_: Organization, school name
 
 **Admin**:
-The person who approves Organizer applications, reviews Tips, and can edit or remove any Event.
+The person who reviews Tips, can remove Organizers, and can edit or remove any Event.
 _Avoid_: Moderator, operator
 
 ### Events

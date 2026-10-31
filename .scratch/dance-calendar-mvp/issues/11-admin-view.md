@@ -12,6 +12,7 @@ What does the Admin view hold and how does the Admin work through it? Settle:
 - Series about to run out
 - finding, editing, removing and reassigning any Event (including handing a Tip Event to an Organizer)
 - takedown requests for Flyers
+- removing Events that aren't partner dance (no automatic check exists, see "Region boundary")
 - what the daily Admin email lists and links to
 
 Built on "Stack and hosting choice" (`/admin` behind Cloudflare Access, pages rendered on the server) and "Organizer confirmation flow" (a confirmed duplicate Tip is deleted automatically; applications are auto-approved).

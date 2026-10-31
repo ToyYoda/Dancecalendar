@@ -25,3 +25,4 @@ Settled with the human, 2026-10-31, by reacting to a prototype: [prototypes/danc
 - **Festivals** appear on every day they run ("Tag 2/3").
 - **Tip Events show their Flyer image** too, marked "von der Community hinzugefügt". This is a risk the human consciously accepted, see the legal ticket's comment.
 - Cancelled Events are crossed out and greyed out. Series show ↻ with their rule. Courses show "Anmeldung nötig". The Workshop tab includes Parties with an Intro class. German/English switch in the header.
+- Amendment from "Region boundary" (2026-10-31): the default without URL filters is **Kassel + Göttingen, 50 km**; the radius chips gain **"überall"**. Events with no style show only while no style chip is selected.

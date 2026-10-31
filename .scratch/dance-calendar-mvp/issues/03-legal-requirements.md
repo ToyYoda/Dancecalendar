@@ -30,3 +30,4 @@ Not legal advice. Full findings, sources and pre-launch checklist: [research/leg
 ## Comments
 
 - 2026-10-31, overridden while working "Dancer overview and filters": the human chose to **show the Flyer image on Tip Events too**, and take it down on request through the takedown contact. This is a consciously accepted risk: a Dancer who forwards someone else's Flyer cannot grant the rights to it, so the Admin is exposed if the designer or a person pictured complains. The takedown contact on the pre-launch checklist becomes mandatory.
+- 2026-10-31, from "Region boundary": the Terms of Use state that only partner-dance Events may be posted; the Admin removes misfits and repeat offenders.

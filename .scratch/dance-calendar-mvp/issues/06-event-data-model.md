@@ -30,3 +30,4 @@ Glossary updated: **Intro class** added, **Course** redefined.
 
 - Amendment from "Organizer confirmation flow" (2026-10-31): **no "still running?" reminder**. A Series' last sign of life is a repost or an edit; Tip Series get no reminder either. ADR 0001 amended.
 - Amendment from "Legal requirements: Impressum, GDPR, WhatsApp policy": the Flyer image is shown only on Organizer Events; **Tip Events are shown without it** (extracted facts only). *Later overridden: Tip Flyers are shown too, see the legal ticket.* Past Events are deleted about 3 months after they happen.
+- Amendment from "Region boundary" (2026-10-31): **styles may be empty** when the Flyer names none (still chosen from the fixed list of five). No location limit on Venues.

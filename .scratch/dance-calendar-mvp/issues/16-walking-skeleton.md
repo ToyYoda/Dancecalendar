@@ -1,6 +1,7 @@
 # Walking skeleton: Worker, D1 schema, week feed, deploy
 
 Type: task
+Status: claimed
 Labels: wayfinder:task
 
 ## Scope

@@ -9,3 +9,7 @@
 
 # Meta setup wizard run log
 .scratch/*/wizards/meta-setup-log.md
+
+# Node and Wrangler
+node_modules/
+.wrangler/

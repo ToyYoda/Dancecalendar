@@ -4,8 +4,27 @@
     {
       "name": "dancer-overview-prototype",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", ".scratch/dance-calendar-mvp"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        ".scratch/dance-calendar-mvp"
+      ],
       "port": 8765
+    },
+    {
+      "name": "worker",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "--port",
+        "8787"
+      ],
+      "port": 8787
     }
   ]
 }

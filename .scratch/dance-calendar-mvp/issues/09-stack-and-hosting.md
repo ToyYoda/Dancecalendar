@@ -40,3 +40,7 @@ Settled with the human, 2026-10-31. See [ADR 0002](../../../docs/adr/0002-typesc
 - **Running cost:** €0 for hosting, plus the Claude calls (under $1/month at the expected volume).
 - **Legal follow-up:** Cloudflare joins the processor list. Accept its Customer DPA (it applies only once agreed), and name it in the privacy policy next to Meta and Anthropic.
 - **Left for later:** the domain and the Cloudflare account setup go to Deploy; the test setup goes to Build.
+
+## Comments
+
+- Amendment from "Admin view" (2026-10-31): the daily Admin email goes out at **21:00 German time**, not about 08:00. Cron Triggers run in UTC, so the job must follow daylight-saving time.

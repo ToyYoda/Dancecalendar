@@ -41,3 +41,7 @@ Settled with the human, 2026-10-31.
 
   Each item links to its page in the Admin view.
 - **Mobile-first:** lists and cards, nothing wider than a phone.
+
+## Comments
+
+- From "Organizer application form" (2026-10-31): the daily email also flags new Organizers who **joined an existing Display name**.

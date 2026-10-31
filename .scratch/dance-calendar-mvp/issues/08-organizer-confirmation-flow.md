@@ -33,3 +33,4 @@ Settled with the human, 2026-10-31, by reacting to a prototype: [prototypes/orga
   - "Nein" → Tip, thanked, goes to the Admin review queue.
   - "Ja" → apply link. The application is **auto-approved**: submitting it (Display name + Terms of Use) makes the sender an Organizer at once, and the bot continues with the Flyer they already sent. The Admin can remove an Organizer afterwards. This replaces the earlier "Admin approves applications", and makes invite links redundant.
 - **No "still running?" reminder.** A Series ends 12 weeks after its last sign of life (a repost or an edit). The bot never writes first, so no paid templates are needed. ADR 0001 and the data model are amended to match.
+- Amendment from "Organizer application form" (2026-10-31): only the "Tipp" answer is remembered per number. "Ja, meine" without a completed form is forgotten, and the next Flyer gets a fresh apply link (valid 24 h); the held Flyer resumes right after the form is submitted.

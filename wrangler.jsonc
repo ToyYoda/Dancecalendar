@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dancecalendar",
+  "account_id": "b1960e03e4c5698895fb3dca8897c037",
   "main": "src/index.tsx",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],

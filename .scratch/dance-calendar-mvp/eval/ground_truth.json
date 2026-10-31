@@ -1,0 +1,370 @@
+{
+  "_about": "Ground truth for the extraction eval, transcribed from assets/flyer-catalogue.md and mapped onto the Event data model (Intro class is a time on the Party, Course = Workshop). start_time lists every acceptable value; \"\" means the Flyer prints none, so an empty value or an uncertain flag is correct. venue lists case-insensitive substrings of which one must appear in venue_name or venue_address; null skips the check. F16 corrected after the first run: its Courses come in two levels per city, and the data model makes each level its own Event, so 6 Events, not 4.",
+  "flyers": {
+    "F01": {
+      "file": "WhatsApp Image 2026-10-06 at 12.01.34.jpeg",
+      "received": "2026-10-06",
+      "events": [
+        {
+          "date": "2026-10-09",
+          "start_time": [
+            "22:00"
+          ],
+          "venue": [
+            "startup"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F02": {
+      "file": "WhatsApp Image 2026-10-07 at 08.12.27.jpeg",
+      "received": "2026-10-07",
+      "undated_series": true,
+      "events": [
+        {
+          "date": null,
+          "start_time": [
+            "20:00",
+            "20:30"
+          ],
+          "venue": [
+            "kater"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F03": {
+      "file": "WhatsApp Image 2026-10-08 at 11.47.03.jpeg",
+      "received": "2026-10-08",
+      "events": [
+        {
+          "date": "2026-10-24",
+          "start_time": [
+            "20:00",
+            "20:30",
+            "21:00"
+          ],
+          "venue": [
+            "muchachos",
+            "act",
+            "1848"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F04": {
+      "file": "WhatsApp Image 2026-10-08 at 20.21.48.jpeg",
+      "received": "2026-10-08",
+      "events": [
+        {
+          "date": "2026-10-10",
+          "start_time": [
+            "22:30"
+          ],
+          "venue": [
+            "taya"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F05": {
+      "file": "WhatsApp Image 2026-10-09 at 10.01.25.jpeg",
+      "received": "2026-10-09",
+      "events": [
+        {
+          "date": "2026-10-09",
+          "start_time": [
+            ""
+          ],
+          "venue": [
+            "schlachthof",
+            "scheidemann"
+          ],
+          "type": "festival"
+        }
+      ]
+    },
+    "F06": {
+      "file": "WhatsApp Image 2026-10-09 at 10.02.00.jpeg",
+      "received": "2026-10-09",
+      "events": [
+        {
+          "date": "2026-10-10",
+          "start_time": [
+            "21:30"
+          ],
+          "venue": [
+            "schlachthof"
+          ],
+          "type": "party"
+        },
+        {
+          "date": "2026-11-14",
+          "start_time": [
+            "21:30",
+            ""
+          ],
+          "venue": [
+            "schlachthof"
+          ],
+          "type": "party"
+        },
+        {
+          "date": "2026-12-12",
+          "start_time": [
+            "21:30",
+            ""
+          ],
+          "venue": [
+            "schlachthof"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F07": {
+      "file": "WhatsApp Image 2026-10-11 at 19.02.59.jpeg",
+      "received": "2026-10-11",
+      "events": [
+        {
+          "date": "2026-10-16",
+          "start_time": [
+            "",
+            "21:15",
+            "22:00"
+          ],
+          "venue": [
+            "seyler"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F08": {
+      "file": "WhatsApp Image 2026-10-12 at 14.49.13.jpeg",
+      "received": "2026-10-12",
+      "events": [
+        {
+          "date": "2026-10-12",
+          "start_time": [
+            "20:00"
+          ],
+          "venue": [
+            "mea mea"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F09": {
+      "file": "WhatsApp Image 2026-10-13 at 07.49.39.jpeg",
+      "received": "2026-10-13",
+      "events": [
+        {
+          "date": "2026-10-15",
+          "start_time": [
+            "19:30",
+            "20:30"
+          ],
+          "venue": [
+            "startup"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F10": {
+      "file": "WhatsApp Image 2026-10-14 at 09.07.01.jpeg",
+      "received": "2026-10-14",
+      "events": [
+        {
+          "date": "2026-10-17",
+          "start_time": [
+            "21:30"
+          ],
+          "venue": [
+            "tango zero"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F11": {
+      "file": "WhatsApp Image 2026-10-14 at 18.03.26.jpeg",
+      "received": "2026-10-14",
+      "events": [
+        {
+          "date": "2026-10-14",
+          "start_time": [
+            "21:00"
+          ],
+          "venue": [
+            "nörgelbuff",
+            "noergelbuff"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F12": {
+      "file": "WhatsApp Image 2026-10-16 at 08.45.12.jpeg",
+      "received": "2026-10-16",
+      "events": [
+        {
+          "date": "2026-11-07",
+          "start_time": [
+            "20:30",
+            "21:30"
+          ],
+          "venue": [
+            "färberei",
+            "faerberei"
+          ],
+          "type": "party"
+        },
+        {
+          "date": "2026-12-05",
+          "start_time": [
+            ""
+          ],
+          "venue": [
+            "färberei",
+            "faerberei"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F13": {
+      "file": "WhatsApp Image 2026-10-16 at 13.14.54.jpeg",
+      "received": "2026-10-16",
+      "events": [
+        {
+          "date": "2026-10-18",
+          "start_time": [
+            "17:00",
+            "17:45"
+          ],
+          "venue": [
+            "antonius"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F14": {
+      "file": "WhatsApp Image 2026-10-18 at 12.49.01.jpeg",
+      "received": "2026-10-18",
+      "events": [
+        {
+          "date": "2026-10-18",
+          "start_time": [
+            "16:00",
+            "17:00"
+          ],
+          "venue": [
+            "wilhelmshöhe",
+            "wilhelmshoehe"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F15": {
+      "file": "WhatsApp Image 2026-10-18 at 14.22.19.jpeg",
+      "received": "2026-10-18",
+      "events": [
+        {
+          "date": "2026-10-23",
+          "start_time": [
+            "19:00"
+          ],
+          "venue": null,
+          "type": "party"
+        }
+      ]
+    },
+    "F16": {
+      "file": "WhatsApp Image 2026-10-18 at 21.57.35.jpeg",
+      "received": "2026-10-18",
+      "events": [
+        {
+          "date": "2026-10-19",
+          "start_time": [
+            "18:15"
+          ],
+          "venue": null,
+          "type": "workshop"
+        },
+        {
+          "date": "2026-10-19",
+          "start_time": [
+            "19:30"
+          ],
+          "venue": null,
+          "type": "workshop"
+        },
+        {
+          "date": "2026-10-20",
+          "start_time": [
+            "18:15"
+          ],
+          "venue": null,
+          "type": "workshop"
+        },
+        {
+          "date": "2026-10-20",
+          "start_time": [
+            "19:30"
+          ],
+          "venue": null,
+          "type": "workshop"
+        },
+        {
+          "date": "2026-10-20",
+          "start_time": [
+            "21:00"
+          ],
+          "venue": [
+            "affoller",
+            "afföller"
+          ],
+          "type": "party"
+        },
+        {
+          "date": "2026-10-23",
+          "start_time": [
+            "",
+            "21:15"
+          ],
+          "venue": [
+            "havanna"
+          ],
+          "type": "party"
+        }
+      ]
+    },
+    "F17": {
+      "file": "WhatsApp Image 2026-10-19 at 09.23.12.jpeg",
+      "received": "2026-10-19",
+      "events": [
+        {
+          "date": "2026-10-24",
+          "start_time": [
+            "20:00",
+            "20:30",
+            "21:00"
+          ],
+          "venue": [
+            "theke"
+          ],
+          "type": "party"
+        }
+      ]
+    }
+  }
+}

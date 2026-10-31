@@ -18,3 +18,5 @@ Which AI vision model should extract Events from Flyer images and texts (German 
 - **Still open:** how accurate Haiku and Sonnet are on the real sample Flyers. The accuracy evaluation decides which is primary.
 
 Findings and sources: [research/flyer-extraction-model.md](../research/flyer-extraction-model.md)
+
+- Amendment from "Extraction accuracy on the sample Flyers" (2026-10-31): **Sonnet 5.5 alone is primary**, with no Haiku first and no retry cascade. It was more accurate, and faster at effort `medium`. About $0.014 per Flyer.

@@ -1,2 +1,5 @@
 # Sample Flyers may contain phone numbers and names
 .scratch/*/assets/flyers/
+
+# Extraction eval raw outputs echo Flyer text
+.scratch/*/eval/results/*/

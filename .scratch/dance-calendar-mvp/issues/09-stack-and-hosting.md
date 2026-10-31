@@ -44,3 +44,5 @@ Settled with the human, 2026-10-31. See [ADR 0002](../../../docs/adr/0002-typesc
 ## Comments
 
 - Amendment from "Admin view" (2026-10-31): the daily Admin email goes out at **21:00 German time**, not about 08:00. Cron Triggers run in UTC, so the job must follow daylight-saving time.
+
+- Amendment from "Extraction accuracy on the sample Flyers" (2026-10-31): the queue consumer runs one Sonnet 5.5 extraction, with no Haiku step and no Sonnet retry.

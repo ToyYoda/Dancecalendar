@@ -3,3 +3,9 @@
 
 # Extraction eval raw outputs echo Flyer text
 .scratch/*/eval/results/*/
+
+# Worker secrets for local dev (Wrangler)
+.dev.vars
+
+# Meta setup wizard run log
+.scratch/*/wizards/meta-setup-log.md

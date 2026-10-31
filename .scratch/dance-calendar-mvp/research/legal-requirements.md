@@ -141,7 +141,7 @@ Source: https://eur-lex.europa.eu/eli/reg/2022/2065/oj
 
 ## 4. WhatsApp Business Platform constraints on the bot
 
-Sources: the WhatsApp Business Messaging Policy (https://whatsappbusiness.com/policy/) and the Meta Terms for WhatsApp Business Platform (formerly the WhatsApp Business Solution Terms, https://www.facebook.com/legal/Meta-Terms-for-WhatsApp-Business-Platform; the page could not be fetched as text, so the AI-provider clause is cited from consistent press reports, e.g. TechCrunch 18.10.2025, *verify in the console when signing up*).
+Sources: the WhatsApp Business Messaging Policy (https://whatsappbusiness.com/policy/) and the Meta Terms for WhatsApp Business Platform (formerly the WhatsApp Business Solution Terms, https://www.facebook.com/legal/Meta-Terms-for-WhatsApp-Business-Platform; the page could not be fetched as text, so the AI-provider clause is cited from consistent press reports, e.g. TechCrunch 18.10.2025, *verify in the console when signing up*). Confirmed later from the primary text, § 4.7 "KI-Anbieter" (version of 23 Sept 2026): see [issues/14-meta-whatsapp-setup.md](../issues/14-meta-whatsapp-setup.md).
 
 - **AI-provider ban (effective for all accounts since 15.01.2026):**
   - The terms bar providers of LLMs, generative-AI platforms, and general-purpose AI assistants from using the Business Platform when that AI is the *primary* functionality offered. Meta decides in its sole discretion.

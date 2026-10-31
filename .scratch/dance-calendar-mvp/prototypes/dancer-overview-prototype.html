@@ -1,0 +1,535 @@
+<!doctype html>
+<!--
+  PROTOTYPE – throwaway. Question: "How should the mobile-first Dancer overview look and behave?"
+  Three structurally different variants plus the merge (D), switchable via ?variant=A|B|C|D and the floating bar (or ← →).
+  Filters live in the URL (styles, types, c = center, r = radius km, lang).
+  Sample data: real Flyers from assets/flyers, dates as printed on the Flyers; the WCS workshop, the Course and Kater Bar's dates are made up.
+  Coordinates are approximate. "Today" is fixed to 5 Oct 2026.
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE · Dancer overview</title>
+<style>
+  :root { --bg:#f6f4f1; --card:#fff; --ink:#1d1a17; --mute:#6f6861; --line:#e4dfd8; --accent:#c2185b;
+          --party:#c2185b; --workshop:#1f6feb; --festival:#b26a00; --course:#2e7d32; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#d9d4cd; font:15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:var(--ink); }
+  .phone { max-width:430px; min-height:100vh; margin:0 auto; background:var(--bg); padding-bottom:90px; position:relative; }
+  header.top { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+  header.top h1 { font-size:17px; margin:0; }
+  header.top small { color:var(--mute); display:block; font-weight:400; font-size:12px; }
+  button { font:inherit; cursor:pointer; }
+  .lang { border:1px solid var(--line); background:none; border-radius:8px; padding:4px 8px; font-size:13px; }
+  .chip { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:5px 11px; font-size:13px; white-space:nowrap; }
+  .chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:999px; background:#efe9e2; color:#4a433d; margin-right:4px; }
+  .t-party{color:var(--party)} .t-workshop{color:var(--workshop)} .t-festival{color:var(--festival)} .t-course{color:var(--course)}
+  .badge { font-size:11px; padding:1px 6px; border-radius:4px; font-weight:600; }
+  .b-cancel { background:#fde2e2; color:#a30000; }
+  .b-tip { background:#e8f0fe; color:#1a4fb4; }
+  .b-reg { background:#e6f4ea; color:#1e6b2f; }
+  .muted { color:var(--mute); }
+  .cancelled .ttl { text-decoration:line-through; color:var(--mute); }
+  .empty { padding:40px 16px; text-align:center; color:var(--mute); }
+  .note { margin:10px 16px; padding:8px 10px; font-size:12px; background:#fff8e1; border:1px solid #f0dc9a; border-radius:8px; color:#5d4a00; }
+
+  /* sheet + detail (shared) */
+  .scrim { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:20; display:flex; align-items:flex-end; justify-content:center; }
+  .sheet { background:var(--card); width:100%; max-width:430px; max-height:88vh; overflow:auto; border-radius:16px 16px 0 0; padding:16px; }
+  .sheet h3 { margin:14px 0 6px; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--mute); }
+  .sheet .row { display:flex; flex-wrap:wrap; gap:6px; }
+  .sheet .close { float:right; border:none; background:none; font-size:22px; line-height:1; }
+  .detail img { width:100%; border-radius:10px; display:block; margin:8px 0; }
+  .detail dl { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:10px 0; font-size:14px; }
+  .detail dt { color:var(--mute); }
+  .detail .noimg { padding:14px; background:#f1eee9; border-radius:10px; font-size:13px; color:var(--mute); margin:8px 0; }
+  .primary { display:block; width:100%; margin-top:14px; padding:10px; border:none; border-radius:10px; background:var(--ink); color:#fff; }
+
+  /* A: agenda */
+  .a-filters { position:sticky; top:53px; z-index:4; background:var(--bg); padding:8px 0; border-bottom:1px solid var(--line); }
+  .a-filters .scroll { display:flex; gap:6px; overflow-x:auto; padding:0 16px; scrollbar-width:none; }
+  .a-filters .sep { width:1px; background:var(--line); flex:none; }
+  .a-day { position:sticky; top:103px; z-index:3; background:var(--bg); padding:10px 16px 4px; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.03em; color:var(--mute); }
+  .a-row { display:grid; grid-template-columns:52px 1fr; gap:10px; padding:10px 16px; background:var(--card); border-bottom:1px solid var(--line); cursor:pointer; }
+  .a-row .time { font-weight:700; font-variant-numeric:tabular-nums; }
+  .a-row .time small { display:block; font-weight:400; color:var(--mute); font-size:11px; }
+  .a-row .ttl { font-weight:600; }
+  .a-row .meta { font-size:13px; color:var(--mute); }
+  .a-row .extra { font-size:12px; margin-top:3px; }
+
+  /* B: calendar */
+  .b-bar { display:flex; justify-content:space-between; align-items:center; padding:10px 16px; }
+  .b-bar .month { font-weight:700; }
+  .b-bar .nav button { border:1px solid var(--line); background:var(--card); border-radius:8px; width:32px; height:32px; }
+  .b-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:0 8px; }
+  .b-grid .dow { text-align:center; font-size:11px; color:var(--mute); padding:4px 0; }
+  .b-cell { background:var(--card); min-height:54px; border-radius:6px; padding:3px; font-size:12px; position:relative; border:2px solid transparent; cursor:pointer; }
+  .b-cell.out { opacity:.35; }
+  .b-cell.past { opacity:.45; }
+  .b-cell.sel { border-color:var(--ink); }
+  .b-cell.today .n { background:var(--accent); color:#fff; border-radius:50%; }
+  .b-cell .n { display:inline-block; width:20px; text-align:center; }
+  .b-cell .dots { display:flex; gap:2px; flex-wrap:wrap; margin-top:2px; }
+  .b-cell .dot { width:7px; height:7px; border-radius:50%; }
+  .b-cell .fest { position:absolute; left:-2px; right:-2px; bottom:3px; height:5px; background:var(--festival); }
+  .b-list { padding:12px 16px; }
+  .b-list h2 { font-size:16px; margin:4px 0 10px; }
+  .b-item { display:flex; gap:12px; background:var(--card); border-radius:12px; padding:10px; margin-bottom:8px; border-left:5px solid var(--line); cursor:pointer; }
+  .b-item .when { font-weight:700; min-width:56px; }
+  .b-item .ttl { font-weight:600; }
+  .b-filterbtn { border:1px solid var(--ink); background:var(--ink); color:#fff; border-radius:999px; padding:5px 12px; font-size:13px; }
+
+  /* C: flyer feed */
+  .c-types { display:flex; gap:0; margin:10px 16px 0; background:#e9e4dd; border-radius:10px; padding:3px; }
+  .c-types button { flex:1; border:none; background:none; padding:6px 0; border-radius:8px; font-size:13px; }
+  .c-types button.on { background:var(--card); box-shadow:0 1px 2px rgba(0,0,0,.1); font-weight:600; }
+  .c-strip { position:sticky; top:53px; z-index:4; background:var(--bg); display:flex; gap:6px; overflow-x:auto; padding:10px 16px; border-bottom:1px solid var(--line); scrollbar-width:none; }
+  .c-pill { flex:none; width:48px; text-align:center; border-radius:12px; background:var(--card); border:1px solid var(--line); padding:4px 0; font-size:11px; }
+  .c-pill b { display:block; font-size:16px; }
+  .c-pill.none { opacity:.35; }
+  .c-pill .cnt { display:inline-block; min-width:16px; border-radius:8px; background:var(--accent); color:#fff; font-size:10px; }
+  .c-day { padding:16px 16px 4px; font-weight:700; font-size:18px; scroll-margin-top:120px; }
+  .c-card { margin:8px 16px 14px; border-radius:16px; overflow:hidden; background:var(--card); box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; }
+  .c-card .hero { aspect-ratio:4/5; background:#222 center top/cover no-repeat; position:relative; }
+  .c-card .hero.text { background:linear-gradient(135deg,#3949ab,#8e24aa); display:flex; align-items:center; justify-content:center; color:#fff; font-size:26px; font-weight:800; text-align:center; padding:20px; aspect-ratio:16/9; }
+  .c-card .ov { position:absolute; left:0; right:0; bottom:0; padding:30px 14px 12px; background:linear-gradient(transparent, rgba(0,0,0,.8)); color:#fff; }
+  .c-card .ov .ttl { font-size:19px; font-weight:800; }
+  .c-card .body { padding:10px 14px 12px; font-size:13px; }
+  .c-card.cancelled .hero { filter:grayscale(1) brightness(.6); }
+  .c-filterbtn { border:1px solid var(--line); background:var(--card); border-radius:8px; padding:4px 10px; font-size:13px; }
+
+  .d-filters { position:sticky; top:53px; z-index:4; background:var(--bg); padding:8px 0 6px; border-bottom:1px solid var(--line); }
+  .d-filters .scroll { display:flex; gap:6px; overflow-x:auto; padding:0 16px; scrollbar-width:none; }
+  .d-filters .sep { width:1px; background:var(--line); flex:none; }
+  .d-filters .c-types { margin:8px 16px 0; }
+  .c-day { scroll-margin-top:200px; }
+
+  /* prototype switcher – not part of the design */
+  .proto-bar { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:50; display:flex; align-items:center; gap:10px;
+               background:#111; color:#ffeb3b; border-radius:999px; padding:6px 10px; box-shadow:0 4px 16px rgba(0,0,0,.4); font:600 13px/1 ui-monospace, monospace; }
+  .proto-bar button { background:#333; color:#ffeb3b; border:none; border-radius:50%; width:30px; height:30px; font-size:15px; }
+</style>
+</head>
+<body>
+<div class="phone" id="app"></div>
+<div id="overlay"></div>
+<div class="proto-bar"><button id="pv">←</button><span id="plabel"></span><button id="nv">→</button></div>
+
+<script>
+// ---------- sample data ----------
+const FLY = id => ({
+  F01:'2026-10-06 at 12.01.34', F02:'2026-10-07 at 08.12.27', F08:'2026-10-12 at 14.49.13', F03:'2026-10-08 at 11.47.03', F05:'2026-10-09 at 10.01.25', F06:'2026-10-09 at 10.02.00',
+  F07:'2026-10-11 at 19.02.59', F09:'2026-10-13 at 07.49.39', F10:'2026-10-14 at 09.07.01', F11:'2026-10-14 at 18.03.26',
+  F12:'2026-10-16 at 08.45.12', F13:'2026-10-16 at 13.14.54', F14:'2026-10-18 at 12.49.01', F15:'2026-10-18 at 14.22.19',
+  F17:'2026-10-19 at 09.23.12' }[id]);
+const flyerSrc = id => id && FLY(id) ? '../assets/flyers/' + encodeURIComponent('WhatsApp Image ' + FLY(id) + '.jpeg') : null;
+
+const VENUES = {
+  startup:{name:'Startup Bar', addr:'Friedrich-Ebert-Str. 58', city:'Kassel', lat:51.3155, lon:9.4750},
+  kater:{name:'Kater Bar', addr:'(Adresse bestätigt)', city:'Kassel', lat:51.3180, lon:9.4900},
+  actheke:{name:'Gaststätte AC Theke', addr:'Wimmelstraße 10', city:'Kassel', lat:51.3195, lon:9.5040},
+  schlachthof:{name:'Kulturzentrum Schlachthof', addr:'Mombachstraße 12', city:'Kassel', lat:51.3260, lon:9.4920},
+  seyler:{name:'Tanzschule Seyler', addr:'Salztorstraße 14', city:'Kassel', lat:51.3180, lon:9.5010},
+  tangozero:{name:'Tanzschule Tango Zero', addr:'Karthäuserstr. 5a', city:'Kassel', lat:51.3120, lon:9.4810},
+  faerberei:{name:'Kulturzentrum Färberei', addr:'Universitätsplatz 10', city:'Kassel', lat:51.3230, lon:9.5030},
+  wilhelmshoehe:{name:'Wilhelmshöher Allee 254', addr:'gegenüber Bahnhof Wilhelmshöhe', city:'Kassel', lat:51.3125, lon:9.4470},
+  kirche:{name:'Hummelweg 50', addr:'Kirche', city:'Kassel', lat:51.3300, lon:9.5200},
+  noergelbuff:{name:'Nörgelbuff', addr:'Groner Straße 23', city:'Göttingen', lat:51.5330, lon:9.9300},
+  musa:{name:'Musa', addr:'Hagenweg 2a', city:'Göttingen', lat:51.5440, lon:9.9480},
+  meamea:{name:'Mea Mea Lounge', addr:'Am Bahnhof 3', city:'Fulda', lat:50.5545, lon:9.6840},
+  antonius:{name:'Antonius-Café', addr:'St.-Vinzenz-Str. 58', city:'Fulda', lat:50.5560, lon:9.6800},
+};
+const CENTERS = { kassel:{lat:51.3127, lon:9.4797, de:'Kassel', en:'Kassel'}, goettingen:{lat:51.5413, lon:9.9158, de:'Göttingen', en:'Göttingen'} };
+
+let EVENTS = [];
+let nid = 1;
+const ev = (o, dates) => (dates || [o.start]).forEach((d, i) => EVENTS.push({ ...o, id:nid++, start:d, end: o.endFn ? o.endFn(d) : o.end,
+  cancelled: (o.cancelledDates||[]).includes(d) }));
+const at = (d, t) => d + 'T' + t;
+
+// Dates exactly as printed on the Flyers (year assumed 2026 where missing).
+// Kater Bar's Flyer has no date at all: its two dates below are made up.
+ev({ title:'Bachata Anfänger-Kurs (erfunden)', type:'workshop', styles:['bachata'], venue:'seyler', display:'Tanzschule Seyler',
+     level:'Anfänger', course:true, series:{de:'jeden Montag', en:'every Monday'}, price:'60 € / 5 Termine', flyer:null,
+     endFn:d=>d.slice(0,11)+'20:15' }, ['2026-10-05','2026-10-12','2026-10-19','2026-10-26','2026-11-02'].map(d=>at(d,'19:00')));
+ev({ title:'Sensual Bachata Wednesday', type:'party', styles:['bachata'], venue:'kater', display:'Kater Bar',
+     intro:{time:'20:00'}, series:{de:'jeden 2. Mittwoch', en:'every 2nd Wednesday'}, price:'', flyer:'F02',
+     cancelledDates:['2026-10-21T20:00'] }, ['2026-10-07T20:00','2026-10-21T20:00']);
+ev({ title:'Está pa Latin Party', type:'party', styles:['salsa'], venue:'startup', display:'Startup Bar',
+     start:'2026-10-09T22:00', price:'', flyer:'F01', desc:'Best music of Reggaeton & Salsa.' });
+ev({ title:'Latin Musicality Festival', type:'festival', styles:['salsa','bachata'], venue:'schlachthof', display:'Latin Musicality Festival',
+     start:'2026-10-09T18:00', end:'2026-10-11T23:00', price:'Tickets online', link:'latinmusicalityfestival.de', flyer:'F05',
+     desc:'Auch im Philipp-Scheidemann-Haus. Uhrzeiten stehen nicht auf dem Flyer.' });
+ev({ title:'Salsa Disco', type:'party', styles:['salsa','bachata'], venue:'schlachthof', display:'Kulturzentrum Schlachthof',
+     series:{de:'jeden 2. Samstag im Monat', en:'every 2nd Saturday of the month'}, price:'', flyer:'F06' },
+     ['2026-10-10T21:30','2026-11-14T21:30','2026-12-12T21:30']);
+ev({ title:'The Last Dance – Latin Afterwork', type:'party', styles:['salsa','bachata','kizomba'], venue:'meamea', display:'Mea Mea Lounge',
+     start:'2026-10-12T20:00', price:'', flyer:'F08' });
+ev({ title:'Salsa en Sótano', type:'party', styles:['salsa','bachata','kizomba'], venue:'noergelbuff', display:'Nörgelbuff',
+     tip:true, series:{de:'jeden zweiten Mittwoch', en:'every other Wednesday'}, price:'5 €, frei mit Kulturticket', flyer:'F11' },
+     ['2026-10-14T21:00','2026-10-28T21:00']);
+ev({ title:'Latin Dance After Work', type:'party', styles:['salsa','bachata'], venue:'startup', display:'Startup Bar',
+     intro:{time:'19:30', level:'Open Class: Latin Fusion'}, start:'2026-10-15T19:30', price:'Open Class kostenfrei', flyer:'F09' });
+ev({ title:'La Clave', type:'party', styles:['bachata','salsa','kizomba'], venue:'seyler', display:'La Clave',
+     intro:{time:'21:15', level:'Bachata Anfänger'}, series:{de:'jeden 3. Freitag im Monat', en:'every 3rd Friday of the month'},
+     price:'10 € / Studenten 5 €', flyer:'F07' }, ['2026-10-16T21:15','2026-11-20T21:15']);
+ev({ title:'Sabakizz – Ritmo de la noche', type:'party', styles:['salsa','bachata','kizomba'], venue:'tangozero', display:'Sabakizz Kassel',
+     start:'2026-10-17T21:30', end:'2026-10-18T02:00', price:'10 € / ermäßigt 5 €', flyer:'F10' });
+ev({ title:'Latin Afternoon', type:'party', styles:['bachata','salsa'], venue:'wilhelmshoehe', display:'Latin Afternoon',
+     intro:{time:'16:00', level:'Schnupperkurs'}, start:'2026-10-18T16:00', end:'2026-10-18T19:30', price:'', flyer:'F14' });
+ev({ title:'infinito Bachata-Party', type:'party', styles:['bachata'], venue:'antonius', display:'infinito',
+     intro:{time:'17:00'}, start:'2026-10-18T17:00', price:'', flyer:'F13' });
+ev({ title:'Kirche und Salsa – geht das?', type:'party', styles:['salsa'], venue:'kirche', display:'Kirche und Salsa',
+     start:'2026-10-23T19:00', end:'2026-10-23T21:00', price:'', flyer:'F15' });
+ev({ title:'La Noche de la Salsa', type:'party', styles:['salsa'], venue:'actheke', display:'Los Muchachos',
+     intro:{time:'20:30', level:'Salsa Footwork'}, start:'2026-10-24T20:00', price:'5 €', flyer:'F17' });
+ev({ title:'WCS Musicality Workshop (erfunden)', type:'workshop', styles:['wcs'], venue:'musa', display:'WCS Göttingen',
+     level:'Mittelstufe', start:'2026-10-25T14:00', end:'2026-10-25T17:00', price:'25 €', flyer:null });
+ev({ title:'Latin Social', type:'party', styles:['salsa','bachata'], venue:'faerberei', display:'Power of Dance',
+     intro:{time:'20:30', level:'Bachata-Einsteigerkurs'}, start:'2026-11-07T20:30', price:'Studenten 5 € / Normal 8 €', flyer:'F12' });
+
+// ---------- i18n ----------
+const T = {
+  de:{ app:'Tanzkalender', sub:'Kassel · Göttingen', all:'Alle', party:'Party', workshop:'Workshop', course:'Kurs', festival:'Festival',
+       parties:'Partys', workshops:'Workshops', courses:'Kurse', festivals:'Festivals', where:'Wo?', anywhere:'Überall', me:'Mein Standort',
+       radius:'Umkreis', styles:'Tanzstil', types:'Art', filter:'Filter', apply:'Anzeigen', reset:'Zurücksetzen', none:'Keine Events für diese Filter.',
+       cancelled:'Abgesagt', tip:'von der Community hinzugefügt', reg:'Anmeldung nötig', intro:'Intro class', level:'Level',
+       price:'Eintritt', venue:'Ort', by:'Veranstaltet von', series:'Serie', link:'Link', day:'Tag', of:'von', today:'Heute', tomorrow:'Morgen',
+       noimg:'Kein Flyer-Bild: Dieses Event wurde von der Community gemeldet.', until:'bis', close:'Schließen', events:'Events' },
+  en:{ app:'Dance calendar', sub:'Kassel · Göttingen', all:'All', party:'Party', workshop:'Workshop', course:'Course', festival:'Festival',
+       parties:'Parties', workshops:'Workshops', courses:'Courses', festivals:'Festivals', where:'Where?', anywhere:'Anywhere', me:'My location',
+       radius:'Radius', styles:'Style', types:'Type', filter:'Filter', apply:'Show', reset:'Reset', none:'No events for these filters.',
+       cancelled:'Cancelled', tip:'added by the community', reg:'Registration required', intro:'Intro class', level:'Level',
+       price:'Price', venue:'Venue', by:'Organized by', series:'Series', link:'Link', day:'Day', of:'of', today:'Today', tomorrow:'Tomorrow',
+       noimg:'No Flyer image: this event was added by the community.', until:'until', close:'Close', events:'events' } };
+const STYLES = [['salsa','Salsa'],['bachata','Bachata'],['kizomba','Kizomba'],['urbankiz','Urban Kiz'],['wcs','West Coast Swing']];
+const TYPES = ['party','workshop','course','festival'];
+const plural = k => t({ party:'parties', workshop:'workshops', course:'courses', festival:'festivals' }[k]);
+
+// ---------- URL state ----------
+const TODAY = new Date(2026, 9, 5);
+const VARIANTS = { A:'Agenda list', B:'Month calendar', C:'Flyer feed', D:'Merged: feed + calendar' };
+function S() {
+  const p = new URLSearchParams(location.search);
+  const list = k => (p.get(k) || '').split(',').filter(Boolean);
+  return { variant: VARIANTS[p.get('variant')] ? p.get('variant') : 'A', lang: p.get('lang') === 'en' ? 'en' : 'de',
+           styles: list('styles'), types: list('types'), c: p.get('c') || '', r: +(p.get('r') || 0), d: p.get('d') || '', view: p.get('view') || '', w: p.get('w') || '' };
+}
+function set(changes) {
+  const p = new URLSearchParams(location.search);
+  for (const [k, v] of Object.entries(changes)) {
+    const val = Array.isArray(v) ? v.join(',') : v;
+    if (val === '' || val == null || val === 0) p.delete(k); else p.set(k, val);
+  }
+  history.replaceState(null, '', '?' + p.toString());
+  render();
+}
+const toggle = (arr, x) => arr.includes(x) ? arr.filter(y => y !== x) : [...arr, x];
+
+// ---------- helpers ----------
+const t = k => T[S().lang][k];
+const D = s => new Date(s);
+const dayKey = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+const hhmm = s => s.slice(11,16);
+const fmtDay = (d, opts) => d.toLocaleDateString(S().lang === 'de' ? 'de-DE' : 'en-GB', opts || { weekday:'long', day:'numeric', month:'long' });
+function center() {
+  const c = S().c;
+  if (CENTERS[c]) return { ...CENTERS[c], label: CENTERS[c][S().lang] };
+  const m = c.match(/^(-?[\d.]+),(-?[\d.]+)$/);
+  return m ? { lat:+m[1], lon:+m[2], label:t('me') } : null;
+}
+function km(a, b) {
+  const R = 6371, rad = x => x * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
+  const h = Math.sin(dLat/2)**2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const dist = e => { const c = center(); return c ? km(c, VENUES[e.venue]) : null; };
+function matches(e) {
+  const s = S();
+  if (s.styles.length && !e.styles.some(x => s.styles.includes(x))) return false;
+  if (s.types.length) {
+    const ok = (s.types.includes('party') && e.type === 'party') ||
+               (s.types.includes('workshop') && (e.type === 'workshop' || e.intro)) ||
+               (s.types.includes('course') && e.course) ||
+               (s.types.includes('festival') && e.type === 'festival');
+    if (!ok) return false;
+  }
+  const c = center();
+  if (c && s.r && km(c, VENUES[e.venue]) > s.r) return false;
+  return true;
+}
+// expand multi-day Festivals so they show up on every day they run
+function occurrencesByDay(fromDate, days) {
+  const map = {};
+  for (let i = 0; i < days; i++) { const d = new Date(fromDate); d.setDate(d.getDate() + i); map[dayKey(d)] = []; }
+  EVENTS.filter(matches).forEach(e => {
+    const s = D(e.start);
+    if (e.type === 'festival' && e.end) {
+      const n = Math.round((new Date(dayKey(D(e.end))) - new Date(dayKey(s))) / 864e5) + 1;
+      for (let i = 0; i < n; i++) { const d = new Date(s); d.setDate(d.getDate() + i); const k = dayKey(d); if (map[k]) map[k].push({ e, dayN:i+1, dayOf:n }); }
+    } else { const k = dayKey(s); if (map[k]) map[k].push({ e }); }
+  });
+  Object.values(map).forEach(l => l.sort((a, b) => (a.dayN > 1) - (b.dayN > 1) || a.e.start.localeCompare(b.e.start)));
+  return map;
+}
+const typeLabel = e => e.course ? t('course') : t(e.type);
+const typeClass = e => e.course ? 't-course' : 't-' + e.type;
+const styleNames = e => e.styles.map(x => STYLES.find(s => s[0] === x)[1]);
+const timeRange = e => e.type === 'festival' ? fmtDay(D(e.start), {day:'numeric', month:'short'}) + '–' + fmtDay(D(e.end), {day:'numeric', month:'short'})
+                         : hhmm(e.start) + (e.end ? '–' + hhmm(e.end) : '');
+const badges = e => (e.cancelled ? `<span class="badge b-cancel">${t('cancelled')}</span> ` : '') +
+                    (e.tip ? `<span class="badge b-tip">${t('tip')}</span> ` : '') +
+                    (e.course ? `<span class="badge b-reg">${t('reg')}</span> ` : '');
+const distTxt = e => { const d = dist(e); return d == null ? '' : ' · ' + (d < 10 ? d.toFixed(1) : Math.round(d)) + ' km'; };
+const activeCount = () => { const s = S(); return s.styles.length + s.types.length + (s.c ? 1 : 0); };
+
+// ---------- shared: detail sheet ----------
+function openDetail(id) {
+  const e = EVENTS.find(x => x.id === id), v = VENUES[e.venue];
+  const img = e.tip && S().variant !== 'D' ? `<div class="noimg">${t('noimg')}</div>` : (flyerSrc(e.flyer) ? `<img src="${flyerSrc(e.flyer)}" alt="Flyer">` : `<div class="noimg">(kein Flyer im Beispiel)</div>`);
+  overlay(`<div class="sheet detail"><button class="close" data-close>×</button>
+    <div class="${typeClass(e)}" style="font-size:12px;font-weight:700;text-transform:uppercase">${typeLabel(e)}</div>
+    <h2 style="margin:4px 0" class="${e.cancelled ? 'cancelled' : ''}"><span class="ttl">${e.title}</span></h2>
+    <div>${badges(e)}</div>
+    ${img}
+    <dl>
+      <dt>📅</dt><dd>${fmtDay(D(e.start))}, ${timeRange(e)}</dd>
+      ${e.intro ? `<dt>${t('intro')}</dt><dd>${e.intro.time}${e.intro.level ? ' · ' + e.intro.level : ''}</dd>` : ''}
+      ${e.level ? `<dt>${t('level')}</dt><dd>${e.level}</dd>` : ''}
+      <dt>${t('venue')}</dt><dd>${v.name}, ${v.addr}, ${v.city}${distTxt(e)}</dd>
+      <dt>${t('by')}</dt><dd>${e.display}</dd>
+      ${e.price ? `<dt>${t('price')}</dt><dd>${e.price}</dd>` : ''}
+      ${e.series ? `<dt>${t('series')}</dt><dd>↻ ${e.series[S().lang]}</dd>` : ''}
+      ${e.link ? `<dt>${t('link')}</dt><dd>${e.link}</dd>` : ''}
+      <dt>Style</dt><dd>${styleNames(e).join(', ')}</dd>
+    </dl>${e.desc ? `<p class="muted">${e.desc}</p>` : ''}</div>`);
+}
+function overlay(html) {
+  const o = document.getElementById('overlay');
+  o.innerHTML = html ? `<div class="scrim">${html}</div>` : '';
+  if (!html) return;
+  o.querySelector('.scrim').onclick = ev => { if (ev.target.classList.contains('scrim') || ev.target.hasAttribute('data-close')) overlay(''); };
+}
+// shared filter controls, laid out differently per variant
+function placeControls() {
+  const s = S();
+  return `<div class="row">
+      <button class="chip ${!s.c ? 'on' : ''}" data-set='{"c":"","r":0}'>${t('anywhere')}</button>
+      ${Object.keys(CENTERS).map(k => `<button class="chip ${s.c === k ? 'on' : ''}" data-set='{"c":"${k}","r":${s.r || 25}}'>${CENTERS[k][s.lang]}</button>`).join('')}
+      <button class="chip ${/,/.test(s.c) ? 'on' : ''}" data-geo>📍 ${t('me')}</button></div>
+    ${s.c ? `<h3>${t('radius')}</h3><div class="row">${[10,25,50,100].map(r => `<button class="chip ${s.r === r ? 'on' : ''}" data-set='{"r":${r}}'>${r} km</button>`).join('')}</div>` : ''}`;
+}
+const styleChips = () => STYLES.map(([k, n]) => `<button class="chip ${S().styles.includes(k) ? 'on' : ''}" data-style="${k}">${n}</button>`).join('');
+const typeChips = () => TYPES.map(k => `<button class="chip ${S().types.includes(k) ? 'on' : ''}" data-type="${k}">${plural(k)}</button>`).join('');
+function filterSheet() {
+  overlay(`<div class="sheet filters"><button class="close" data-close>×</button><strong>${t('filter')}</strong>
+    <h3>${t('where')}</h3>${placeControls()}
+    <h3>${t('styles')}</h3><div class="row">${styleChips()}</div>
+    <h3>${t('types')}</h3><div class="row">${typeChips()}</div>
+    <button class="primary" data-close>${t('apply')}</button>
+    <button class="chip" style="margin-top:8px" data-set='{"styles":"","types":"","c":"","r":0}'>${t('reset')}</button></div>`);
+}
+function header(right) {
+  return `<header class="top"><h1>💃 ${t('app')}<small>${t('sub')}</small></h1>
+    <div style="display:flex;gap:6px;align-items:center">${right || ''}<button class="lang" data-set='{"lang":"${S().lang === 'de' ? 'en' : 'de'}"}'>${S().lang === 'de' ? 'EN' : 'DE'}</button></div></header>`;
+}
+const note = `<div class="note">PROTOTYPE · Beispieldaten aus echten Flyern mit ihren echten Daten · „heute“ = 5.10.2026</div>`;
+
+// ---------- Variant A: agenda list, filters as sticky chip row ----------
+function VariantA() {
+  const s = S(), c = center(), byDay = occurrencesByDay(TODAY, 28);
+  let html = header() + `<div class="a-filters"><div class="scroll">
+      <button class="chip ${s.c ? 'on' : ''}" data-place>📍 ${c ? c.label + ' · ' + s.r + ' km' : t('anywhere')} ▾</button>
+      <span class="sep"></span>${styleChips()}<span class="sep"></span>${typeChips()}</div></div>` + note;
+  let any = false;
+  for (const [k, list] of Object.entries(byDay)) {
+    if (!list.length) continue; any = true;
+    const d = new Date(k + 'T12:00');
+    const rel = k === dayKey(TODAY) ? t('today') + ', ' : (k === dayKey(new Date(TODAY.getTime() + 864e5)) ? t('tomorrow') + ', ' : '');
+    html += `<div class="a-day">${rel}${fmtDay(d)}</div>`;
+    html += list.map(({ e, dayN, dayOf }) => `<div class="a-row ${e.cancelled ? 'cancelled' : ''}" data-ev="${e.id}">
+        <div class="time">${dayN ? (dayN === 1 ? hhmm(e.start) : '⋯') + `<small>${t('day')} ${dayN}/${dayOf}</small>` : hhmm(e.start) + (e.end ? `<small>${t('until')} ${hhmm(e.end)}</small>` : '')}</div>
+        <div><div class="ttl">${e.title}</div>
+          <div class="meta"><span class="${typeClass(e)}">${typeLabel(e)}</span> · ${VENUES[e.venue].name}, ${VENUES[e.venue].city}${distTxt(e)}</div>
+          <div class="extra">${styleNames(e).map(n => `<span class="tag">${n}</span>`).join('')}
+            ${e.intro ? `<span class="tag">🎓 ${t('intro')} ${e.intro.time}</span>` : ''}${e.level ? `<span class="tag">🎓 ${e.level}</span>` : ''}
+            ${e.series ? `<span class="tag">↻ ${e.series[s.lang]}</span>` : ''} ${badges(e)}</div></div></div>`).join('');
+  }
+  return html + (any ? '' : `<div class="empty">${t('none')}</div>`);
+}
+
+// ---------- Variant B: month calendar, filters behind one button ----------
+function VariantB() {
+  const s = S();
+  const sel = s.d || (() => { const m = occurrencesByDay(TODAY, 60); return Object.keys(m).find(k => m[k].length) || dayKey(TODAY); })();
+  const selD = new Date(sel + 'T12:00');
+  const first = new Date(selD.getFullYear(), selD.getMonth(), 1);
+  const gridStart = new Date(first); gridStart.setDate(1 - ((first.getDay() + 6) % 7));
+  const byDay = occurrencesByDay(gridStart, 42);
+  const dotColor = e => e.course ? 'var(--course)' : `var(--${e.type})`;
+  const cnt = activeCount();
+  let html = header(`<button class="b-filterbtn" data-filter>${t('filter')}${cnt ? ' (' + cnt + ')' : ''}</button>`) + note;
+  const shiftMonth = n => { const d = new Date(first); d.setMonth(d.getMonth() + n); return dayKey(d); };
+  html += `<div class="b-bar"><span class="month">${first.toLocaleDateString(s.lang === 'de' ? 'de-DE' : 'en-GB', {month:'long', year:'numeric'})}</span>
+    <span class="nav"><button data-set='{"d":"${shiftMonth(-1)}"}'>‹</button> <button data-set='{"d":"${shiftMonth(1)}"}'>›</button></span></div>`;
+  const dows = s.lang === 'de' ? ['Mo','Di','Mi','Do','Fr','Sa','So'] : ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  html += `<div class="b-grid">${dows.map(x => `<div class="dow">${x}</div>`).join('')}`;
+  for (const [k, list] of Object.entries(byDay)) {
+    const d = new Date(k + 'T12:00');
+    const cls = [d.getMonth() !== first.getMonth() ? 'out' : '', k === sel ? 'sel' : '', k === dayKey(TODAY) ? 'today' : '', d < TODAY && k !== dayKey(TODAY) ? 'past' : ''].join(' ');
+    const fest = list.some(x => x.e.type === 'festival');
+    html += `<div class="b-cell ${cls}" data-set='{"d":"${k}"}'><span class="n">${d.getDate()}</span>
+      <div class="dots">${list.filter(x => x.e.type !== 'festival').slice(0, 4).map(x => `<span class="dot" style="background:${x.e.cancelled ? '#bbb' : dotColor(x.e)}"></span>`).join('')}</div>
+      ${fest ? '<div class="fest"></div>' : ''}</div>`;
+  }
+  html += `</div><div class="b-list"><h2>${fmtDay(selD)}</h2>`;
+  const today = byDay[sel] || [];
+  html += today.length ? today.map(({ e, dayN, dayOf }) => `<div class="b-item ${e.cancelled ? 'cancelled' : ''}" style="border-left-color:${dotColor(e)}" data-ev="${e.id}">
+      <div class="when">${dayN ? `${t('day')} ${dayN}/${dayOf}` : hhmm(e.start)}</div>
+      <div><div class="ttl">${e.title}</div>
+        <div class="muted" style="font-size:13px">${typeLabel(e)} · ${styleNames(e).join(', ')}</div>
+        <div class="muted" style="font-size:13px">${VENUES[e.venue].name}, ${VENUES[e.venue].city}${distTxt(e)}</div>
+        <div style="font-size:12px;margin-top:3px">${e.intro ? '🎓 ' + t('intro') + ' ' + e.intro.time + ' ' : ''}${e.series ? '↻ ' + e.series[s.lang] + ' ' : ''}${badges(e)}</div></div></div>`).join('')
+    : `<div class="empty">${t('none')}</div>`;
+  return html + '</div>';
+}
+
+// ---------- Variant C: flyer-led feed with day strip and type tabs ----------
+function VariantC() {
+  const s = S(), byDay = occurrencesByDay(TODAY, 28);
+  const extra = s.styles.length + (s.c ? 1 : 0);
+  let html = header(`<button class="c-filterbtn" data-filter>⚙${extra ? ' ' + extra : ''}</button>`);
+  const one = s.types.length === 1 ? s.types[0] : '';
+  html += `<div class="c-types">${['', ...TYPES].map(k => `<button class="${one === k || (!k && !s.types.length) ? 'on' : ''}" data-set='{"types":"${k}"}'>${k ? plural(k) : t('all')}</button>`).join('')}</div>`;
+  html += `<div class="c-strip">${Object.entries(byDay).map(([k, l]) => { const d = new Date(k + 'T12:00');
+      return `<button class="c-pill ${l.length ? '' : 'none'}" data-jump="${k}">${d.toLocaleDateString(s.lang === 'de' ? 'de-DE' : 'en-GB', {weekday:'short'})}<b>${d.getDate()}</b>${l.length ? `<span class="cnt">${l.length}</span>` : '&nbsp;'}</button>`; }).join('')}</div>` + note;
+  let any = false;
+  for (const [k, list] of Object.entries(byDay)) {
+    const items = list.filter(x => !x.dayN || x.dayN === 1); // festival card only on its first day
+    if (!items.length) continue; any = true;
+    html += `<div class="c-day" id="day-${k}">${fmtDay(new Date(k + 'T12:00'))}</div>`;
+    html += items.map(({ e }) => {
+      const src = !e.tip && flyerSrc(e.flyer);
+      return `<div class="c-card ${e.cancelled ? 'cancelled' : ''}" data-ev="${e.id}">
+        ${src ? `<div class="hero" style="background-image:url('${src}')"><div class="ov"><div class="ttl">${e.title}</div>${timeRange(e)} · ${VENUES[e.venue].name}</div></div>`
+              : `<div class="hero text">${e.title}</div>`}
+        <div class="body"><b>${timeRange(e)}</b> · <span class="${typeClass(e)}">${typeLabel(e)}</span> · ${VENUES[e.venue].city}${distTxt(e)}<br>
+          ${styleNames(e).map(n => `<span class="tag">${n}</span>`).join('')}${e.intro ? `<span class="tag">🎓 ${e.intro.time}</span>` : ''}${e.level ? `<span class="tag">🎓 ${e.level}</span>` : ''}${e.series ? `<span class="tag">↻ ${e.series[s.lang]}</span>` : ''}
+          <div style="margin-top:4px">${badges(e)}</div></div></div>`; }).join('');
+  }
+  return html + (any ? '' : `<div class="empty">${t('none')}</div>`);
+}
+
+// ---------- Variant D: the merge the human picked ----------
+// Flyer feed by default, paged by week (?w=); calendar as a second view (?view=cal) with a day list, Flyer in the details; place + styles chip row and type tabs
+// above both, one shared filter state; Festivals on every day they run; Tip Events show their Flyer too.
+function VariantD() {
+  const s = S(), cal = s.view === 'cal', c = center();
+  const one = s.types.length === 1 ? s.types[0] : '';
+  const toggleBtn = `<span class="c-types" style="margin:0;width:auto">
+      <button class="${cal ? '' : 'on'}" data-set='{"view":""}' style="padding:4px 8px">🖼</button>
+      <button class="${cal ? 'on' : ''}" data-set='{"view":"cal"}' style="padding:4px 8px">📅</button></span>`;
+  let html = header(toggleBtn) + `<div class="d-filters">
+      <div class="scroll"><button class="chip ${s.c ? 'on' : ''}" data-place>📍 ${c ? c.label + ' · ' + s.r + ' km' : t('anywhere')} ▾</button>
+        <span class="sep"></span>${styleChips()}</div>
+      <div class="c-types">${['', ...TYPES].map(k => `<button class="${one === k || (!k && !s.types.length) ? 'on' : ''}" data-set='{"types":"${k}"}'>${k ? plural(k) : t('all')}</button>`).join('')}</div>`;
+  const card = ({ e, dayN, dayOf }) => {
+    const src = flyerSrc(e.flyer);
+    const when = dayN ? `${t('day')} ${dayN}/${dayOf}` : timeRange(e);
+    return `<div class="c-card ${e.cancelled ? 'cancelled' : ''}" data-ev="${e.id}">
+      ${src ? `<div class="hero" style="background-image:url('${src}')"><div class="ov"><div class="ttl">${e.title}</div>${when} · ${VENUES[e.venue].name}</div></div>`
+            : `<div class="hero text">${e.title}</div>`}
+      <div class="body"><b>${when}</b> · <span class="${typeClass(e)}">${typeLabel(e)}</span> · ${VENUES[e.venue].city}${distTxt(e)}<br>
+        ${styleNames(e).map(n => `<span class="tag">${n}</span>`).join('')}${e.intro ? `<span class="tag">🎓 ${t('intro')} ${e.intro.time}</span>` : ''}${e.level ? `<span class="tag">🎓 ${e.level}</span>` : ''}${e.series ? `<span class="tag">↻ ${e.series[s.lang]}</span>` : ''}
+        <div style="margin-top:4px">${badges(e)}</div></div></div>`;
+  };
+  if (!cal) {
+    // one week at a time (Mon–Sun), ‹ › to page; ?w= holds the week's Monday
+    const monday = d => { const m = new Date(d); m.setHours(0,0,0,0); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return m; };
+    const wk = s.w ? monday(new Date(s.w + 'T12:00')) : monday(TODAY);
+    const shiftWeek = n => { const d = new Date(wk); d.setDate(d.getDate() + 7 * n); return dayKey(d); };
+    const sun = new Date(wk); sun.setDate(sun.getDate() + 6);
+    const loc = s.lang === 'de' ? 'de-DE' : 'en-GB';
+    const byDay = occurrencesByDay(wk, 7);
+    html += `<div class="b-bar" style="padding:8px 16px 0"><span class="month">${wk.toLocaleDateString(loc, {day:'numeric', month:'short'})} – ${sun.toLocaleDateString(loc, {day:'numeric', month:'short'})}</span>
+        <span class="nav"><button data-set='{"w":"${shiftWeek(-1)}"}'>‹</button> <button data-set='{"w":"${shiftWeek(1)}"}'>›</button></span></div>`;
+    html += `<div class="c-strip" style="position:static;border:none;padding:6px 16px 2px;justify-content:space-between">${Object.entries(byDay).map(([k, l]) => { const d = new Date(k + 'T12:00');
+        return `<button class="c-pill ${l.length ? '' : 'none'}" data-jump="${k}">${d.toLocaleDateString(loc, {weekday:'short'})}<b>${d.getDate()}</b>${l.length ? `<span class="cnt">${l.length}</span>` : '&nbsp;'}</button>`; }).join('')}</div></div>` + note;
+    let any = false;
+    for (const [k, list] of Object.entries(byDay)) {
+      if (!list.length) continue; any = true;
+      html += `<div class="c-day" id="day-${k}">${fmtDay(new Date(k + 'T12:00'))}</div>` + list.map(card).join('');
+    }
+    return html + (any ? '' : `<div class="empty">${t('none')}</div>`);
+  }
+  // calendar view: month grid, then the selected day's Flyer cards
+  const sel = s.d || (() => { const m = occurrencesByDay(TODAY, 60); return Object.keys(m).find(k => m[k].length) || dayKey(TODAY); })();
+  const selD = new Date(sel + 'T12:00');
+  const first = new Date(selD.getFullYear(), selD.getMonth(), 1);
+  const gridStart = new Date(first); gridStart.setDate(1 - ((first.getDay() + 6) % 7));
+  const byDay = occurrencesByDay(gridStart, 42);
+  const dotColor = e => e.course ? 'var(--course)' : `var(--${e.type})`;
+  const shiftMonth = n => { const d = new Date(first); d.setMonth(d.getMonth() + n); return dayKey(d); };
+  html += `</div>` + note + `<div class="b-bar"><span class="month">${first.toLocaleDateString(s.lang === 'de' ? 'de-DE' : 'en-GB', {month:'long', year:'numeric'})}</span>
+    <span class="nav"><button data-set='{"d":"${shiftMonth(-1)}"}'>‹</button> <button data-set='{"d":"${shiftMonth(1)}"}'>›</button></span></div>`;
+  const dows = s.lang === 'de' ? ['Mo','Di','Mi','Do','Fr','Sa','So'] : ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  html += `<div class="b-grid">${dows.map(x => `<div class="dow">${x}</div>`).join('')}`;
+  for (const [k, list] of Object.entries(byDay)) {
+    const d = new Date(k + 'T12:00');
+    const cls = [d.getMonth() !== first.getMonth() ? 'out' : '', k === sel ? 'sel' : '', k === dayKey(TODAY) ? 'today' : '', d < TODAY && k !== dayKey(TODAY) ? 'past' : ''].join(' ');
+    html += `<div class="b-cell ${cls}" data-set='{"d":"${k}"}'><span class="n">${d.getDate()}</span>
+      <div class="dots">${list.filter(x => x.e.type !== 'festival').slice(0, 4).map(x => `<span class="dot" style="background:${x.e.cancelled ? '#bbb' : dotColor(x.e)}"></span>`).join('')}</div>
+      ${list.some(x => x.e.type === 'festival') ? '<div class="fest"></div>' : ''}</div>`;
+  }
+  // the selected day as a compact list; the Flyer opens in the detail sheet
+  const dayList = byDay[sel] || [];
+  return html + `</div><div class="b-list"><h2>${fmtDay(selD)}</h2>` + (dayList.length ? dayList.map(({ e, dayN, dayOf }) =>
+    `<div class="b-item ${e.cancelled ? 'cancelled' : ''}" style="border-left-color:${dotColor(e)}" data-ev="${e.id}">
+      <div class="when">${dayN ? `${t('day')} ${dayN}/${dayOf}` : hhmm(e.start)}</div>
+      <div><div class="ttl">${e.title}</div>
+        <div class="muted" style="font-size:13px">${typeLabel(e)} · ${styleNames(e).join(', ')}</div>
+        <div class="muted" style="font-size:13px">${VENUES[e.venue].name}, ${VENUES[e.venue].city}${distTxt(e)}</div>
+        <div style="font-size:12px;margin-top:3px">${e.intro ? '🎓 ' + t('intro') + ' ' + e.intro.time + ' ' : ''}${e.level ? '🎓 ' + e.level + ' ' : ''}${e.series ? '↻ ' + e.series[s.lang] + ' ' : ''}${badges(e)}</div></div></div>`).join('')
+    : `<div class="empty">${t('none')}</div>`) + '</div>';
+}
+
+// ---------- render + events ----------
+function render() {
+  const s = S();
+  document.documentElement.lang = s.lang;
+  document.getElementById('app').innerHTML = { A:VariantA, B:VariantB, C:VariantC, D:VariantD }[s.variant]();
+  document.getElementById('plabel').textContent = s.variant + ' (' + VARIANTS[s.variant] + ')';
+  // keep an open filter or place sheet in sync with the URL
+  if (document.querySelector('#overlay .sheet.filters')) filterSheet();
+  if (document.querySelector('#overlay .sheet.place')) placeSheet();
+}
+const placeSheet = () => overlay(`<div class="sheet place"><button class="close" data-close>×</button><strong>${t('where')}</strong><h3></h3>${placeControls()}<button class="primary" data-close>${t('apply')}</button></div>`);
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-set],[data-style],[data-type],[data-ev],[data-place],[data-filter],[data-geo],[data-jump]');
+  if (!el) return;
+  if (el.dataset.set) set(JSON.parse(el.dataset.set));
+  else if (el.dataset.style) set({ styles: toggle(S().styles, el.dataset.style) });
+  else if (el.dataset.type) set({ types: toggle(S().types, el.dataset.type) });
+  else if (el.dataset.ev) openDetail(+el.dataset.ev);
+  else if (el.hasAttribute('data-place')) placeSheet();
+  else if (el.hasAttribute('data-filter')) filterSheet();
+  else if (el.dataset.jump) document.getElementById('day-' + el.dataset.jump)?.scrollIntoView({ behavior:'smooth' });
+  else if (el.hasAttribute('data-geo')) navigator.geolocation?.getCurrentPosition(
+      p => set({ c: p.coords.latitude.toFixed(2) + ',' + p.coords.longitude.toFixed(2), r: S().r || 25 }),
+      () => alert('Standort nicht verfügbar – bitte Stadt wählen.'), { timeout: 8000, maximumAge: 600000 });
+});
+const keys = Object.keys(VARIANTS);
+const cycle = n => set({ variant: keys[(keys.indexOf(S().variant) + n + keys.length) % keys.length] });
+document.getElementById('pv').onclick = () => cycle(-1);
+document.getElementById('nv').onclick = () => cycle(1);
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,[contenteditable]')) return;
+  if (e.key === 'ArrowLeft') cycle(-1); if (e.key === 'ArrowRight') cycle(1);
+});
+render();
+</script>
+</body>
+</html>

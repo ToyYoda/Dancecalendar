@@ -1,0 +1,3 @@
+# Series end by themselves 12 weeks after their last sign of life
+
+A Series generates real Events 12 weeks ahead, but only up to 12 weeks after its last sign of life: the Organizer reposts the Flyer, edits the Series, or answers "yes" to the bot's "still running?" question, which goes out 8 weeks after the last sign of life (to the Admin for Series that came in as a Tip). Without one, the Series simply runs out. We chose this over open-ended Series because Organizers rarely announce that a Series has stopped, and a calendar full of ghost Events would cost Dancers' trust more than an occasional gap costs Organizers one tap on WhatsApp. This is deliberate, not a bug: don't "fix" it into Series that run forever.

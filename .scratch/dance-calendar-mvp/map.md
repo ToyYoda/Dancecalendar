@@ -51,6 +51,7 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
 - [Retention and backups](issues/26-retention-and-backups.md): live; the 02:30 cron deletes Events, empty Series and handled submissions 90 days after, unconfirmed Flyers after 30 days, message ids after 7, plus unused Flyers in R2; a weekly GitHub Action dumps D1 into 8 rotating slots in the private eu bucket `dancecalendar-backups`; restore tested and documented in the ticket.
 - [Legal pages](issues/27-legal-pages.md): live; Impressum (home address in Kassel), privacy policy, Terms of Use and data deletion in German with `?lang=en`, all in every footer with "Event melden" and the OSM credit; operator details are Worker secrets, not in the repo; the form links Terms and privacy, the bot greeting links privacy and Terms; "Admin" requests now go after 90 days.
 - [Immediate reply when a Flyer arrives](issues/31-immediate-flyer-reply.md): live; Organizers, remembered Tip numbers and a „Nein, ist ein Tipp“ tap hear „Ich lese deinen Flyer …“ before the AI read, once per message even when the queue retries.
+- [Distances from the Dancer's own position, or a place picked on a map](issues/33-distance-from-my-position.md): live; distances from the browser's position (asked on a bare visit) or a place tapped on the `/karte` map (MapLibre self-served, OpenFreeMap tiles only there); without either every Event shows without km; the Kassel/Göttingen chips are gone. Overrides the Kassel + Göttingen default of [Region boundary](issues/10-region-boundary.md).
 
 ## Not yet specified
 

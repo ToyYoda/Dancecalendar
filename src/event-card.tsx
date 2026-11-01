@@ -1,4 +1,6 @@
+import type { Child } from "hono/jsx";
 import type { ExtractedEvent } from "./extraction/extract";
+import { ruleFromValue, ruleOptions, ruleValue, type Rule } from "./series";
 
 // The Event card shared by the confirm page (/c/<token>) and the edit page (/e/<token>):
 // yellow = check, red = missing, plus warnings such as a likely duplicate.
@@ -27,6 +29,11 @@ export function fromForm(form: FormData, i: number, original: ExtractedEvent): E
   const type = String(form.get(`type.${i}`));
   if (type in TYPES) e.type = type as ExtractedEvent["type"];
   e.styles = form.getAll(`styles.${i}`).map(String).filter((s) => s in STYLES);
+  const repeat = form.get(`repeat.${i}`);
+  if (repeat !== null) {
+    e.series_rule = ruleFromValue(String(repeat), e.start_date, original.series_rule ?? null);
+    e.answered = { ...e.answered, rule: true };
+  }
   return e;
 }
 
@@ -50,6 +57,7 @@ export function Card(props: {
   warnings?: string[];
   hidden?: TextField[];
   venue?: string; // what the geocoder found for a new Venue
+  series?: Child; // in place of the date's Series line: a RuleSelect or a note
 }) {
   const { i, e, red, yellow } = props;
   const field = (name: TextField, label: string, type = "text", required = false) => {
@@ -103,7 +111,7 @@ export function Card(props: {
         {field("intro_class_time", "Einsteigerkurs", "time")}
         {field("end_date", "Bis (mehrtägig)", "date")}
       </div>
-      {e.series.is_series && <p class="series">🔁 {e.series.rule_text} – vorerst nur dieser Termin</p>}
+      {props.series}
       {field("venue_name", "Ort")}
       {field("venue_address", "Adresse")}
       {field("city", "Stadt")}
@@ -121,6 +129,31 @@ export function Card(props: {
         {field("level", "Level")}
       </div>
     </fieldset>
+  );
+}
+
+// The "Wiederholung" select of a Series' first Event (confirm page) or of a Series (Series page).
+// `none` labels the option that publishes just this date; the Series page has none.
+export function RuleSelect(props: { i: number; e: ExtractedEvent; rule: Rule | null; none?: string; note?: string }) {
+  const { i, e } = props;
+  const value = ruleValue(props.rule);
+  return (
+    <div>
+      <label for={`repeat.${i}`}>Wiederholung{e.series.rule_text ? ` (Flyer: „${e.series.rule_text}“)` : ""}</label>
+      <select id={`repeat.${i}`} name={`repeat.${i}`} class={props.note ? "unc" : undefined}>
+        {props.none && (
+          <option value="none" selected={value === "none"}>
+            {props.none}
+          </option>
+        )}
+        {ruleOptions(e.start_date, props.rule).map((o) => (
+          <option value={o.value} selected={o.value === value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {props.note && <div class="why">⚠️ {props.note}</div>}
+    </div>
   );
 }
 

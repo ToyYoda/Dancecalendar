@@ -1,5 +1,6 @@
 import { codeFlags } from "../extraction/checks";
 import type { ExtractedEvent } from "../extraction/extract";
+import { firstDates, heldRule, ruleWords, seriesLeads } from "../series";
 
 // The chat summary of a Flyer's Events (variant C of prototypes/organizer-confirmation-prototype.html).
 
@@ -46,11 +47,31 @@ export const publishable = (e: ExtractedEvent, receivedOn: string) => blocker(e,
 export function summary(events: ExtractedEvent[], receivedOn: string, firstName: string | null): string {
   const count = events.length === 1 ? "1 Event" : `${events.length} Events`;
   const hello = firstName ? `Danke, ${firstName}!` : "Danke!";
-  return [`${hello} Ich habe ${count} auf dem Flyer erkannt:`, ...events.map((e) => eventBlock(e, receivedOn))].join("\n\n");
+  const leads = seriesLeads(events);
+  const blocks = events.map((e, i) => eventBlock(e, receivedOn, seriesLine(events, leads, i, receivedOn)));
+  return [`${hello} Ich habe ${count} auf dem Flyer erkannt:`, ...blocks].join("\n\n");
 }
 
+// The Series rule in plain words with its first dates, on the first Event of a Series only.
+function seriesLine(events: ExtractedEvent[], leads: number[], i: number, receivedOn: string): string | null {
+  const e = events[i];
+  if (e.update_of && e.update_series) return e.series.is_series ? "🔁 verlängert deine Serie" : "🔁 ändert nur diesen Termin deiner Serie";
+  if (e.update_of) return "✏️ ersetzt dein bestehendes Event, der alte Link gilt weiter";
+  if (!e.series.is_series || e.series_rule === null) return null;
+  if (leads[i] !== i) return "🔁 gehört zur Serie oben";
+  const rule = heldRule(e);
+  if (!rule) return `🔁 ${e.series.rule_text} – vorerst nur dieser Termin`;
+  if (rule.freq === "custom") return `🔁 ${ruleWords(rule)} – prüft der Admin, vorerst nur dieser Termin`;
+  const own = events.filter((_, k) => leads[k] === i).map((o) => o.start_date);
+  const dates = firstDates(rule, own).map((d) => formatDate(d, receivedOn)).join(", ");
+  const words = e.type === "workshop" && e.registration_required ? `Kurs mit Anmeldung, ${lowerFirst(ruleWords(rule))}` : ruleWords(rule);
+  return `🔁 ${words}: ${dates} …`;
+}
+
+const lowerFirst = (s: string) => s[0].toLowerCase() + s.slice(1);
+
 // Fields the Organizer has answered a question about in the chat no longer need checking.
-const ANSWERED_FIELDS = { time: ["start_time"], venue: ["venue_name", "venue_address", "city"] };
+const ANSWERED_FIELDS = { date: ["start_date"], time: ["start_time"], venue: ["venue_name", "venue_address", "city"] };
 
 // What the model or the code checks found uncertain, minus what the Organizer has answered.
 export function uncertainFields(e: ExtractedEvent, receivedOn: string): Set<string> {
@@ -58,14 +79,13 @@ export function uncertainFields(e: ExtractedEvent, receivedOn: string): Set<stri
   return new Set([...e.uncertain_fields.map((f) => f.split(".")[0]), ...codeFlags(e, receivedOn)].filter((f) => !settled.has(f)));
 }
 
-function eventBlock(e: ExtractedEvent, receivedOn: string): string {
+function eventBlock(e: ExtractedEvent, receivedOn: string, series: string | null): string {
   const lines = [`*${e.title || "(ohne Titel)"}*`];
   const when = [formatDate(e.start_date, receivedOn), e.start_time].filter(Boolean).join(" · ");
   lines.push(e.intro_class_time ? `${when} (Einsteigerkurs ${e.intro_class_time})` : when);
   lines.push(`📍 ${[e.venue_name, e.venue_address, e.city].filter(Boolean).join(", ")}`);
   lines.push([TYPE_NAMES[e.type], e.styles.map((s) => STYLE_NAMES[s] ?? s).join(", ")].filter(Boolean).join(" · "));
-  if (e.series.is_series) lines.push(`🔁 ${e.series.rule_text} – vorerst nur dieser Termin`);
-  if (e.update_of) lines.push("✏️ ersetzt dein bestehendes Event, der alte Link gilt weiter");
+  if (series) lines.push(series);
 
   const why = blocker(e, receivedOn);
   if (why) {

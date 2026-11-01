@@ -4,6 +4,7 @@ import { Card, CARD_CSS, fromForm, missing } from "./event-card";
 import type { ExtractedEvent } from "./extraction/extract";
 import { Layout } from "./layout";
 import { columns, findVenue, venueQuery } from "./publish";
+import { signOfLife } from "./series";
 import { queueUpload, waitForUpload } from "./upload";
 import { berlinDate } from "./whatsapp/bot";
 import { guessVenue } from "./whatsapp/questions";
@@ -11,7 +12,8 @@ import { guessVenue } from "./whatsapp/questions";
 // The target of an Event's private edit link (/e/<token>, no login): change any field with the confirm
 // page's card, cancel the Event (it stays in the feed, marked) or take that back, and upload another
 // Flyer, which goes to the confirm page and is published under the same Organizer.
-// Likely duplicates are warned about, never blocked. Series-wide edits come with ticket 22.
+// Likely duplicates are warned about, never blocked. A Series' date changed here stays as it is when the
+// whole Series is edited (src/series-page.tsx), and every change counts as the Series' sign of life.
 
 type Row = {
   id: number;
@@ -30,6 +32,8 @@ type Row = {
   address: string | null;
   organizer_id: number | null;
   display_name: string | null;
+  series_id: number | null;
+  series_token: string | null;
 };
 
 export const editPage = new Hono<{ Bindings: Env }>();
@@ -51,11 +55,13 @@ editPage.post("/:token", async (c) => {
   if (venueQuery(e) && !(await findVenue(c.env.DB, e))) await guessVenue(c.env, e); // a new Venue's coordinates
   const col = await columns(c.env.DB, e);
   await c.env.DB.prepare(
-    `UPDATE event SET title = ?, type = ?, styles = ?, starts_at = ?, ends_at = ?, intro_class_at = ?, level = ?, price = ?, venue_id = ?
+    `UPDATE event SET title = ?, type = ?, styles = ?, starts_at = ?, ends_at = ?, intro_class_at = ?, level = ?, price = ?, venue_id = ?,
+                      detached = series_id IS NOT NULL
      WHERE id = ?`,
   )
     .bind(col.title, col.type, col.styles, col.starts_at, col.ends_at, col.intro_class_at, col.level, col.price, col.venue_id, row.id)
     .run();
+  if (row.series_id) await signOfLife(c.env.DB, row.series_id, berlinDate(new Date()));
   const saved = (await load(c.env.DB, token))!;
   return c.html(<EditPage token={token} row={saved} event={toCard(saved)} warnings={await duplicatesOfEvent(c.env.DB, row.id)} saved />);
 });
@@ -96,8 +102,8 @@ async function load(db: D1Database, token: string) {
   return db
     .prepare(
       `SELECT e.id, e.title, e.type, e.styles, e.starts_at, e.ends_at, e.intro_class_at, e.level, e.price, e.description,
-              e.flyer_key, e.cancelled, v.name AS venue, v.address, e.organizer_id, o.display_name
-       FROM event e JOIN venue v ON v.id = e.venue_id LEFT JOIN organizer o ON o.id = e.organizer_id
+              e.flyer_key, e.cancelled, v.name AS venue, v.address, e.organizer_id, o.display_name, e.series_id, s.edit_token AS series_token
+       FROM event e JOIN venue v ON v.id = e.venue_id LEFT JOIN organizer o ON o.id = e.organizer_id LEFT JOIN series s ON s.id = e.series_id
        WHERE e.edit_token = ? AND o.blocked_at IS NULL`,
     )
     .bind(token)
@@ -108,6 +114,7 @@ async function setCancelled(db: D1Database, token: string, cancelled: 0 | 1): Pr
   const e = await load(db, token);
   if (!e) return false;
   await db.prepare("UPDATE event SET cancelled = ? WHERE id = ?").bind(cancelled, e.id).run();
+  if (e.series_id) await signOfLife(db, e.series_id, berlinDate(new Date()));
   return true;
 }
 
@@ -166,6 +173,11 @@ function EditPage(props: {
       <h1>Event bearbeiten</h1>
       {props.saved && <p class="saved">✅ Gespeichert.</p>}
       {row.cancelled ? <p class="cancelled">❌ Abgesagt – steht im Kalender als „abgesagt“.</p> : null}
+      {row.series_token && (
+        <p>
+          🔁 Ein Termin einer Serie – Änderungen hier gelten nur für diesen Tag. <a href={`/s/${row.series_token}`}>Ganze Serie bearbeiten</a>
+        </p>
+      )}
       {row.flyer_key && <img class="flyer" src={`/e/${token}/flyer`} alt="Flyer" />}
       <form method="post">
         <Card i={0} e={props.event} red={props.red ?? {}} yellow={new Map()} warnings={props.warnings} hidden={["city"]} />

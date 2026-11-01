@@ -1,9 +1,15 @@
 import type { ExtractedEvent } from "./extraction/extract";
+import { applyTemplate, createSeries, extendSeries, heldRule, ruleWords, seriesLeads, signOfLife, templateOf, type Rule } from "./series";
+import { berlinDate } from "./whatsapp/bot";
 import { formatDate } from "./whatsapp/summary";
 
-// Turns a held submission's Events into calendar Events. Returns what was published, with edit tokens.
+// Turns a held submission's Events into calendar Events. Returns what was published, with edit links:
+// one per single Event, and one per Series (its occurrences are reachable from the Series page).
 
-export type Published = { title: string; startsAt: string; editToken: string; updated: boolean };
+type Published = { title: string; startsAt: string; editToken: string; updated: boolean; seriesId: number | null };
+
+// A line of the "✅ Ist online!" reply and of the confirm page's Done page.
+export type Entry = { title: string; when: string; note: string; label: string; link: string };
 
 export type Held = { id: string; organizer_id: number; flyer_key: string; received_on: string };
 
@@ -14,30 +20,54 @@ export async function publishSubmission(
   submission: Held,
   ready: ExtractedEvent[],
   skipped: ExtractedEvent[],
-): Promise<{ published: Published[]; text: string } | null> {
+): Promise<{ entries: Entry[]; text: string } | null> {
   const { meta } = await env.DB.prepare("UPDATE submission SET status = 'published' WHERE id = ? AND status = 'pending'")
     .bind(submission.id)
     .run();
   if (meta.changes !== 1) return null;
-  const published = await publishEvents(env.DB, submission, ready);
+  const published = await publishEvents(env.DB, submission, ready, berlinDate(new Date()));
+  const entries = await entriesOf(env, published, submission.received_on);
 
-  const lines = published.map((p) => {
-    const updated = p.updated ? " (aktualisiert, der alte Link gilt weiter)" : "";
-    return `*${p.title}* – ${formatDate(p.startsAt.slice(0, 10), submission.received_on)}${updated}\nBearbeiten: ${editLink(env, p)}`;
-  });
+  const lines = entries.map((p) => `*${p.title}* – ${p.when}${p.note}\n${p.label}: ${p.link}`);
   if (skipped.length) lines.push(`Nicht eingetragen: ${skipped.map((e) => e.title).join(", ")}`);
-  return { published, text: `✅ Ist online!\n\n${lines.join("\n\n")}\n\nDie Links sind privat – nicht weiterleiten.` };
+  return { entries, text: `✅ Ist online!\n\n${lines.join("\n\n")}\n\nDie Links sind privat – nicht weiterleiten.` };
 }
 
-export const editLink = (env: Env, p: Published) => `${env.PUBLIC_URL}/e/${p.editToken}`;
+async function entriesOf(env: Env, published: Published[], receivedOn: string): Promise<Entry[]> {
+  const entries: Entry[] = [];
+  const seen = new Set<number>();
+  for (const p of published) {
+    if (!p.seriesId) {
+      const note = p.updated ? " (aktualisiert, der alte Link gilt weiter)" : "";
+      entries.push({ title: p.title, when: formatDate(p.startsAt.slice(0, 10), receivedOn), note, label: "Bearbeiten", link: `${env.PUBLIC_URL}/e/${p.editToken}` });
+      continue;
+    }
+    if (seen.has(p.seriesId)) continue;
+    seen.add(p.seriesId);
+    const s = (await env.DB.prepare(
+      "SELECT edit_token, rule, (SELECT COUNT(*) FROM event WHERE series_id = series.id) AS n FROM series WHERE id = ?",
+    )
+      .bind(p.seriesId)
+      .first<{ edit_token: string; rule: string; n: number }>())!;
+    const rule = JSON.parse(s.rule) as Rule;
+    const from = formatDate(p.startsAt.slice(0, 10), receivedOn);
+    const when = rule.freq === "custom" ? `${from}, 🔁 ${ruleWords(rule)} – prüft der Admin` : `🔁 ${ruleWords(rule)}, ab ${from}`;
+    const note = p.updated ? " (verlängert)" : s.n > 1 ? ` (${s.n} Termine eingetragen)` : "";
+    entries.push({ title: p.title, when, note, label: "Serie bearbeiten", link: `${env.PUBLIC_URL}/s/${s.edit_token}` });
+  }
+  return entries;
+}
 
 async function publishEvents(
   db: D1Database,
   submission: { organizer_id: number; flyer_key: string },
   events: ExtractedEvent[],
+  today: string,
 ): Promise<Published[]> {
   const published: Published[] = [];
-  for (const e of events) {
+  const leads = seriesLeads(events);
+  const created = new Map<number, number>(); // the lead Event's index → its new Series
+  for (const [i, e] of events.entries()) {
     const c = await columns(db, e);
     // A repost the Organizer called an update replaces their existing Event, which keeps its edit link.
     const updated =
@@ -46,21 +76,47 @@ async function publishEvents(
         .prepare(
           `UPDATE event SET title = ?, type = ?, styles = ?, starts_at = ?, ends_at = ?, intro_class_at = ?, level = ?,
                             description = ?, price = ?, venue_id = ?, flyer_key = ?
-           WHERE id = ? AND organizer_id = ? RETURNING edit_token`,
+           WHERE id = ? AND organizer_id = ? RETURNING edit_token, series_id`,
         )
         .bind(c.title, c.type, c.styles, c.starts_at, c.ends_at, c.intro_class_at, c.level, e.description || null, c.price, c.venue_id,
           submission.flyer_key, e.update_of, submission.organizer_id)
-        .first<{ edit_token: string }>());
+        .first<{ edit_token: string; series_id: number | null }>());
     if (updated) {
-      published.push({ title: e.title, startsAt: c.starts_at, editToken: updated.edit_token, updated: true });
+      if (updated.series_id) {
+        // The Series' Flyer again: its fields count for the dates ahead. A one-off Flyer changes only its date.
+        if (e.series.is_series) await applyTemplate(db, updated.series_id, templateOf(c, e.description || null, submission.flyer_key), c.starts_at.slice(0, 10));
+        else await db.prepare("UPDATE event SET detached = 1 WHERE id = ?").bind(e.update_of).run();
+        await signOfLife(db, updated.series_id, today);
+      }
+      published.push({ title: e.title, startsAt: c.starts_at, editToken: updated.edit_token, updated: true, seriesId: updated.series_id });
       continue;
+    }
+
+    const rule = heldRule(events[leads[i]]);
+    let seriesId: number | null = null;
+    if (rule) {
+      seriesId = created.get(leads[i]) ?? null;
+      if (!seriesId) {
+        const lead = events[leads[i]];
+        const dates = events.filter((_, k) => leads[k] === leads[i]).map((o) => o.start_date).sort();
+        const series = await createSeries(db, {
+          organizerId: submission.organizer_id,
+          rule,
+          template: templateOf(await columns(db, lead), lead.description || null, submission.flyer_key),
+          registrationRequired: lead.type === "workshop" && lead.registration_required,
+          generatedUntil: dates.at(-1)!,
+          today,
+        });
+        seriesId = series.id;
+        created.set(leads[i], seriesId);
+      }
     }
     const editToken = randomToken();
     await db
       .prepare(
         `INSERT INTO event (title, type, styles, starts_at, ends_at, intro_class_at, level, description, price,
-                            venue_id, organizer_id, flyer_key, edit_token)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            venue_id, organizer_id, flyer_key, series_id, edit_token)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         c.title,
@@ -75,11 +131,13 @@ async function publishEvents(
         c.venue_id,
         submission.organizer_id,
         submission.flyer_key,
+        seriesId,
         editToken,
       )
       .run();
-    published.push({ title: e.title, startsAt: c.starts_at, editToken, updated: false });
+    published.push({ title: e.title, startsAt: c.starts_at, editToken, updated: false, seriesId });
   }
+  for (const id of created.values()) await extendSeries(db, today, id);
   return published;
 }
 
@@ -99,7 +157,7 @@ export async function columns(db: D1Database, e: ExtractedEvent) {
 }
 
 // An end time before the start time without an end date runs past midnight.
-export function endsAt(e: ExtractedEvent): string | null {
+export function endsAt(e: Pick<ExtractedEvent, "start_date" | "start_time" | "end_date" | "end_time">): string | null {
   if (!e.end_time) return e.end_date ? `${e.end_date}T23:59` : null;
   if (e.end_date) return `${e.end_date}T${e.end_time}`;
   if (e.end_time > e.start_time) return `${e.start_date}T${e.end_time}`;

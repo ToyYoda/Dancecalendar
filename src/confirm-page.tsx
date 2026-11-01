@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { duplicatesOfExtracted } from "./duplicates";
-import { Card, CARD_CSS, fromForm, missing } from "./event-card";
+import { Card, CARD_CSS, fromForm, missing, RuleSelect } from "./event-card";
 import type { ExtractedEvent, Extraction } from "./extraction/extract";
 import { Layout } from "./layout";
-import { editLink, findVenue, publishSubmission, venueQuery, type Held, type Published } from "./publish";
+import { findVenue, publishSubmission, venueQuery, type Entry, type Held } from "./publish";
+import { heldRule, seriesLeads } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 import { sendText } from "./whatsapp/graph";
 import { guessVenue } from "./whatsapp/questions";
@@ -72,7 +73,7 @@ confirmPage.post("/:token", async (c) => {
     // Outside the 24-hour window this fails; the page shows the same links anyway.
     await sendText(c.env, s.whatsapp_number, result.text).catch((err) => console.error("confirm page reply failed", err));
   }
-  return c.html(<Done env={c.env} s={s} published={result.published} skipped={skipped} />);
+  return c.html(<Done s={s} entries={result.entries} skipped={skipped} />);
 });
 
 async function load(db: D1Database, token: string) {
@@ -138,7 +139,16 @@ function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: 
       </p>
       <form id="confirm" method="post" data-today={today}>
         {events.map((e, i) => (
-          <Card i={i} e={e} include={include[i]} red={missing(e, today)} yellow={uncertain(e, s.received_on)} warnings={props.notes[i].warnings} venue={props.notes[i].venue} />
+          <Card
+            i={i}
+            e={e}
+            include={include[i]}
+            red={missing(e, today)}
+            yellow={uncertain(e, s.received_on)}
+            warnings={props.notes[i].warnings}
+            venue={props.notes[i].venue}
+            series={<SeriesField events={events} i={i} />}
+          />
         ))}
         <button name="publish" type="submit" class="publish" disabled={isBlocked}>
           {publishLabel(include.filter(Boolean).length)}
@@ -152,16 +162,28 @@ function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: 
   );
 }
 
-function Done(props: { env: Env; s: Submission; published: Published[]; skipped: ExtractedEvent[] }) {
+// The first Event of a Series chooses the rule; the Flyer's other dates of it follow.
+function SeriesField(props: { events: ExtractedEvent[]; i: number }) {
+  const e = props.events[props.i];
+  if (e.update_of && e.update_series) return <p class="series">🔁 {e.series.is_series ? "verlängert deine Serie" : "ändert nur diesen Termin deiner Serie"}</p>;
+  if (!e.series.is_series) return null;
+  if (seriesLeads(props.events)[props.i] !== props.i) return <p class="series">🔁 gehört zur Serie oben</p>;
+  const rule = heldRule(e);
+  const unclear = !rule && e.series_rule === undefined;
+  return <RuleSelect i={props.i} e={e} rule={rule} none="Nur dieser Termin" note={unclear ? "Wie oft? Bitte wählen – sonst nur dieser Termin." : undefined} />;
+}
+
+function Done(props: { s: Submission; entries: Entry[]; skipped: ExtractedEvent[] }) {
   return (
     <Layout title="Ist online – DanceCalendar">
       <h1>✅ Ist online!</h1>
       <ul>
-        {props.published.map((p) => (
+        {props.entries.map((p) => (
           <li>
-            <strong>{p.title}</strong> – {formatDate(p.startsAt.slice(0, 10), props.s.received_on)}
+            <strong>{p.title}</strong> – {p.when}
+            {p.note}
             <br />
-            Bearbeiten: <a href={editLink(props.env, p)} style="overflow-wrap: anywhere">{editLink(props.env, p)}</a>
+            {p.label}: <a href={p.link} style="overflow-wrap: anywhere">{p.link}</a>
           </li>
         ))}
       </ul>

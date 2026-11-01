@@ -2,6 +2,7 @@
 
 Type: task
 Blocked by: 21
+Status: claimed
 Labels: wayfinder:task
 
 ## Scope
@@ -29,3 +30,21 @@ Since [Blocking questions in chat](21-blocking-questions.md), the questions live
 ## Out of scope
 
 The Admin's "12 Wochen verlängern" and the email listing for Series running out (that's [Admin tools](25-admin-tools-and-email.md)).
+
+## Comments
+
+**2026-11-01, build session:** built test-first, 109 tests green (21 new in `test/series.test.ts` and `test/series-rules.test.ts`), Series page checked locally in the browser at phone width. Not deployed yet.
+
+- **Rules** (`src/series.ts`): weekly, every N weeks, Nth weekday of the month (or the last one), and "custom" (typed by the Organizer, generates nothing until the Admin checks it). Stored as JSON with an anchor date on `series.rule` (migration 0007). The shared fields live on `series.template`; `series.generated_until` is the last rule date that has an Event.
+- **Generation:** publishing a Series inserts the Flyer's own dates, then the rule's dates after the last of them, up to 12 weeks ahead. A new daily cron (`30 2 * * *`) adds the next ones, but never beyond 12 weeks after `last_sign_of_life` (ADR 0001). Dates the cron missed stay out.
+- **Chat:** a Series Flyer without a date first asks "Wann ist der nächste Termin?" (typed: "14.10.", "14.10.26"; [Event weglassen]). An ambiguous rule then asks [Alle 2 Wochen] [2. Mi im Monat] (or [Letzter Mi im Monat]) [Anders …]. "Anders …" takes a typed rule. Clear rules ("jeden Freitag", "alle 14 Tage", "jeden letzten Freitag") aren't asked about. The summary shows "🔁 Jeden Freitag: Fr 06.11., Fr 13.11., Fr 20.11. …"; a Course reads "🔁 Kurs mit Anmeldung, jeden Montag: …". Several listed dates of one Series on a Flyer form one Series, led by the first.
+- **Reposts:** the same Series Flyer again (own occurrence on that date, nothing different) is taken as an update without asking. It says "🔁 verlängert deine Serie", refreshes the shared fields from that date on, and counts as a sign of life. A repost that differs is asked about as before. A one-off Flyer for a Series date changes only that date.
+- **Links:** "✅ Ist online!" sends one "Serie bearbeiten" link per Series (`/s/<token>`). The Series page edits the shared fields and the rule ("Datum" = the next date; changing it or the rule restarts the Series there), lists the coming dates with their own edit links, and has "Serie beenden" (removes future dates). An occurrence's own edit page links back to its Series. Saving there marks it `detached`, so Series edits leave it alone. Cancelling it leaves the rest. Every save or cancel counts as a sign of life.
+- **Confirm page:** the first Event of a Series has a "Wiederholung" select ("Nur dieser Termin" publishes a single Event). An unanswered ambiguous rule shows yellow with "Nur dieser Termin" preselected.
+- **Course:** `series.registration_required` is set when the Series' Events are Workshops that need registration. The feed doesn't show it yet (handed on to "Full Dancer overview").
+- Handed on: free-text rules and ending a removed Organizer's Series → "Admin tools"; Tip Series → "Tips"; showing Courses → "Full Dancer overview".
+
+Human steps before the demo:
+
+1. Push to `main` so CI applies migration 0007, registers the daily cron and deploys.
+2. Demo: forward a weekly Party Flyer → check the "🔁 Jeden …" line in the summary → [Veröffentlichen] → open "Serie bearbeiten": 12 dates are listed. (The week feed only shows 7 days until "Full Dancer overview".) Tap one date → "Event absagen" → the feed shows it "abgesagt". Back on the Series page, change "Beginn" → [Speichern] → the dates ahead show the new time.

@@ -25,6 +25,8 @@ See [Admin view](11-admin-view.md). Everything is mobile-first.
 
 Organizers can't change a known Venue's address or coordinates (Venues are matched by name and shared; see [Blocking questions in chat](21-blocking-questions.md)). The Admin needs a way to correct a Venue: name, address, and coordinates via the geocoder (`src/geocode.ts`).
 
+Since [Series and Courses](22-series-and-courses.md): a free-text rule ("Anders …") is a Series whose `rule.freq` is `"custom"`; it generates nothing until checked. The review can set a real rule through the Series page (`/s/<series.edit_token>`, its "Wiederholung" select). "12 Wochen verlängern" is `signOfLife` in `src/series.ts`; a Series runs out at `last_sign_of_life` + 84 days. "Entfernen" must also end the Organizer's Series (`endSeries`), or the daily cron keeps generating their Events.
+
 ## Done when
 
 - Tests are green (with a fixed clock for both DST offsets) and the slice is deployed.

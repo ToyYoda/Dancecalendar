@@ -2,18 +2,20 @@ import { duplicatesOfExtracted } from "../duplicates";
 import type { ExtractedEvent, Extraction } from "../extraction/extract";
 import { geocode, type Place } from "../geocode";
 import { findVenue, normalize, venueQuery } from "../publish";
+import { ruleButtons, ruleFromFlyer, ruleFromValue, seriesLeads, type Rule } from "../series";
 import { sendButtons, sendText, type Button } from "./graph";
 import { formatDate, publishable, summary } from "./summary";
 
 // The blocking questions the bot asks about a held Flyer before its summary, one message each, in this
-// order: a reposted Event (update or new?), a missing start time, a new Venue (is this the place the
-// geocoder found?), a likely duplicate of another Organizer's Event. The next question is worked out
+// order: a reposted Event (update or new?), a Series' next date when the Flyer prints none, an ambiguous
+// Series rule, a missing start time, a new Venue (is this the place the geocoder found?), a likely
+// duplicate of another Organizer's Event. The next question is worked out
 // afresh from the held Events each time, so a stale or repeated tap can't answer the wrong one.
 // The answers live on the held Events (`HeldAnswers`); typed answers wait in `submission.awaiting`.
 // Decisions: .scratch/dance-calendar-mvp/issues/08-organizer-confirmation-flow.md (variant C).
 
-type Kind = "repost" | "time" | "venue" | "duplicate";
-type Awaiting = { kind: "time" | "address"; i: number };
+type Kind = "repost" | "date" | "rule" | "time" | "venue" | "duplicate";
+type Awaiting = { kind: "date" | "rule" | "time" | "address"; i: number };
 type Question = { kind: Kind; i: number; text: string; buttons: Button[]; awaiting?: Awaiting };
 
 type Held = {
@@ -55,6 +57,11 @@ export async function answerButton(env: Env, from: string, organizerId: number, 
   if (kind === "repost") {
     if (value !== "new") e.update_of = Number(value);
     answer(e, "repost");
+  } else if (kind === "date") {
+    e.dropped = true; // the only button: "Event weglassen"
+  } else if (kind === "rule") {
+    if (value === "other") [awaiting, prompt] = [{ kind: "rule", i: q.i }, "Schreib mir, wann es stattfindet, z. B. „jeden 1. und 3. Freitag“. Der Admin schaut es sich an."];
+    else setRule(events, q.i, ruleFromValue(value, e.start_date, null));
   } else if (kind === "time") {
     if (value === "drop") e.dropped = true;
     else if (value === "other") [awaiting, prompt] = [{ kind: "time", i: q.i }, "Schick mir die Uhrzeit, z. B. 21:00."];
@@ -82,7 +89,18 @@ export async function answerTyped(env: Env, from: string, organizerId: number, t
   if (!held) return false;
   const awaiting = JSON.parse(held.awaiting!) as Awaiting;
   const extraction = JSON.parse(held.extraction) as Extraction;
-  if (awaiting.kind === "time") {
+  if (awaiting.kind === "date") {
+    const date = parseDate(text, held.received_on);
+    if (!date) {
+      await sendText(env, from, "Das habe ich nicht verstanden. Schick mir das Datum so: 14.10.");
+      return true;
+    }
+    const e = extraction.events[awaiting.i];
+    [e.start_date, e.answered] = [date, { ...e.answered, date: true }];
+  } else if (awaiting.kind === "rule") {
+    const e = extraction.events[awaiting.i];
+    setRule(extraction.events, awaiting.i, { freq: "custom", text: text.trim().slice(0, 200), anchor: e.start_date });
+  } else if (awaiting.kind === "time") {
     const time = parseTime(text);
     if (!time) {
       await sendText(env, from, "Das habe ich nicht verstanden. Schick mir die Uhrzeit so: 21:00");
@@ -113,11 +131,40 @@ async function nextQuestion(env: Env, s: Held, events: ExtractedEvent[]): Promis
       e.start_time && e.start_time !== own.starts_at.slice(11) ? `Beginn ${e.start_time} statt ${own.starts_at.slice(11)}` : "",
       e.venue_name && normalize(e.venue_name) !== normalize(own.venue) ? `Ort „${e.venue_name}“ statt „${own.venue}“` : "",
     ].filter(Boolean);
+    if (own.series_id) e.update_series = own.series_id;
+    // The same Series Flyer again extends the Series without asking.
+    if (own.series_id && e.series.is_series && !diff.length) {
+      e.update_of = own.id;
+      answer(e, "repost");
+      continue;
+    }
     const text =
       `Den kenne ich schon: „${own.title}“ am ${when(e)} hast du schon eingetragen.` +
       (diff.length ? `\nNeu auf diesem Flyer: ${diff.join(", ")}.` : "") +
       "\nIst das ein Update?";
     return { kind: "repost", i, text, buttons: [button("repost", i, String(own.id), "Ja, Update"), button("repost", i, "new", "Nein, neues Event")] };
+  }
+
+  const leads = seriesLeads(events);
+  for (const [e, i] of open("date")) {
+    if (!e.series.is_series || DATE.test(e.start_date)) continue;
+    return {
+      kind: "date",
+      i,
+      text: `„${e.title || "(ohne Titel)"}“ ist eine Serie („${e.series.rule_text}“). Wann ist der nächste Termin? Schick mir das Datum, z. B. 14.10.`,
+      buttons: [button("date", i, "drop", "Event weglassen")],
+      awaiting: { kind: "date", i },
+    };
+  }
+
+  for (const [e, i] of open("rule")) {
+    if (!e.series.is_series || leads[i] !== i || !DATE.test(e.start_date) || (e.update_of && e.update_series) || ruleFromFlyer(e)) continue;
+    return {
+      kind: "rule",
+      i,
+      text: `„${e.title || "(ohne Titel)"}“ ab ${when(e)}: Auf dem Flyer steht „${e.series.rule_text}“. Wie ist das gemeint?`,
+      buttons: [...ruleButtons(e.start_date, e.series.rule_text).map((b) => button("rule", i, b.value, b.title)), button("rule", i, "other", "Anders …")],
+    };
   }
 
   for (const [e, i] of open("time")) {
@@ -183,11 +230,11 @@ export async function guessVenue(env: Env, e: ExtractedEvent): Promise<Place | n
 async function ownEventLike(db: D1Database, organizerId: number, e: ExtractedEvent, taken: number[]) {
   const { results } = await db
     .prepare(
-      `SELECT e.id, e.title, e.starts_at, v.name AS venue FROM event e JOIN venue v ON v.id = e.venue_id
+      `SELECT e.id, e.title, e.starts_at, e.series_id, v.name AS venue FROM event e JOIN venue v ON v.id = e.venue_id
        WHERE e.organizer_id = ? AND e.cancelled = 0 AND substr(e.starts_at, 1, 10) = ? ORDER BY e.starts_at`,
     )
     .bind(organizerId, e.start_date)
-    .all<{ id: number; title: string; starts_at: string; venue: string }>();
+    .all<{ id: number; title: string; starts_at: string; series_id: number | null; venue: string }>();
   const place = normalize(e.venue_name || e.venue_address);
   return (
     results.find((o) => !taken.includes(o.id) && (normalize(o.title) === normalize(e.title) || (place && normalize(o.venue) === place))) ?? null
@@ -209,6 +256,29 @@ function confirmVenue(events: ExtractedEvent[], i: number, place: Place) {
 }
 
 const answer = (e: ExtractedEvent, kind: Kind) => (e.answered = { ...e.answered, [kind]: true });
+
+// A Series rule counts for every Event of that Series on the Flyer.
+function setRule(events: ExtractedEvent[], lead: number, rule: Rule | null) {
+  const leads = seriesLeads(events);
+  events.forEach((e, k) => {
+    if (leads[k] !== lead) return;
+    e.series_rule = rule;
+    answer(e, "rule");
+  });
+}
+
+// "14.10.", "14.10", "14.10.2026", "14.10.26"; without a year, the next such date from the day the Flyer arrived.
+function parseDate(text: string, receivedOn: string): string | null {
+  const m = /^(\d{1,2})\.(\d{1,2})\.?(\d{2}|\d{4})?$/.exec(text.trim());
+  if (!m) return null;
+  const [d, mo] = [m[1].padStart(2, "0"), m[2].padStart(2, "0")];
+  const year = m[3] ? (m[3].length === 2 ? `20${m[3]}` : m[3]) : receivedOn.slice(0, 4);
+  let date = `${year}-${mo}-${d}`;
+  if (!m[3] && date < receivedOn) date = `${Number(year) + 1}-${mo}-${d}`;
+  const check = new Date(`${date}T00:00:00Z`);
+  if (isNaN(check.getTime()) || check.toISOString().slice(0, 10) !== date || date < receivedOn) return null;
+  return date;
+}
 
 // "21:00", "21.30", "21 Uhr", "9:15".
 function parseTime(text: string): string | null {

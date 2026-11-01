@@ -19,6 +19,8 @@ See [Dancer overview and filters](07-dancer-overview-prototype.md), [Region boun
 - **Flyer images:** served through the app from R2 with long cache headers.
 - **Language:** the UI is in German and English. Event text is shown as written.
 
+Since [Series and Courses](22-series-and-courses.md): occurrences are ordinary `event` rows with a `series_id`, 12 weeks ahead. A Course is a Series with `registration_required = 1`; the overview should say "Anmeldung nötig" on its Events.
+
 ## Done when
 
 - Tests are green and the slice is deployed.

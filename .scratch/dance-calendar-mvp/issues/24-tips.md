@@ -19,6 +19,8 @@ Since [Organizer application](20-organizer-application.md), [Nein, ist ein Tipp]
 
 The duplicate-with-Tip question belongs in the "duplicate" step of `src/whatsapp/questions.ts` (since [Blocking questions in chat](21-blocking-questions.md)); today that step only asks about other Organizers' Events.
 
+Since [Series and Courses](22-series-and-courses.md): publishing creates a Series for any held Event with a rule (`publishEvents` in `src/publish.ts`), so an approved Tip Series needs its rule confirmed by the Admin and gets `series.organizer_id` NULL; the Series page already copes with that.
+
 ## Done when
 
 - Tests are green and the slice is deployed.

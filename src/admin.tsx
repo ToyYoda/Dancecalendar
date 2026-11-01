@@ -55,9 +55,22 @@ admin.post("/upload", async (c) => {
 // Waits for the queue consumer, then hands over to the confirm page.
 admin.get("/upload/:token", async (c) => {
   const token = c.req.param("token");
-  const s = await c.env.DB.prepare("SELECT status FROM submission WHERE confirm_token = ? AND source = 'admin'")
+  const s = await c.env.DB.prepare("SELECT status, extraction FROM submission WHERE confirm_token = ? AND source = 'admin'")
     .bind(token)
-    .first<{ status: string }>();
+    .first<{ status: string; extraction: string }>();
+  const error = s && (JSON.parse(s.extraction) as { error?: string }).error;
+  if (error) {
+    return c.html(
+      <Layout title="Fehler – DanceCalendar">
+        <h1>Auslesen fehlgeschlagen</h1>
+        <p>Der Flyer konnte nicht ausgelesen werden:</p>
+        <pre style="white-space: pre-wrap">{error}</pre>
+        <p>
+          <a href="/admin/upload">Nochmal hochladen</a>
+        </p>
+      </Layout>,
+    );
+  }
   if (s?.status === "discarded") {
     return c.html(
       <Layout title="Kein Flyer – DanceCalendar">
@@ -90,6 +103,17 @@ export async function readUpload(env: Env, job: AdminUpload) {
      VALUES (?, ?, ?, ?, ?, ?, ?, 'admin')`,
   )
     .bind(randomToken(), job.organizerId, job.flyerKey, job.receivedOn, JSON.stringify(extraction), found ? "pending" : "discarded", job.token)
+    .run();
+}
+
+// After the last try, the waiting page shows the error instead of waiting forever.
+export async function uploadFailed(env: Env, job: AdminUpload, err: unknown) {
+  await env.FLYERS.delete(job.flyerKey);
+  await env.DB.prepare(
+    `INSERT INTO submission (id, organizer_id, flyer_key, received_on, extraction, status, confirm_token, source)
+     VALUES (?, ?, ?, ?, ?, 'discarded', ?, 'admin')`,
+  )
+    .bind(randomToken(), job.organizerId, job.flyerKey, job.receivedOn, JSON.stringify({ error: String(err) }), job.token)
     .run();
 }
 

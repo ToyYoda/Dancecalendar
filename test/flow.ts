@@ -4,17 +4,17 @@ import { expect } from "vitest";
 import worker, { type Job } from "../src/index";
 
 // Runs one job through the queue consumer, as the queue would after the webhook or an Admin upload.
-export async function runJob(job: Job) {
-  const batch = createMessageBatch("dancecalendar-jobs", [{ id: crypto.randomUUID(), timestamp: new Date(), attempts: 1, body: job }]);
+export async function runJob(job: Job, attempts = 1) {
+  const batch = createMessageBatch("dancecalendar-jobs", [{ id: crypto.randomUUID(), timestamp: new Date(), attempts, body: job }]);
   const ctx = createExecutionContext();
   await worker.queue(batch, env, ctx);
-  const result = await getQueueResult(batch, ctx);
-  expect(result.retryMessages).toEqual([]);
+  return getQueueResult(batch, ctx);
 }
 
 // Runs one inbound WhatsApp webhook payload through the queue consumer.
 export async function deliver(payload: any) {
-  await runJob(payload.entry[0].changes[0].value.messages[0]);
+  const result = await runJob(payload.entry[0].changes[0].value.messages[0]);
+  expect(result.retryMessages).toEqual([]);
 }
 
 export function get(url: string, headers: HeadersInit = {}) {

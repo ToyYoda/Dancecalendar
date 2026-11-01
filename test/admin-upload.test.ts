@@ -38,6 +38,10 @@ describe("/admin", () => {
     expect((await get(base, ADMIN)).status).toBe(200);
   });
 
+  it("finds the upload page with a trailing slash too", async () => {
+    expect((await get(`${base}/`, ADMIN)).status).toBe(200);
+  });
+
   it("lists the Organizers to publish under", async () => {
     const html = await (await get(base, ADMIN)).text();
 
@@ -53,7 +57,7 @@ describe("an Admin Flyer upload", () => {
     const { job, waiting } = await upload("2");
 
     expect(await (await get(waiting, ADMIN)).text()).toContain("ausgelesen");
-    await runJob(job);
+    expect((await runJob(job)).retryMessages).toEqual([]);
     const ready = await get(waiting, ADMIN);
     expect(ready.status).toBe(303);
     const confirm = new URL(ready.headers.get("location")!, base).href;
@@ -79,5 +83,18 @@ describe("an Admin Flyer upload", () => {
     const res = await get(waiting, ADMIN);
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("keine Tanzveranstaltung");
+  });
+
+  it("retries a failed extraction, and shows the error once the last try fails", async () => {
+    fakeApis({ anthropicError: "image exceeds 5 MB maximum" });
+    const { job, waiting } = await upload("1");
+
+    expect((await runJob(job, 1)).retryMessages).toHaveLength(1);
+    expect(await (await get(waiting, ADMIN)).text()).toContain("ausgelesen");
+
+    expect((await runJob(job, 3)).retryMessages).toEqual([]);
+    const html = await (await get(waiting, ADMIN)).text();
+    expect(html).toContain("fehlgeschlagen");
+    expect(html).toContain("image exceeds 5 MB maximum");
   });
 });

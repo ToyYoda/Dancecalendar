@@ -5,7 +5,7 @@ import { vi } from "vitest";
 
 export type SentMessage = { to: string; text: string; buttons: { id: string; title: string }[] };
 
-export function fakeApis(options: { extraction?: object } = {}) {
+export function fakeApis(options: { extraction?: object; anthropicError?: string } = {}) {
   const sent: SentMessage[] = [];
   const anthropicCalls: any[] = [];
 
@@ -31,6 +31,9 @@ export function fakeApis(options: { extraction?: object } = {}) {
     }
     if (url.hostname === "api.anthropic.com") {
       anthropicCalls.push(await req.json());
+      if (options.anthropicError) {
+        return Response.json({ type: "error", error: { type: "invalid_request_error", message: options.anthropicError } }, { status: 400 });
+      }
       return Response.json({
         id: "msg_test",
         type: "message",

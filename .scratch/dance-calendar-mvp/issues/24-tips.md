@@ -15,6 +15,8 @@ See [Organizer confirmation flow](08-organizer-confirmation-flow.md), [Admin vie
 - **Duplicate with a Tip:** when an Organizer's Event is likely the same as a Tip Event, the bot asks "Ist das dasselbe?". On yes, the Tip Event is deleted automatically.
 - **Retention:** a Cron Trigger deletes Tip data within 30 days.
 
+Since [Organizer application](20-organizer-application.md), [Nein, ist ein Tipp] sets `contact.tip_at`, deletes the held Flyer and only thanks the sender (`answerOwnership` in `src/application.tsx`), and later Flyers from that number are only thanked. This ticket replaces both with the Tip flow.
+
 ## Done when
 
 - Tests are green and the slice is deployed.

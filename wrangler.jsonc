@@ -25,6 +25,7 @@
       "jurisdiction": "eu"
     }
   ],
+  "triggers": { "crons": ["17 * * * *"] },
   "queues": {
     "producers": [{ "binding": "JOBS", "queue": "dancecalendar-jobs" }],
     "consumers": [{ "queue": "dancecalendar-jobs", "max_batch_size": 1, "max_retries": 2 }]

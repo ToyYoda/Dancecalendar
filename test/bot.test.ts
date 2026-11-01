@@ -4,8 +4,6 @@ import { berlinDate, fakeApis, flyer } from "./fake-apis";
 import { deliver, feed } from "./flow";
 import { buttonReply, documentMessage, imageMessage, ORGANIZER_NUMBER, textMessage } from "./whatsapp-fixtures";
 
-const STRANGER = "4917600000009";
-
 beforeEach(async () => {
   await env.DB.batch(
     ["event", "submission", "venue", "admin_request", "contact", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
@@ -184,16 +182,6 @@ describe("a registered Organizer forwards a Flyer", () => {
 });
 
 describe("chat commands and unknown senders", () => {
-  it("tells an unregistered sender that posting is invitation-only for now, without reading the Flyer", async () => {
-    const api = fakeApis();
-
-    await deliver(imageMessage("media1", STRANGER));
-
-    expect(api.sent.every((m) => m.to === STRANGER)).toBe(true);
-    expect(api.sent.at(-1)!.text).toContain("eingeladene");
-    expect(api.anthropicCalls).toHaveLength(0);
-  });
-
   it("stops replying after STOP and starts again after START", async () => {
     const api = fakeApis();
 

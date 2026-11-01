@@ -19,7 +19,7 @@ Replace the interim pages with the real text, in German and English:
 - **Data deletion.**
 - **Terms of Use,** including the Flyer-rights grant and the partner-dance rule.
 
-All four are linked from the footer, the application form and the bot's first reply.
+All four are linked from the footer, the application form and the bot's first reply. The application form's Terms checkbox (`src/application.tsx`, since [Organizer application](20-organizer-application.md)) names the Terms of Use but doesn't link them yet.
 
 ## Done when
 

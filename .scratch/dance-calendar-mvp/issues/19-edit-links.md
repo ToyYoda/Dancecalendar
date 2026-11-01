@@ -1,7 +1,7 @@
 # Edit links: edit, cancel, duplicate warning
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 18
 Labels: wayfinder:task
 
@@ -22,6 +22,15 @@ See [Organizer confirmation flow](08-organizer-confirmation-flow.md) and the Fee
 ## Out of scope
 
 Series-wide edits (that's [Series and Courses](22-series-and-courses.md)) and duplicate handling with Tips (that's [Tips](24-tips.md)).
+
+## Answer
+
+Live since 2026-11-01 (92ebb7a). Both demos passed in production: an edit link from the bot's reply changed the time and cancelled the Event (the feed showed it, then "abgesagt"), and forwarding the same Flyer again warned "doppelt?" and still published.
+
+- `/e/<token>` edit page with the confirm page's card (now shared in `src/event-card.tsx`): all fields editable, same checks as publishing, Flyer shown. Cancelling keeps the Event in the feed marked "(abgesagt)" and can be taken back. A blocked Organizer's links answer 404.
+- Venues are still matched by name: a new name moves the Event, but an address-only change to a known Venue does nothing. Handed to "Blocking questions in chat".
+- Likely duplicates (`src/duplicates.ts`): same Venue, overlapping time, with a missing end counted as 2 h. Cancelled Events, Events from the same Flyer and unknown places don't count. The warning shows in the chat summary, on the confirm page and on the edit page, and never blocks.
+- Organizer web upload from the edit page goes through the same queue, waiting page and confirm page as the Admin upload (`src/upload.tsx`, job `flyer_upload`, `submission.source` = `web` via migration 0004), with no WhatsApp message.
 
 ## Comments
 

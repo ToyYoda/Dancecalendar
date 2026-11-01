@@ -2,7 +2,7 @@
 
 Type: task
 Blocked by: 20, 21
-Status: claimed
+Status: resolved
 Labels: wayfinder:task
 
 ## Scope
@@ -30,3 +30,14 @@ Since [Series and Courses](22-series-and-courses.md): publishing creates a Serie
 ## Out of scope
 
 The Admin-view list of everything else (that's [Admin tools](25-admin-tools-and-email.md)).
+
+## Answer
+
+Done 2026-11-01, live on workers.dev (commit 621b28a). Code: `src/tips.tsx`, `migrations/0008_tips.sql`, tests in `test/tips.test.ts`.
+
+- **Intake:** "Nein, ist ein Tipp" reads the held Flyer (read first, so a failed read is retried) and holds it as a `submission` with `source = 'tip'` and no Organizer. The migration rebuilds the table to allow that. The bot replies "Danke für den Tipp! 🙏 Der Admin schaut ihn sich an und trägt ihn ein." `contact.tip_at` is refreshed on every Tip, and a number with it set skips the ownership question. A picture with no dance Event gets the usual "keine Tanzveranstaltung" reply and nothing is held.
+- **Review:** `/admin/tips` lists waiting Tips, oldest first. `/admin/tips/<token>` shows the confirm-page cards (shared with `/c/` through `openCards`/`readCards`) plus a "Gezeigt als" field, pre-filled from `display_name_on_flyer` and required. **Freigeben** publishes with `is_tip = 1`, `shown_as` and `organizer_id` NULL. **Ablehnen** deletes the submission and the Flyer at once. `/c/<token>` refuses Tips. The tipper gets no news either way.
+- **Tip Series:** `series.organizer_id` is NULL and the new `series.shown_as` column holds the name. Occurrences generated for a Series without an Organizer are Tip Events. Once a Series is assigned to an Organizer (Admin tools), its new dates aren't.
+- **Duplicate with a Tip:** a new chat question, `tip`, comes just before `duplicate`: „<Event>“: Am <date> ist in „<Venue>“ schon „<title>“ (von der Community) eingetragen. Ist das dasselbe? [Ja, dasselbe] [Nein, beide]. Ja sets `replaces_tip` on the held Event, and publishing it (from the chat or the confirm page) deletes that Tip Event. The confirm page notes "Ersetzt den Community-Tipp …". The `duplicate` question leaves out Tip Events, so Nein doesn't trigger a second warning. Only the one matching date is deleted, never a whole Tip Series.
+- **Retention:** the hourly cron deletes Tips waiting unreviewed for more than 30 days, with their Flyer, and clears `tip_at` 30 days after a number's last Tip. Published Tip Events stay, since they hold no tipper data.
+- `.claude/launch.json` has a `worker-admin` config (port 8788, local-only Admin password) for trying `/admin` locally.

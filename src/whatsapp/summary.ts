@@ -42,13 +42,15 @@ export function blocker(e: ExtractedEvent, receivedOn: string): string | null {
 
 export const publishable = (e: ExtractedEvent, receivedOn: string) => blocker(e, receivedOn) === null;
 
-export function summary(events: ExtractedEvent[], receivedOn: string, firstName: string | null): string {
+// `duplicates` holds each Event's likely-duplicate warnings, by index.
+export function summary(events: ExtractedEvent[], receivedOn: string, firstName: string | null, duplicates: string[][] = []): string {
   const count = events.length === 1 ? "1 Event" : `${events.length} Events`;
   const hello = firstName ? `Danke, ${firstName}!` : "Danke!";
-  return [`${hello} Ich habe ${count} auf dem Flyer erkannt:`, ...events.map((e) => eventBlock(e, receivedOn))].join("\n\n");
+  const blocks = events.map((e, i) => eventBlock(e, receivedOn, duplicates[i] ?? []));
+  return [`${hello} Ich habe ${count} auf dem Flyer erkannt:`, ...blocks].join("\n\n");
 }
 
-function eventBlock(e: ExtractedEvent, receivedOn: string): string {
+function eventBlock(e: ExtractedEvent, receivedOn: string, duplicates: string[]): string {
   const lines = [`*${e.title || "(ohne Titel)"}*`];
   const when = [formatDate(e.start_date, receivedOn), e.start_time].filter(Boolean).join(" · ");
   lines.push(e.intro_class_time ? `${when} (Einsteigerkurs ${e.intro_class_time})` : when);
@@ -63,6 +65,7 @@ function eventBlock(e: ExtractedEvent, receivedOn: string): string {
     const uncertain = new Set([...e.uncertain_fields.map((f) => f.split(".")[0]), ...codeFlags(e, receivedOn)]);
     const names = [...new Set([...uncertain].map((f) => FIELD_NAMES[f]).filter(Boolean))];
     if (names.length) lines.push(`⚠️ bitte prüfen: ${names.join(", ")}`);
+    for (const d of duplicates) lines.push(`⚠️ ${d}`);
   }
   return lines.join("\n");
 }

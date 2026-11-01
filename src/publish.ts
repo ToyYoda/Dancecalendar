@@ -35,8 +35,7 @@ async function publishEvents(
 ): Promise<Published[]> {
   const published: Published[] = [];
   for (const e of events) {
-    const venueId = await venueFor(db, e);
-    const startsAt = `${e.start_date}T${e.start_time}`;
+    const c = await columns(db, e);
     const editToken = randomToken();
     await db
       .prepare(
@@ -45,28 +44,43 @@ async function publishEvents(
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
-        e.title,
-        e.type,
-        JSON.stringify(e.styles),
-        startsAt,
-        endsAt(e),
-        e.intro_class_time ? `${e.start_date}T${e.intro_class_time}` : null,
-        e.level || null,
+        c.title,
+        c.type,
+        c.styles,
+        c.starts_at,
+        c.ends_at,
+        c.intro_class_at,
+        c.level,
         e.description || null,
-        e.price_text || null,
-        venueId,
+        c.price,
+        c.venue_id,
         submission.organizer_id,
         submission.flyer_key,
         editToken,
       )
       .run();
-    published.push({ title: e.title, startsAt, editToken });
+    published.push({ title: e.title, startsAt: c.starts_at, editToken });
   }
   return published;
 }
 
+// The event columns an Organizer sets, from the confirm or edit page's fields; creates the Venue if it's new.
+export async function columns(db: D1Database, e: ExtractedEvent) {
+  return {
+    title: e.title,
+    type: e.type,
+    styles: JSON.stringify(e.styles),
+    starts_at: `${e.start_date}T${e.start_time}`,
+    ends_at: endsAt(e),
+    intro_class_at: e.intro_class_time ? `${e.start_date}T${e.intro_class_time}` : null,
+    level: e.level || null,
+    price: e.price_text || null,
+    venue_id: await venueFor(db, e),
+  };
+}
+
 // An end time before the start time without an end date runs past midnight.
-function endsAt(e: ExtractedEvent): string | null {
+export function endsAt(e: ExtractedEvent): string | null {
   if (!e.end_time) return e.end_date ? `${e.end_date}T23:59` : null;
   if (e.end_date) return `${e.end_date}T${e.end_time}`;
   if (e.end_time > e.start_time) return `${e.start_date}T${e.end_time}`;
@@ -78,18 +92,25 @@ function endsAt(e: ExtractedEvent): string | null {
 // Matched by name, ignoring case and spacing; otherwise created as printed (geocoding comes with ticket 21).
 // A Flyer that prints only an address gets a Venue named after that address.
 async function venueFor(db: D1Database, e: ExtractedEvent): Promise<number> {
-  const address = [e.venue_address, e.city].filter(Boolean).join(", ") || null;
-  const name = e.venue_name || address || "(Ort unbekannt)";
-  const key = normalize(name);
-  const { results } = await db.prepare("SELECT id, name FROM venue").all<{ id: number; name: string }>();
-  const known = results.find((v) => normalize(v.name) === key);
-  if (known) return known.id;
+  const known = await findVenue(db, e);
+  if (known) return known;
   const row = await db
     .prepare("INSERT INTO venue (name, address) VALUES (?, ?) RETURNING id")
-    .bind(name, address)
+    .bind(venueName(e), venueAddress(e))
     .first<{ id: number }>();
   return row!.id;
 }
+
+// The known Venue an Event's place names, or null for a new or unknown place.
+export async function findVenue(db: D1Database, e: ExtractedEvent): Promise<number | null> {
+  const key = normalize(venueName(e));
+  const { results } = await db.prepare("SELECT id, name FROM venue").all<{ id: number; name: string }>();
+  return results.find((v) => normalize(v.name) === key)?.id ?? null;
+}
+
+const venueAddress = (e: ExtractedEvent) => [e.venue_address, e.city].filter(Boolean).join(", ") || null;
+const venueName = (e: ExtractedEvent) => e.venue_name || venueAddress(e) || UNKNOWN_VENUE;
+export const UNKNOWN_VENUE = "(Ort unbekannt)";
 
 const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 

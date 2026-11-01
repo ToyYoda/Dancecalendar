@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { duplicatesOfExtracted } from "./duplicates";
+import { Card, CARD_CSS, fromForm, missing } from "./event-card";
 import { codeFlags } from "./extraction/checks";
 import type { ExtractedEvent, Extraction } from "./extraction/extract";
 import { Layout } from "./layout";
@@ -14,30 +16,12 @@ import { formatDate } from "./whatsapp/summary";
 type Submission = Held & {
   extraction: string;
   status: string;
-  source: "whatsapp" | "admin";
+  source: "whatsapp" | "admin" | "web";
   confirm_token: string;
   whatsapp_number: string;
   first_name: string | null;
   display_name: string;
 };
-
-const TEXT_FIELDS = [
-  "title",
-  "start_date",
-  "start_time",
-  "end_time",
-  "intro_class_time",
-  "end_date",
-  "venue_name",
-  "venue_address",
-  "city",
-  "price_text",
-  "level",
-] as const;
-type TextField = (typeof TEXT_FIELDS)[number];
-
-const TYPES = { party: "Party", workshop: "Workshop", festival: "Festival" } as const;
-const STYLES = { salsa: "Salsa", bachata: "Bachata", kizomba: "Kizomba", urban_kiz: "Urban Kiz", west_coast_swing: "West Coast Swing" };
 
 export const confirmPage = new Hono<{ Bindings: Env }>();
 
@@ -49,7 +33,7 @@ confirmPage.get("/:token", async (c) => {
   const events = (JSON.parse(s.extraction) as Extraction).events;
   // A past Event can't be fixed on the page, so it starts unticked.
   const include = events.map((e) => !(e.start_date && e.start_date < today));
-  return c.html(<ConfirmPage s={s} events={events} include={include} today={today} />);
+  return c.html(<ConfirmPage s={s} events={events} include={include} today={today} duplicates={await duplicates(c.env.DB, s, events)} />);
 });
 
 confirmPage.get("/:token/flyer", async (c) => {
@@ -71,7 +55,10 @@ confirmPage.post("/:token", async (c) => {
   const include = events.map((_, i) => ticked.has(String(i)));
   const today = berlinDate(new Date());
   if (blocked(events, include, today)) {
-    return c.html(<ConfirmPage s={s} events={events} include={include} today={today} />, 422);
+    return c.html(
+      <ConfirmPage s={s} events={events} include={include} today={today} duplicates={await duplicates(c.env.DB, s, events)} />,
+      422,
+    );
   }
 
   const ready = events.filter((_, i) => include[i]);
@@ -96,24 +83,8 @@ async function load(db: D1Database, token: string) {
     .first<Submission>();
 }
 
-function fromForm(form: FormData, i: number, original: ExtractedEvent): ExtractedEvent {
-  const e = { ...original };
-  for (const f of TEXT_FIELDS) e[f] = String(form.get(`${f}.${i}`) ?? "").trim();
-  const type = String(form.get(`type.${i}`));
-  if (type in TYPES) e.type = type as ExtractedEvent["type"];
-  e.styles = form.getAll(`styles.${i}`).map(String).filter((s) => s in STYLES);
-  return e;
-}
-
-// Why a field keeps the Event from being published, by field.
-function missing(e: ExtractedEvent, today: string): Partial<Record<TextField, string>> {
-  const out: Partial<Record<TextField, string>> = {};
-  if (!e.title) out.title = "fehlt – ohne Titel kein Eintrag";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(e.start_date)) out.start_date = "fehlt – ohne Datum kein Eintrag";
-  else if (e.start_date < today) out.start_date = "liegt in der Vergangenheit";
-  if (!/^\d{2}:\d{2}$/.test(e.start_time)) out.start_time = "fehlt – ohne Uhrzeit kein Eintrag";
-  return out;
-}
+const duplicates = (db: D1Database, s: Submission, events: ExtractedEvent[]) =>
+  Promise.all(events.map((e) => duplicatesOfExtracted(db, e, s.flyer_key)));
 
 const blocked = (events: ExtractedEvent[], include: boolean[], today: string) =>
   !include.some(Boolean) || events.some((e, i) => include[i] && Object.keys(missing(e, today)).length > 0);
@@ -137,21 +108,21 @@ function addDays(iso: string, days: number): string {
 
 const publishLabel = (n: number) => (n === 1 ? "1 Event veröffentlichen" : `${n} Events veröffentlichen`);
 
-function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: boolean[]; today: string }) {
+function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: boolean[]; today: string; duplicates: string[][] }) {
   const { s, events, include, today } = props;
   const isBlocked = blocked(events, include, today);
   return (
-    <Layout title="Events prüfen – DanceCalendar" head={<style>{CSS}</style>}>
+    <Layout title="Events prüfen – DanceCalendar" head={<style>{CARD_CSS}</style>}>
       <h1>Events prüfen</h1>
       <img class="flyer" src={`/c/${s.confirm_token}/flyer`} alt="Flyer" />
       <p>
-        {s.source === "whatsapp" && s.first_name ? `Hallo ${s.first_name}! ` : ""}
+        {s.source !== "admin" && s.first_name ? `Hallo ${s.first_name}! ` : ""}
         Das habe ich auf dem Flyer erkannt. <span class="unc-key">Gelb</span> = bitte prüfen, <span class="miss-key">rot</span> = fehlt.
         Wird veröffentlicht als <strong>{s.display_name}</strong>.
       </p>
       <form id="confirm" method="post" data-today={today}>
         {events.map((e, i) => (
-          <Card i={i} e={e} include={include[i]} red={missing(e, today)} yellow={uncertain(e, s.received_on)} />
+          <Card i={i} e={e} include={include[i]} red={missing(e, today)} yellow={uncertain(e, s.received_on)} warnings={props.duplicates[i]} />
         ))}
         <button name="publish" type="submit" class="publish" disabled={isBlocked}>
           {publishLabel(include.filter(Boolean).length)}
@@ -162,75 +133,6 @@ function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: 
       </form>
       <script dangerouslySetInnerHTML={{ __html: SCRIPT }} />
     </Layout>
-  );
-}
-
-function Card(props: { i: number; e: ExtractedEvent; include: boolean; red: Partial<Record<TextField, string>>; yellow: Map<string, string> }) {
-  const { i, e, red, yellow } = props;
-  const field = (name: TextField, label: string, type = "text", required = false) => {
-    const why = red[name] ?? yellow.get(name);
-    return (
-      <div>
-        <label for={`${name}.${i}`}>{label}</label>
-        <input
-          id={`${name}.${i}`}
-          name={`${name}.${i}`}
-          type={type}
-          value={e[name]}
-          class={red[name] ? "miss" : yellow.has(name) ? "unc" : undefined}
-          data-required={required ? "" : undefined}
-        />
-        {why && <div class={red[name] ? "why r" : "why"}>{red[name] ? why : `⚠️ ${why}`}</div>}
-      </div>
-    );
-  };
-  return (
-    <fieldset class={props.include ? "card" : "card dropped"}>
-      <legend>
-        <span>{e.title || "(ohne Titel)"}</span>
-        <label>
-          <input type="checkbox" name="include" value={String(i)} checked={props.include} /> eintragen
-        </label>
-      </legend>
-      {field("title", "Titel", "text", true)}
-      <div class="row">
-        <div>
-          <label for={`type.${i}`}>Art</label>
-          <select id={`type.${i}`} name={`type.${i}`} class={yellow.has("type") ? "unc" : undefined}>
-            {Object.entries(TYPES).map(([value, label]) => (
-              <option value={value} selected={e.type === value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        {field("start_date", "Datum", "date", true)}
-      </div>
-      <div class="row">
-        {field("start_time", "Beginn", "time", true)}
-        {field("end_time", "Ende", "time")}
-      </div>
-      <div class="row">
-        {field("intro_class_time", "Einsteigerkurs", "time")}
-        {field("end_date", "Bis (mehrtägig)", "date")}
-      </div>
-      {e.series.is_series && <p class="series">🔁 {e.series.rule_text} – vorerst nur dieser Termin</p>}
-      {field("venue_name", "Ort")}
-      {field("venue_address", "Adresse")}
-      {field("city", "Stadt")}
-      <div class={yellow.has("styles") ? "styles unc" : "styles"}>
-        <span>Tanzstile</span>
-        {Object.entries(STYLES).map(([value, label]) => (
-          <label>
-            <input type="checkbox" name={`styles.${i}`} value={value} checked={e.styles.includes(value)} /> {label}
-          </label>
-        ))}
-      </div>
-      <div class="row">
-        {field("price_text", "Preis")}
-        {field("level", "Level")}
-      </div>
-    </fieldset>
   );
 }
 
@@ -269,27 +171,6 @@ function AlreadyDone() {
     </Layout>
   );
 }
-
-const CSS = `
-  .flyer { display: block; max-width: 100%; max-height: 45vh; margin: 0 auto 1rem; border-radius: 8px; }
-  .card { border: 1px solid #e4dfd8; border-radius: 10px; padding: .75rem; margin: 1rem 0; }
-  .card.dropped { opacity: .45; }
-  .card legend { display: flex; gap: 1rem; justify-content: space-between; width: 100%; font-weight: bold; padding: 0 .25rem; box-sizing: border-box; }
-  .card legend label { font-weight: normal; margin: 0; color: inherit; font-size: 1rem; }
-  .card label, .styles > span { display: block; font-size: .8rem; color: #6f6861; margin-top: .5rem; }
-  .card input:not([type=checkbox]), .card select { width: 100%; box-sizing: border-box; border: 1px solid #e4dfd8; border-radius: 6px; padding: .4rem .5rem; font: inherit; background: #fff; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-  .styles label { display: inline-block; margin-right: .75rem; color: inherit; font-size: .9rem; }
-  .styles.unc { background: #fff8e1; border-radius: 6px; padding: 0 .25rem .25rem; }
-  .card :is(input, select).unc, .unc-key { background: #fff8e1; border-color: #e0b100; }
-  .card :is(input, select).miss, .miss-key { background: #fde2e2; border-color: #d33; }
-  .why { font-size: .8rem; color: #8a6d00; }
-  .why.r { color: #a30000; }
-  .series { font-size: .9rem; margin: .5rem 0 0; }
-  .publish { width: 100%; padding: .75rem; font: inherit; font-weight: bold; border: 0; border-radius: 8px; background: #c2185b; color: #fff; }
-  .publish:disabled { background: #ccc; color: #666; }
-  .hint { font-size: .85rem; color: #6f6861; }
-`;
 
 // Keeps the Publish button in step with the ticks and the required fields; the server checks again.
 const SCRIPT = `(() => {

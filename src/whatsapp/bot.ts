@@ -1,3 +1,4 @@
+import { duplicatesOfExtracted } from "../duplicates";
 import { extractFlyer, type Extraction } from "../extraction/extract";
 import { publishable, summary } from "./summary";
 import { downloadMedia, sendButtons, sendText } from "./graph";
@@ -82,7 +83,8 @@ async function receiveFlyer(env: Env, message: InboundMessage, organizer: Organi
     .bind(id, organizer.id, flyerKey, receivedOn, JSON.stringify(extraction))
     .run();
 
-  const text = summary(extraction.events, receivedOn, organizer.first_name);
+  const duplicates = await Promise.all(extraction.events.map((e) => duplicatesOfExtracted(env.DB, e, flyerKey)));
+  const text = summary(extraction.events, receivedOn, organizer.first_name, duplicates);
   // Without a publishable Event there's nothing to publish as is, but a missing time or date can be fixed on the confirm page.
   const buttons = [
     ...(extraction.events.some((e) => publishable(e, receivedOn)) ? [{ id: `publish:${id}`, title: "Veröffentlichen" }] : []),

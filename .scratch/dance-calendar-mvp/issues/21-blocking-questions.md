@@ -16,7 +16,7 @@ Before the summary, the bot asks only the blocking questions, one message each w
 4. **Unknown Venue:** geocode it server-side once via Photon, with Nominatim as fallback. The Organizer confirms the match or types an address. The Venue is stored with its coordinates and reused afterwards.
 5. **Likely duplicate** with another Organizer's Event: acknowledge the warning.
 
-The web confirm page shows the same Venue match and lets the Organizer change it.
+The web confirm page shows the same Venue match and lets the Organizer change it. So does the edit page: since [Edit links](19-edit-links.md) it matches Venues by name only, so changing just the address of a known Venue is ignored. The duplicate warning for question 5 already exists (`duplicatesOfExtracted` in `src/duplicates.ts`); this ticket turns it into a button.
 
 ## Done when
 

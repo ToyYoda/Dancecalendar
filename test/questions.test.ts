@@ -122,7 +122,10 @@ describe("a new Venue", () => {
 
   it("is asked about once for all Events of the Flyer there", async () => {
     const api = fakeApis({
-      extraction: flyer([{ venue_name: "Musa" }, { title: "Bachata Sunday", venue_name: "musa", start_date: berlinDate(4) }]),
+      extraction: flyer([
+        { venue_name: "Musa", venue_address: "" },
+        { title: "Bachata Sunday", venue_name: "musa", venue_address: "", start_date: berlinDate(4) },
+      ]),
       places: { musa: MUSA },
     });
     await deliver(imageMessage("media1"));
@@ -143,7 +146,8 @@ describe("a new Venue", () => {
 
     await reply("Weender Landstr. 5, Göttingen");
 
-    expect(last(api).text).toContain("📍 EXIL, Weender Landstraße 5, 37073 Göttingen");
+    // Looked up by the address alone, so the place shows as just that address.
+    expect(last(api).text).toContain("📍 Weender Landstraße 5, 37073 Göttingen");
     await tap(api, "Ja, genau");
     await publish(api);
     const venue = await env.DB.prepare("SELECT lat, lng FROM venue WHERE name = 'Exil'").first();
@@ -169,6 +173,19 @@ describe("a new Venue", () => {
     await reply("Obere Königsstr. 1, Kassel");
 
     expect(last(api).text).toContain("Ist es das hier?");
+    await tap(api, "Ja, genau");
+    await publish(api);
+    const venue = await env.DB.prepare("SELECT lat FROM venue WHERE name = 'Tanzschule Pelzer'").first();
+    expect(venue).toEqual({ lat: 51.55 });
+  });
+
+  it("is looked up by its printed address when the Flyer has one", async () => {
+    const api = fakeApis({ extraction: flyer([{ venue_name: "Salsa Bar", venue_address: "Friedrich-Ebert-Str. 1", city: "Kassel" }]), places: { friedrich: MUSA } });
+
+    await deliver(imageMessage("media1"));
+
+    expect(api.geocoded).toEqual(["photon: Friedrich-Ebert-Str. 1, Kassel"]);
+    expect(last(api).text).toContain("„Salsa Bar“ kenne ich noch nicht. Ist es das hier?");
   });
 
   it("falls back to Nominatim when Photon fails", async () => {
@@ -181,7 +198,7 @@ describe("a new Venue", () => {
   });
 
   it("comes after the missing start time", async () => {
-    const api = fakeApis({ extraction: flyer([{ venue_name: "Musa", start_time: "" }]), places: { musa: MUSA } });
+    const api = fakeApis({ extraction: flyer([{ venue_name: "Musa", venue_address: "", start_time: "" }]), places: { musa: MUSA } });
     await deliver(imageMessage("media1"));
     expect(last(api).text).toContain("Anfangszeit");
 
@@ -192,7 +209,7 @@ describe("a new Venue", () => {
   });
 
   it("shows its match on the confirm page, and publishing from there stores the coordinates", async () => {
-    const api = fakeApis({ extraction: flyer([{ venue_name: "Musa", start_date: "" }]), places: { musa: MUSA, exil: EXIL } });
+    const api = fakeApis({ extraction: flyer([{ venue_name: "Musa", venue_address: "", start_date: "" }]), places: { musa: MUSA, weender: EXIL } });
     await deliver(imageMessage("media1"));
     await tap(api, "Ja, genau");
     await tap(api, "Ändern ✏️");
@@ -202,6 +219,7 @@ describe("a new Venue", () => {
     const fields = formFrom(page);
     fields.set("start_date.0", berlinDate(2));
     fields.set("venue_name.0", "Exil");
+    fields.set("venue_address.0", "Weender Landstr. 5");
 
     await post(link, fields.toString(), { "content-type": "application/x-www-form-urlencoded" });
 

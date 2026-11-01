@@ -173,7 +173,9 @@ async function nextQuestion(env: Env, s: Held, events: ExtractedEvent[]): Promis
 // What the geocoder finds for an Event's venue fields, asked once per wording and kept on the Event.
 export async function guessVenue(env: Env, e: ExtractedEvent): Promise<Place | null> {
   const query = venueQuery(e);
-  if (e.venue_guess?.query !== query) e.venue_guess = { query, place: await geocode(env, query) };
+  if (e.venue_guess?.query !== query) {
+    e.venue_guess = { query, place: await geocode(env, { name: e.venue_name, address: e.venue_address, city: e.city }) };
+  }
   return e.venue_guess.place;
 }
 

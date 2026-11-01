@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
 // Plays Meta's Graph API, the Anthropic API and the geocoders (Photon, Nominatim) at the fetch boundary.
-// `sent` collects every WhatsApp message the bot sends, in order. `places` maps a word of a geocoder
+// `sent` collects every WhatsApp message the bot sends, in order. `places` maps the start of a geocoder
 // query to what Photon finds for it; anything else isn't found. `photonDown` makes Photon fail.
 
 export type SentMessage = { to: string; text: string; buttons: { id: string; title: string }[] };
@@ -12,7 +12,8 @@ export function fakeApis(options: { extraction?: object; anthropicError?: string
   const sent: SentMessage[] = [];
   const anthropicCalls: any[] = [];
   const geocoded: string[] = [];
-  const find = (q: string) => Object.entries(options.places ?? {}).find(([word]) => q.toLowerCase().includes(word.toLowerCase()))?.[1];
+  // Like the real Photon, an unknown name in front of a findable address finds nothing.
+  const find = (q: string) => Object.entries(options.places ?? {}).find(([word]) => q.toLowerCase().startsWith(word.toLowerCase()))?.[1];
 
   const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const req = new Request(input as RequestInfo, init);

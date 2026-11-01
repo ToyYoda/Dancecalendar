@@ -7,9 +7,15 @@ export type Place = { label: string; address: string; lat: number; lng: number }
 // Kassel/Göttingen, for Photon's location bias.
 const FOCUS = { lat: 51.4, lon: 9.7 };
 
-export async function geocode(env: Env, query: string): Promise<Place | null> {
+// A Venue is looked up by its address when it has one: an unknown name in front of a findable
+// address makes Photon find nothing or the wrong place. The name is only asked for without an address,
+// and an address lookup shows just the address (the place's own name there is often someone else).
+export async function geocode(env: Env, venue: { name: string; address: string; city: string }): Promise<Place | null> {
+  const byAddress = Boolean(venue.address);
+  const query = [byAddress ? venue.address : venue.name, venue.city].filter(Boolean).join(", ");
   if (!query.trim()) return null;
-  return (await photon(env, query).catch(failed("photon"))) ?? (await nominatim(env, query).catch(failed("nominatim")));
+  const place = (await photon(env, query).catch(failed("photon"))) ?? (await nominatim(env, query).catch(failed("nominatim")));
+  return place && byAddress ? { ...place, label: place.address } : place;
 }
 
 const failed = (service: string) => (err: unknown) => {

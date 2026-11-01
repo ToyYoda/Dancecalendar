@@ -52,15 +52,17 @@ function endsAt(e: ExtractedEvent): string | null {
 }
 
 // Matched by name, ignoring case and spacing; otherwise created as printed (geocoding comes with ticket 21).
+// A Flyer that prints only an address gets a Venue named after that address.
 async function venueFor(db: D1Database, e: ExtractedEvent): Promise<number> {
-  const key = normalize(e.venue_name);
+  const address = [e.venue_address, e.city].filter(Boolean).join(", ") || null;
+  const name = e.venue_name || address || "(Ort unbekannt)";
+  const key = normalize(name);
   const { results } = await db.prepare("SELECT id, name FROM venue").all<{ id: number; name: string }>();
   const known = results.find((v) => normalize(v.name) === key);
   if (known) return known.id;
-  const address = [e.venue_address, e.city].filter(Boolean).join(", ") || null;
   const row = await db
     .prepare("INSERT INTO venue (name, address) VALUES (?, ?) RETURNING id")
-    .bind(e.venue_name || "(Ort unbekannt)", address)
+    .bind(name, address)
     .first<{ id: number }>();
   return row!.id;
 }

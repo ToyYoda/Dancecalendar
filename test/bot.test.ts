@@ -99,6 +99,17 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(results).toEqual([{ venue_id: 7 }]);
   });
 
+  it("names the Venue after its address when the Flyer prints only an address", async () => {
+    const api = fakeApis({ extraction: flyer([{ venue_name: "", venue_address: "Wilhelmshöher Allee 254 - Deck 4", city: "" }]) });
+    await deliver(imageMessage("media1"));
+
+    await deliver(buttonReply(api.sent.at(-1)!.buttons[0].id));
+
+    const html = await feed();
+    expect(html).toContain("Wilhelmshöher Allee 254 - Deck 4");
+    expect(html).not.toContain("Ort unbekannt");
+  });
+
   it("leaves out an Event without a start time, says so, and publishes the rest", async () => {
     const api = fakeApis({
       extraction: flyer([{}, { title: "Weihnachtsfeier", start_date: berlinDate(4), start_time: "" }]),

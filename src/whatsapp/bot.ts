@@ -12,7 +12,8 @@ import type { InboundMessage } from "./types";
 
 export type Organizer = { id: number; first_name: string | null };
 
-export async function handleMessage(env: Env, message: InboundMessage) {
+// `attempt` is the queue's delivery count: one-off replies go out on the first attempt only, so a retry doesn't repeat them.
+export async function handleMessage(env: Env, message: InboundMessage, attempt = 1) {
   const from = message.from;
   const command = message.type === "text" ? message.text!.body.trim().toUpperCase() : "";
   const contact = await env.DB.prepare("SELECT greeted_at, opted_out_at, tip_at FROM contact WHERE whatsapp_number = ?")
@@ -53,14 +54,14 @@ export async function handleMessage(env: Env, message: InboundMessage) {
 
   // "Ja, meine" / "Nein, ist ein Tipp" may come back after the sender became an Organizer (a retry).
   const buttonId = message.interactive?.button_reply?.id ?? "";
-  if (/^(mine|tip):/.test(buttonId)) return answerOwnership(env, from, buttonId);
+  if (/^(mine|tip):/.test(buttonId)) return answerOwnership(env, from, buttonId, attempt);
   if (!organizer) {
     if (message.type !== "image") return sendText(env, from, "Schick mir einfach einen Flyer als Bild, dann trage ich die Veranstaltung ein.");
-    if (contact?.tip_at) return receiveTip(env, message);
+    if (contact?.tip_at) return receiveTip(env, message, attempt);
     return askOwnership(env, message);
   }
 
-  if (message.type === "image") return receiveFlyer(env, message, organizer);
+  if (message.type === "image") return receiveFlyer(env, message, organizer, attempt);
   if (buttonId.startsWith("q|")) return answerButton(env, from, organizer.id, buttonId);
   if (buttonId) return pressButton(env, from, organizer, buttonId);
   if (message.type === "text" && (await answerTyped(env, from, organizer.id, message.text!.body))) return;
@@ -77,14 +78,21 @@ function greeting(env: Env): string {
   );
 }
 
-async function receiveFlyer(env: Env, message: InboundMessage, organizer: Organizer) {
+// Reading a Flyer takes a few seconds, so the sender hears at once that it arrived.
+export async function acknowledgeFlyer(env: Env, to: string, attempt: number) {
+  if (attempt === 1) await sendText(env, to, "Danke! Ich lese deinen Flyer – in ein paar Sekunden melde ich mich.");
+}
+
+async function receiveFlyer(env: Env, message: InboundMessage, organizer: Organizer, attempt: number) {
+  await acknowledgeFlyer(env, message.from, attempt);
   const held = await storeFlyer(env, message);
   const extraction = await extractFlyer(env.ANTHROPIC_API_KEY, held.bytes, held.mimeType, held.receivedOn);
   return offerFlyer(env, message.from, organizer, held, extraction);
 }
 
 // A number that answered "Nein, ist ein Tipp" before: its Flyers are Tips without asking.
-async function receiveTip(env: Env, message: InboundMessage) {
+async function receiveTip(env: Env, message: InboundMessage, attempt: number) {
+  await acknowledgeFlyer(env, message.from, attempt);
   const held = await storeFlyer(env, message);
   const extraction = await extractFlyer(env.ANTHROPIC_API_KEY, held.bytes, held.mimeType, held.receivedOn);
   return holdTip(env, message.from, held, extraction);

@@ -4,7 +4,7 @@ import { Layout } from "./layout";
 import { randomToken } from "./publish";
 import { holdTip } from "./tips";
 import { sendButtons, sendText } from "./whatsapp/graph";
-import { offerFlyer, storeFlyer, type Organizer } from "./whatsapp/bot";
+import { acknowledgeFlyer, offerFlyer, storeFlyer, type Organizer } from "./whatsapp/bot";
 import type { InboundMessage } from "./whatsapp/types";
 
 // An unregistered number sends a Flyer: the bot asks whether it's their own Event. "Ja, meine" holds
@@ -39,7 +39,7 @@ export async function askOwnership(env: Env, message: InboundMessage) {
 }
 
 // Safe to run twice: a retried "Ja" sends no second link and reads the Flyer only once; a retried "Nein" holds one Tip.
-export async function answerOwnership(env: Env, from: string, buttonId: string) {
+export async function answerOwnership(env: Env, from: string, buttonId: string, attempt = 1) {
   const [action, id] = buttonId.split(":");
   const app = await env.DB.prepare(`SELECT * FROM application WHERE id = ? AND whatsapp_number = ? AND ${VALID}`)
     .bind(id, from)
@@ -47,6 +47,7 @@ export async function answerOwnership(env: Env, from: string, buttonId: string) 
   if (!app) return sendText(env, from, "Dieser Flyer ist schon erledigt. Schick ihn einfach nochmal.");
 
   if (action === "tip") {
+    await acknowledgeFlyer(env, from, attempt);
     // Read first, so a failed read is retried with the application still there.
     const extraction = await readHeld(env, app);
     if (!extraction) return;

@@ -166,29 +166,31 @@ The AI provider's terms usually also require disclosing AI use and forbid sendin
 
 ## Pre-launch checklist (MVP must have)
 
+Ticked items covered by [Legal pages](../issues/27-legal-pages.md) and the slices before it; the rest waits for Deploy.
+
 **Website pages**
-- [ ] **Impressum** page, linked from every page footer:
-  - [ ] full name
-  - [ ] a servable postal address (no PO box)
-  - [ ] an email address
-  - [ ] "Verantwortlich nach § 18 Abs. 2 MStV: <name, address>"
-- [ ] **Datenschutzerklärung** (privacy policy) in German, with an English version, linked from every page and from the bot's first reply. It covers:
-  - [ ] controller
-  - [ ] every processing activity with purpose, legal basis, and retention (table in § 2.2)
-  - [ ] processors (hosting, AI, WhatsApp/Meta, email)
-  - [ ] third-country transfers and safeguards
-  - [ ] Art. 15–21 rights, with the Art. 21 objection highlighted
-  - [ ] the complaint right to the HBDI
-  - [ ] Art. 14 information for people named on Flyers
-- [ ] **Terms of Use for Organizers** (shown and accepted on apply/invite):
-  - [ ] rights warranty for Flyers and depicted people
-  - [ ] simple licence to publish
-  - [ ] removal policy
-  - [ ] the Admin may edit or remove anything
-- [ ] "Report / remove this Event" contact on each Event or in the footer.
+- [x] **Impressum** page, linked from every page footer:
+  - [x] full name
+  - [x] a servable postal address (no PO box)
+  - [x] an email address
+  - [x] "Verantwortlich nach § 18 Abs. 2 MStV: <name, address>"
+- [x] **Datenschutzerklärung** (privacy policy) in German, with an English version, linked from every page and from the bot's first reply. It covers:
+  - [x] controller
+  - [x] every processing activity with purpose, legal basis, and retention (table in § 2.2)
+  - [x] processors (hosting, AI, WhatsApp/Meta, email)
+  - [x] third-country transfers and safeguards
+  - [x] Art. 15–21 rights, with the Art. 21 objection highlighted
+  - [x] the complaint right to the HBDI
+  - [x] Art. 14 information for people named on Flyers
+- [x] **Terms of Use for Organizers** (shown and accepted on apply/invite):
+  - [x] rights warranty for Flyers and depicted people
+  - [x] simple licence to publish
+  - [x] removal policy
+  - [x] the Admin may edit or remove anything
+- [x] "Report / remove this Event" contact on each Event or in the footer.
 
 **Website technology**
-- [ ] No analytics, no tracking cookies, no third-party embeds, so no cookie banner (§ 25 TDDDG).
+- [x] No analytics, no tracking cookies, no third-party embeds, so no cookie banner (§ 25 TDDDG).
 - [ ] Fonts self-hosted. Maps self-hosted, proxied, or click-to-load.
 - [ ] HTTPS everywhere. Server logs auto-deleted after ≤ 14 days.
 - [ ] Phone numbers and tipper identities never appear on the public site.
@@ -212,10 +214,10 @@ The AI provider's terms usually also require disclosing AI use and forbid sendin
 **WhatsApp bot**
 - [ ] Single-purpose: Flyer → Events → confirm. Anything else gets a fixed help text, with no open-ended AI chat (AI-provider clause).
 - [ ] First reply includes:
-  - [ ] "automated assistant, uses AI" (AI Act Art. 50)
-  - [ ] the privacy-policy link
-  - [ ] how to reach the Admin (human escalation)
-  - [ ] "send STOP to opt out"
+  - [x] "automated assistant, uses AI" (AI Act Art. 50)
+  - [x] the privacy-policy link
+  - [x] how to reach the Admin (human escalation)
+  - [x] "send STOP to opt out"
 - [ ] Free-form replies only inside the 24 h window. Later notices (e.g. "application approved") use an approved template or another channel.
 - [ ] No content from one user's chat is shown to another user. Opt-outs are honoured and stored.
 - [ ] The WhatsApp display name is "DanceCalendar …", not an Organizer's brand.

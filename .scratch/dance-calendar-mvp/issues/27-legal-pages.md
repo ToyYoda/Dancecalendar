@@ -3,6 +3,7 @@
 Type: task
 Blocked by: 16
 Labels: wayfinder:task
+Status: resolved
 
 ## Scope
 
@@ -41,3 +42,19 @@ All four are linked from the footer, the application form and the bot's first re
 ## Out of scope
 
 Accepting the DPAs and the CJEU re-check (Deploy).
+
+## Answer
+
+Done 2026-11-01 (commit 6dad434).
+
+- **Pages** (`src/legal-pages.tsx`): `/impressum`, `/datenschutz`, `/nutzungsbedingungen`, `/datenloeschung`, each in English with `?lang=en` (German is binding) and a language toggle.
+- **Address:** the Admin chose the home address in Kassel. Name, address and contact email are Worker secrets `OPERATOR_NAME`, `OPERATOR_ADDRESS`, `CONTACT_EMAIL` (set with `wrangler secret put`, also in the git-ignored `.dev.vars`), so they never land in the public repo.
+- **Footer** on every page: all four pages, "Event melden" (`/impressum#melden`, the report/removal contact) and "Ortsdaten © OpenStreetMap-Mitwirkende (ODbL)".
+- **Application form:** the Terms checkbox links the Terms of Use and the privacy policy (new tab, so the form survives) and adds the rights warranty.
+- **Bot greeting:** links the privacy policy and the Terms ("Regeln"). Not all four: four long URLs in a WhatsApp greeting are noise, and both pages link the other two in their footer.
+- **Privacy policy** names Cloudflare, Anthropic, WhatsApp Ireland (processor and independent controller), Photon and Nominatim, the retention periods from `retention.ts`/`tips.tsx`/`application.tsx`, the 8-week backup rotation, the highlighted Art. 21 objection and the HBDI. To keep it true, "Admin" requests are now deleted after 90 days by the daily retention cron.
+- Checklist items these pages cover are ticked in [research/legal-requirements.md](../research/legal-requirements.md).
+
+Still for the Admin (moved to Deploy on the map): review the final text (not legal advice); Meta Live mode (app icon, privacy and data-deletion URLs, EU data-protection contact, switch to Live) before the first other Organizer.
+
+Found on the way: "Admin" requests are stored but shown nowhere, so nobody is told; see [Admin requests reach the Admin](30-admin-requests-reach-the-admin.md).

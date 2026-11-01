@@ -19,7 +19,7 @@ export function EditPage(props: { event: NonNullable<Awaited<ReturnType<typeof l
     <Layout title={`${e.title} – DanceCalendar`}>
       <h1>{e.title}</h1>
       <p>
-        {formatDate(e.starts_at.slice(0, 10))} · {e.starts_at.slice(11)} · {e.venue}
+        {formatDate(e.starts_at.slice(0, 10), new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Berlin" }))} · {e.starts_at.slice(11)} · {e.venue}
       </p>
       <p>Bearbeiten und Absagen sind hier bald möglich.</p>
     </Layout>

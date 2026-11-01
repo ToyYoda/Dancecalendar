@@ -113,6 +113,33 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(html).not.toContain("Weihnachtsfeier");
   });
 
+  it("shows the year when an Event is not in the year the Flyer arrived", async () => {
+    const nextYear = Number(berlinDate(0).slice(0, 4)) + 1;
+    const api = fakeApis({ extraction: flyer([{ start_date: `${nextYear}-01-15` }]) });
+
+    await deliver(imageMessage("media1"));
+
+    expect(api.sent.at(-1)!.text).toContain(`15.01.${nextYear}`);
+  });
+
+  it("won't publish an Event dated before the Flyer arrived", async () => {
+    const api = fakeApis({ extraction: flyer([{ start_date: berlinDate(-3) }]) });
+
+    await deliver(imageMessage("media1"));
+
+    expect(api.sent.at(-1)!.text).toContain("liegt in der Vergangenheit");
+    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Verwerfen"]);
+  });
+
+  it("won't publish a guessed date almost a year away, which suggests last year's Flyer", async () => {
+    const api = fakeApis({ extraction: flyer([{ start_date: berlinDate(300), uncertain_fields: ["start_date"] }]) });
+
+    await deliver(imageMessage("media1"));
+
+    expect(api.sent.at(-1)!.text).toContain("vom letzten Jahr");
+    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Verwerfen"]);
+  });
+
   it("offers only Verwerfen when no Event can be published", async () => {
     const api = fakeApis({ extraction: flyer([{ start_time: "" }]) });
 

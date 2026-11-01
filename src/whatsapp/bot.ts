@@ -83,7 +83,7 @@ async function receiveFlyer(env: Env, message: InboundMessage, organizer: Organi
     .run();
 
   const text = summary(extraction.events, receivedOn, organizer.first_name);
-  const buttons = extraction.events.some(publishable)
+  const buttons = extraction.events.some((e) => publishable(e, receivedOn))
     ? [
         { id: `publish:${id}`, title: "Veröffentlichen" },
         { id: `edit:${id}`, title: "Ändern ✏️" },
@@ -96,10 +96,10 @@ async function receiveFlyer(env: Env, message: InboundMessage, organizer: Organi
 async function pressButton(env: Env, from: string, organizer: Organizer, buttonId: string) {
   const [action, id] = buttonId.split(":");
   const submission = await env.DB.prepare(
-    "SELECT id, organizer_id, flyer_key, extraction FROM submission WHERE id = ? AND organizer_id = ? AND status = 'pending'",
+    "SELECT id, organizer_id, flyer_key, received_on, extraction FROM submission WHERE id = ? AND organizer_id = ? AND status = 'pending'",
   )
     .bind(id, organizer.id)
-    .first<{ id: string; organizer_id: number; flyer_key: string; extraction: string }>();
+    .first<{ id: string; organizer_id: number; flyer_key: string; received_on: string; extraction: string }>();
   if (!submission) return sendText(env, from, "Dieser Flyer ist schon erledigt.");
 
   if (action === "discard") {
@@ -112,13 +112,13 @@ async function pressButton(env: Env, from: string, organizer: Organizer, buttonI
   }
   if (action === "publish") {
     const extraction = JSON.parse(submission.extraction) as Extraction;
-    const ready = extraction.events.filter(publishable);
-    const skipped = extraction.events.filter((e) => !publishable(e));
+    const ready = extraction.events.filter((e) => publishable(e, submission.received_on));
+    const skipped = extraction.events.filter((e) => !publishable(e, submission.received_on));
     const published = await publishEvents(env.DB, submission, ready);
     await env.DB.prepare("UPDATE submission SET status = 'published' WHERE id = ?").bind(id).run();
 
-    const lines = published.map((p) => `*${p.title}* – ${formatDate(p.startsAt.slice(0, 10))}\nBearbeiten: ${env.PUBLIC_URL}/e/${p.editToken}`);
-    if (skipped.length) lines.push(`Nicht eingetragen (Datum oder Uhrzeit fehlt): ${skipped.map((e) => e.title).join(", ")}`);
+    const lines = published.map((p) => `*${p.title}* – ${formatDate(p.startsAt.slice(0, 10), submission.received_on)}\nBearbeiten: ${env.PUBLIC_URL}/e/${p.editToken}`);
+    if (skipped.length) lines.push(`Nicht eingetragen: ${skipped.map((e) => e.title).join(", ")}`);
     return sendText(env, from, `✅ Ist online!\n\n${lines.join("\n\n")}\n\nDie Links sind privat – nicht weiterleiten.`);
   }
 }

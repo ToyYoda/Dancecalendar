@@ -28,7 +28,7 @@
       "jurisdiction": "eu"
     }
   ],
-  // Hourly: held Flyers of unfinished applications. Daily: Series generate their next Events (src/index.tsx).
+  // Hourly: held Flyers of unfinished applications, old Tip data. Daily: Series generate their next Events (src/index.tsx).
   "triggers": { "crons": ["17 * * * *", "30 2 * * *"] },
   "queues": {
     "producers": [{ "binding": "JOBS", "queue": "dancecalendar-jobs" }],

@@ -171,7 +171,8 @@ describe("an unregistered sender's Flyer", () => {
     expect(api.sent.filter((m) => m.text.includes("Salsa Night"))).toHaveLength(1);
   });
 
-  it("is only thanked for on Nein, and the answer is remembered for the number's next Flyers", async () => {
+  // What becomes of the Tips: test/tips.test.ts.
+  it("is thanked for as a Tip on Nein, and the answer is remembered for the number's next Flyers", async () => {
     const api = fakeApis();
     await deliver(imageMessage("media1", STRANGER));
 
@@ -182,7 +183,6 @@ describe("an unregistered sender's Flyer", () => {
     const before = api.sent.length;
     await deliver(imageMessage("media2", STRANGER));
     expect(api.sent.slice(before).map((m) => m.text)).toEqual([expect.stringContaining("Danke für den Tipp")]);
-    expect(api.anthropicCalls).toHaveLength(0);
   });
 
   it("asks again next time when Ja wasn't followed by the form", async () => {

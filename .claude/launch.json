@@ -25,6 +25,19 @@
         "8787"
       ],
       "port": 8787
+    },
+    {
+      "name": "worker-admin",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "--port",
+        "8788",
+        "--var",
+        "ADMIN_SECRET:local-admin-test"
+      ],
+      "port": 8788
     }
   ]
 }

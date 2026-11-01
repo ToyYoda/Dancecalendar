@@ -1,7 +1,8 @@
 import { Hono } from "hono";
-import { extractFlyer } from "./extraction/extract";
+import { extractFlyer, type Extraction } from "./extraction/extract";
 import { Layout } from "./layout";
 import { randomToken } from "./publish";
+import { holdTip } from "./tips";
 import { sendButtons, sendText } from "./whatsapp/graph";
 import { offerFlyer, storeFlyer, type Organizer } from "./whatsapp/bot";
 import type { InboundMessage } from "./whatsapp/types";
@@ -9,10 +10,9 @@ import type { InboundMessage } from "./whatsapp/types";
 // An unregistered number sends a Flyer: the bot asks whether it's their own Event. "Ja, meine" holds
 // the Flyer, sends a single-use apply link (/a/<token>, 24 hours) and reads the Flyer meanwhile; the
 // form makes the sender an Organizer at once (auto-approved), and the bot continues with the held
-// Flyer's summary. "Nein, ist ein Tipp" is remembered per number. Held Flyers go after 24 hours.
+// Flyer's summary. "Nein, ist ein Tipp" reads the Flyer as a Tip (src/tips.tsx) and is remembered per
+// number. Held Flyers go after 24 hours.
 // Decisions: .scratch/dance-calendar-mvp/issues/12-organizer-application.md
-
-export const TIP_THANKS = "Danke für den Tipp! 🙏 Tipps kann ich noch nicht eintragen, aber bald.";
 
 const VALID = "created_at > datetime('now', '-24 hours')";
 
@@ -38,7 +38,7 @@ export async function askOwnership(env: Env, message: InboundMessage) {
   ]);
 }
 
-// Safe to run twice: a retried "Ja" sends no second link and reads the Flyer only once.
+// Safe to run twice: a retried "Ja" sends no second link and reads the Flyer only once; a retried "Nein" holds one Tip.
 export async function answerOwnership(env: Env, from: string, buttonId: string) {
   const [action, id] = buttonId.split(":");
   const app = await env.DB.prepare(`SELECT * FROM application WHERE id = ? AND whatsapp_number = ? AND ${VALID}`)
@@ -47,10 +47,12 @@ export async function answerOwnership(env: Env, from: string, buttonId: string) 
   if (!app) return sendText(env, from, "Dieser Flyer ist schon erledigt. Schick ihn einfach nochmal.");
 
   if (action === "tip") {
-    await env.DB.prepare("UPDATE contact SET tip_at = datetime('now') WHERE whatsapp_number = ?").bind(from).run();
-    await env.DB.prepare("DELETE FROM application WHERE id = ?").bind(id).run();
-    await env.FLYERS.delete(app.flyer_key);
-    return sendText(env, from, TIP_THANKS);
+    // Read first, so a failed read is retried with the application still there.
+    const extraction = await readHeld(env, app);
+    if (!extraction) return;
+    const { meta } = await env.DB.prepare("DELETE FROM application WHERE id = ?").bind(id).run();
+    if (meta.changes !== 1) return;
+    return holdTip(env, from, { id: app.id, flyerKey: app.flyer_key, receivedOn: app.received_on }, extraction);
   }
 
   const token = randomToken();
@@ -62,13 +64,18 @@ export async function answerOwnership(env: Env, from: string, buttonId: string) 
       `Super! Melde dich hier einmal kurz an, dann geht's direkt mit deinem Flyer weiter:\n${env.PUBLIC_URL}/a/${token}\n\nDer Link gilt 24 Stunden und ist privat.`,
     );
   }
-  if (app.extraction === null) {
-    const object = await env.FLYERS.get(app.flyer_key);
-    if (!object) return;
-    const extraction = await extractFlyer(env.ANTHROPIC_API_KEY, await object.arrayBuffer(), app.mime_type, app.received_on);
-    await env.DB.prepare("UPDATE application SET extraction = ? WHERE id = ?").bind(JSON.stringify(extraction), id).run();
-  }
+  if (!(await readHeld(env, app))) return;
   await resume(env, id);
+}
+
+// The held Flyer as read, reading it once; null when it's gone.
+async function readHeld(env: Env, app: Application): Promise<Extraction | null> {
+  if (app.extraction !== null) return JSON.parse(app.extraction);
+  const object = await env.FLYERS.get(app.flyer_key);
+  if (!object) return null;
+  const extraction = await extractFlyer(env.ANTHROPIC_API_KEY, await object.arrayBuffer(), app.mime_type, app.received_on);
+  await env.DB.prepare("UPDATE application SET extraction = ? WHERE id = ?").bind(JSON.stringify(extraction), app.id).run();
+  return extraction;
 }
 
 // Once the form is in and the Flyer is read, whichever comes last, the held Flyer continues as the

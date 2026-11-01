@@ -2,6 +2,7 @@
 
 Type: task
 Blocked by: 20, 21
+Status: claimed
 Labels: wayfinder:task
 
 ## Scope

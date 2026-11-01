@@ -199,6 +199,7 @@ export function heldRule(e: ExtractedEvent): Rule | null {
 type SeriesRow = {
   id: number;
   organizer_id: number | null;
+  shown_as: string | null; // a Tip Series: the name its Events are shown under
   rule: string;
   template: string;
   generated_until: string;
@@ -208,15 +209,24 @@ type SeriesRow = {
 
 export async function createSeries(
   db: D1Database,
-  s: { organizerId: number; rule: Rule; template: Template; registrationRequired: boolean; generatedUntil: string; today: string },
+  s: {
+    organizerId: number | null; // a Tip Series has none, and its Events are shown under `shownAs`
+    shownAs?: string | null;
+    rule: Rule;
+    template: Template;
+    registrationRequired: boolean;
+    generatedUntil: string;
+    today: string;
+  },
 ): Promise<{ id: number; token: string }> {
   const token = randomToken();
   const row = await db
     .prepare(
-      `INSERT INTO series (organizer_id, rule, template, registration_required, last_sign_of_life, generated_until, edit_token)
-       VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      `INSERT INTO series (organizer_id, shown_as, rule, template, registration_required, last_sign_of_life, generated_until, edit_token)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     )
-    .bind(s.organizerId, JSON.stringify(s.rule), JSON.stringify(s.template), s.registrationRequired ? 1 : 0, s.today, s.generatedUntil, token)
+    .bind(s.organizerId, s.organizerId === null ? (s.shownAs ?? null) : null, JSON.stringify(s.rule), JSON.stringify(s.template),
+      s.registrationRequired ? 1 : 0, s.today, s.generatedUntil, token)
     .first<{ id: number }>();
   return { id: row!.id, token };
 }
@@ -225,7 +235,7 @@ export async function createSeries(
 export async function extendSeries(db: D1Database, today: string, seriesId?: number) {
   const { results } = await db
     .prepare(
-      `SELECT id, organizer_id, rule, template, generated_until, last_sign_of_life, edit_token FROM series
+      `SELECT id, organizer_id, shown_as, rule, template, generated_until, last_sign_of_life, edit_token FROM series
        WHERE ended_at IS NULL AND (? IS NULL OR id = ?)`,
     )
     .bind(seriesId ?? null, seriesId ?? null)
@@ -236,20 +246,23 @@ export async function extendSeries(db: D1Database, today: string, seriesId?: num
     // Dates the cron missed are in the past by now and stay out.
     const after = s.generated_until > today ? s.generated_until : addDays(today, -1);
     const template = JSON.parse(s.template) as Template;
-    const inserts = ruleDates(JSON.parse(s.rule), after, until).map((date) => insertOccurrence(db, s.id, s.organizer_id, template, date));
+    const inserts = ruleDates(JSON.parse(s.rule), after, until).map((date) => insertOccurrence(db, s, template, date));
     await db.batch([...inserts, db.prepare("UPDATE series SET generated_until = ? WHERE id = ?").bind(until, s.id)]);
   }
 }
 
-function insertOccurrence(db: D1Database, seriesId: number, organizerId: number | null, t: Template, date: string) {
+// A Series without an Organizer is a Tip Series: its Events are Tip Events.
+function insertOccurrence(db: D1Database, s: Pick<SeriesRow, "id" | "organizer_id" | "shown_as">, t: Template, date: string) {
   const c = occurrence(t, date);
+  const tip = s.organizer_id === null;
   return db
     .prepare(
       `INSERT INTO event (title, type, styles, starts_at, ends_at, intro_class_at, level, description, price,
-                          venue_id, organizer_id, flyer_key, series_id, edit_token)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                          venue_id, organizer_id, flyer_key, series_id, edit_token, is_tip, shown_as)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .bind(c.title, c.type, c.styles, c.starts_at, c.ends_at, c.intro_class_at, t.level, t.description, t.price, t.venue_id, organizerId, t.flyer_key, seriesId, randomToken());
+    .bind(c.title, c.type, c.styles, c.starts_at, c.ends_at, c.intro_class_at, t.level, t.description, t.price, t.venue_id, s.organizer_id,
+      t.flyer_key, s.id, randomToken(), tip ? 1 : 0, tip ? s.shown_as : null);
 }
 
 // An occurrence's own columns on a date.

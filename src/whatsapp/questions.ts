@@ -1,4 +1,4 @@
-import { duplicatesOfExtracted } from "../duplicates";
+import { duplicatesOfExtracted, tipsLikeExtracted } from "../duplicates";
 import type { ExtractedEvent, Extraction } from "../extraction/extract";
 import { geocode, type Place } from "../geocode";
 import { findVenue, normalize, venueQuery } from "../publish";
@@ -9,12 +9,13 @@ import { formatDate, publishable, summary } from "./summary";
 // The blocking questions the bot asks about a held Flyer before its summary, one message each, in this
 // order: a reposted Event (update or new?), a Series' next date when the Flyer prints none, an ambiguous
 // Series rule, a missing start time, a new Venue (is this the place the geocoder found?), a likely
-// duplicate of another Organizer's Event. The next question is worked out
+// duplicate of a Tip Event (the same? then the Tip Event goes), a likely duplicate of another
+// Organizer's Event. The next question is worked out
 // afresh from the held Events each time, so a stale or repeated tap can't answer the wrong one.
 // The answers live on the held Events (`HeldAnswers`); typed answers wait in `submission.awaiting`.
 // Decisions: .scratch/dance-calendar-mvp/issues/08-organizer-confirmation-flow.md (variant C).
 
-type Kind = "repost" | "date" | "rule" | "time" | "venue" | "duplicate";
+type Kind = "repost" | "date" | "rule" | "time" | "venue" | "tip" | "duplicate";
 type Awaiting = { kind: "date" | "rule" | "time" | "address"; i: number };
 type Question = { kind: Kind; i: number; text: string; buttons: Button[]; awaiting?: Awaiting };
 
@@ -70,6 +71,9 @@ export async function answerButton(env: Env, from: string, organizerId: number, 
     if (value === "yes") confirmVenue(events, q.i, e.venue_guess!.place!);
     else if (value === "none") sameVenue(events, q.i).forEach((v) => answer(v, "venue"));
     else [awaiting, prompt] = [{ kind: "address", i: q.i }, "Schick mir die Adresse (Straße, Ort)."];
+  } else if (kind === "tip") {
+    if (value !== "both") e.replaces_tip = Number(value);
+    answer(e, "tip");
   } else if (kind === "duplicate") {
     if (value === "drop") e.dropped = true;
     answer(e, "duplicate");
@@ -203,9 +207,23 @@ async function nextQuestion(env: Env, s: Held, events: ExtractedEvent[]): Promis
     };
   }
 
+  for (const [e, i] of open("tip")) {
+    if (!publishable(e, s.received_on)) continue;
+    const taken = events.map((o) => o.replaces_tip).filter((id) => id !== undefined);
+    const tip = (await tipsLikeExtracted(env.DB, e, s.flyer_key)).find((t) => !taken.includes(t.id));
+    if (!tip) continue;
+    const at = `${formatDate(tip.starts_at.slice(0, 10), s.received_on)} ${tip.starts_at.slice(11)}`;
+    return {
+      kind: "tip",
+      i,
+      text: `„${e.title}“: Am ${at} ist in „${tip.venue}“ schon „${tip.title}“ (von der Community) eingetragen. Ist das dasselbe?`,
+      buttons: [button("tip", i, String(tip.id), "Ja, dasselbe"), button("tip", i, "both", "Nein, beide")],
+    };
+  }
+
   for (const [e, i] of open("duplicate")) {
     if (!publishable(e, s.received_on)) continue;
-    const warnings = await duplicatesOfExtracted(env.DB, e, s.flyer_key, s.organizer_id);
+    const warnings = await duplicatesOfExtracted(env.DB, e, s.flyer_key, { othersOf: s.organizer_id, tips: false });
     if (!warnings.length) continue;
     return {
       kind: "duplicate",

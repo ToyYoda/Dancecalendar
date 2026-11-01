@@ -11,21 +11,24 @@ type Published = { title: string; startsAt: string; editToken: string; updated: 
 // A line of the "✅ Ist online!" reply and of the confirm page's Done page.
 export type Entry = { title: string; when: string; note: string; label: string; link: string };
 
-export type Held = { id: string; organizer_id: number; flyer_key: string; received_on: string };
+// A Tip has no Organizer.
+export type Held = { id: string; organizer_id: number | null; flyer_key: string; received_on: string };
 
 // Publishes a held submission once, from the chat or the confirm page: whoever claims it first wins,
-// a late second attempt gets null. `text` is the "✅ Ist online!" reply with the edit links.
+// a late second attempt gets null. `text` is the "✅ Ist online!" reply with the edit links. A Tip's
+// Events are shown under `shownAs`, marked as from the community.
 export async function publishSubmission(
   env: Env,
   submission: Held,
   ready: ExtractedEvent[],
   skipped: ExtractedEvent[],
+  shownAs: string | null = null,
 ): Promise<{ entries: Entry[]; text: string } | null> {
   const { meta } = await env.DB.prepare("UPDATE submission SET status = 'published' WHERE id = ? AND status = 'pending'")
     .bind(submission.id)
     .run();
   if (meta.changes !== 1) return null;
-  const published = await publishEvents(env.DB, submission, ready, berlinDate(new Date()));
+  const published = await publishEvents(env.DB, { ...submission, shownAs }, ready, berlinDate(new Date()));
   const entries = await entriesOf(env, published, submission.received_on);
 
   const lines = entries.map((p) => `*${p.title}* – ${p.when}${p.note}\n${p.label}: ${p.link}`);
@@ -60,7 +63,7 @@ async function entriesOf(env: Env, published: Published[], receivedOn: string): 
 
 async function publishEvents(
   db: D1Database,
-  submission: { organizer_id: number; flyer_key: string },
+  submission: { organizer_id: number | null; flyer_key: string; shownAs: string | null },
   events: ExtractedEvent[],
   today: string,
 ): Promise<Published[]> {
@@ -101,6 +104,7 @@ async function publishEvents(
         const dates = events.filter((_, k) => leads[k] === leads[i]).map((o) => o.start_date).sort();
         const series = await createSeries(db, {
           organizerId: submission.organizer_id,
+          shownAs: submission.shownAs,
           rule,
           template: templateOf(await columns(db, lead), lead.description || null, submission.flyer_key),
           registrationRequired: lead.type === "workshop" && lead.registration_required,
@@ -115,8 +119,8 @@ async function publishEvents(
     await db
       .prepare(
         `INSERT INTO event (title, type, styles, starts_at, ends_at, intro_class_at, level, description, price,
-                            venue_id, organizer_id, flyer_key, series_id, edit_token)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            venue_id, organizer_id, flyer_key, series_id, edit_token, is_tip, shown_as)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         c.title,
@@ -133,8 +137,12 @@ async function publishEvents(
         submission.flyer_key,
         seriesId,
         editToken,
+        submission.organizer_id === null ? 1 : 0,
+        submission.organizer_id === null ? submission.shownAs : null,
       )
       .run();
+    // "Ja, dasselbe": the Organizer's Event takes the Tip Event's place.
+    if (e.replaces_tip) await db.prepare("DELETE FROM event WHERE id = ? AND is_tip = 1").bind(e.replaces_tip).run();
     published.push({ title: e.title, startsAt: c.starts_at, editToken, updated: false, seriesId });
   }
   for (const id of created.values()) await extendSeries(db, today, id);

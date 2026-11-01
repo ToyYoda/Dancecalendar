@@ -31,10 +31,11 @@ export type ExtractedEvent = {
 
 // Not from the model: what the Organizer answered while the Flyer was held (src/whatsapp/questions.ts).
 export type HeldAnswers = {
-  answered?: Partial<Record<"repost" | "date" | "rule" | "time" | "venue" | "duplicate", true>>;
+  answered?: Partial<Record<"repost" | "date" | "rule" | "time" | "venue" | "tip" | "duplicate", true>>;
   dropped?: boolean; // "Event weglassen" / "Meins weglassen"
   update_of?: number; // a repost: the Organizer's existing Event this one replaces
   update_series?: number; // the Series of the Event a repost may replace
+  replaces_tip?: number; // "Ja, dasselbe": the Tip Event this one replaces, deleted on publish
   venue_guess?: { query: string; place: Place | null }; // the geocoder's answer for these venue fields
   series_rule?: Rule | null; // the Series rule the Organizer chose; null = just this date (src/series.ts `heldRule`)
 };

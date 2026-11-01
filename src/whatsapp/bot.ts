@@ -1,4 +1,5 @@
-import { answerOwnership, askOwnership, TIP_THANKS } from "../application";
+import { answerOwnership, askOwnership } from "../application";
+import { holdTip } from "../tips";
 import { extractFlyer, type Extraction } from "../extraction/extract";
 import { answerButton, answerTyped, continueFlyer } from "./questions";
 import { publishable } from "./summary";
@@ -55,7 +56,7 @@ export async function handleMessage(env: Env, message: InboundMessage) {
   if (/^(mine|tip):/.test(buttonId)) return answerOwnership(env, from, buttonId);
   if (!organizer) {
     if (message.type !== "image") return sendText(env, from, "Schick mir einfach einen Flyer als Bild, dann trage ich die Veranstaltung ein.");
-    if (contact?.tip_at) return sendText(env, from, TIP_THANKS);
+    if (contact?.tip_at) return receiveTip(env, message);
     return askOwnership(env, message);
   }
 
@@ -78,6 +79,13 @@ async function receiveFlyer(env: Env, message: InboundMessage, organizer: Organi
   const held = await storeFlyer(env, message);
   const extraction = await extractFlyer(env.ANTHROPIC_API_KEY, held.bytes, held.mimeType, held.receivedOn);
   return offerFlyer(env, message.from, organizer, held, extraction);
+}
+
+// A number that answered "Nein, ist ein Tipp" before: its Flyers are Tips without asking.
+async function receiveTip(env: Env, message: InboundMessage) {
+  const held = await storeFlyer(env, message);
+  const extraction = await extractFlyer(env.ANTHROPIC_API_KEY, held.bytes, held.mimeType, held.receivedOn);
+  return holdTip(env, message.from, held, extraction);
 }
 
 // Media URLs expire after 5 minutes, so every Flyer goes to R2 as soon as it arrives.

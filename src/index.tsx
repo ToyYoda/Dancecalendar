@@ -7,6 +7,7 @@ import { DataDeletion, PrivacyPolicy } from "./legal-pages";
 import { overview } from "./overview";
 import { extendSeries } from "./series";
 import { seriesPage } from "./series-page";
+import { cleanUpTips } from "./tips";
 import { readUpload, uploadFailed, type FlyerUpload } from "./upload";
 import { berlinDate, handleMessage } from "./whatsapp/bot";
 import type { InboundMessage } from "./whatsapp/types";
@@ -33,11 +34,11 @@ const MAX_ATTEMPTS = 3; // the first try plus max_retries in wrangler.jsonc
 
 export default {
   fetch: app.fetch,
-  // Hourly (wrangler.jsonc): held Flyers of unfinished applications go after 24 hours.
+  // Hourly (wrangler.jsonc): held Flyers of unfinished applications go after 24 hours, Tip data after 30 days.
   // Daily: every running Series generates its Events up to 12 weeks ahead.
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
     if (controller.cron === SERIES_CRON) ctx.waitUntil(extendSeries(env.DB, berlinDate(new Date(controller.scheduledTime))));
-    else ctx.waitUntil(cleanUpApplications(env));
+    else ctx.waitUntil(Promise.all([cleanUpApplications(env), cleanUpTips(env)]));
   },
   async queue(batch: MessageBatch<Job>, env: Env, _ctx: ExecutionContext) {
     for (const message of batch.messages) {

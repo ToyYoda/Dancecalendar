@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import { basicAuth } from "hono/basic-auth";
 import { Layout } from "./layout";
+import { tipReview } from "./tips";
 import { queueUpload, waitForUpload } from "./upload";
 
 // /admin, behind a password (the ADMIN_SECRET Worker secret) until Cloudflare Access comes with Deploy.
 // /admin/upload seeds the calendar with Flyers published under a chosen Organizer (see upload.tsx).
+// /admin/tips is the review queue of Tips (see tips.tsx).
 
 export const admin = new Hono<{ Bindings: Env }>();
 
@@ -12,6 +14,8 @@ admin.use("*", async (c, next) => {
   if (!c.env.ADMIN_SECRET) return c.text("Admin ist noch nicht eingerichtet.", 503);
   return basicAuth({ username: "admin", password: c.env.ADMIN_SECRET, realm: "DanceCalendar Admin" })(c, next);
 });
+
+admin.route("/tips", tipReview);
 
 admin.get("/upload", async (c) => c.html(<UploadForm organizers={await organizers(c.env.DB)} />));
 

@@ -176,5 +176,7 @@ export const CARD_CSS = `
   .series { font-size: .9rem; margin: .5rem 0 0; }
   .publish { width: 100%; padding: .75rem; font: inherit; font-weight: bold; border: 0; border-radius: 8px; background: #c2185b; color: #fff; }
   .publish:disabled { background: #ccc; color: #666; }
+  .shown-as input { width: 100%; box-sizing: border-box; border: 1px solid #e4dfd8; border-radius: 6px; padding: .4rem .5rem; font: inherit; }
+  .reject { width: 100%; margin-top: .75rem; padding: .6rem; font: inherit; border: 1px solid #a30000; border-radius: 8px; background: #fff; color: #a30000; }
   .hint { font-size: .85rem; color: #6f6861; }
 `;

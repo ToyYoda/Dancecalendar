@@ -12,6 +12,7 @@ import argparse
 import base64
 import datetime as dt
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -21,7 +22,7 @@ FLYERS = HERE.parent / "assets" / "flyers"
 RESULTS = HERE / "results"
 GT = json.loads((HERE / "ground_truth.json").read_text(encoding="utf-8"))["flyers"]
 MODELS = ["claude-haiku-5-5", "claude-sonnet-5-5"]
-PROMPT_VERSION = "v2"  # v1: first run (no save-the-date rule, year inference flagged)
+PROMPT_VERSION = "v3"  # v1: first run (no save-the-date rule, year inference flagged); v3: party starts when its intro class ends
 PRICES = {"claude-haiku-5-5": (0.10, 0.50), "claude-sonnet-5-5": (2.0, 10.0)}  # $/MTok in, out
 
 KEY_FIELDS = {"start_date", "start_time", "venue_name"}
@@ -33,10 +34,22 @@ SYSTEM = (EXTRACTION / "prompt.md").read_text(encoding="utf-8").rstrip("\n")
 
 
 
+def api_key():
+    """ANTHROPIC_API_KEY from the environment, else from the repo's git-ignored .dev.vars."""
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return os.environ["ANTHROPIC_API_KEY"]
+    dev_vars = HERE.parents[2] / ".dev.vars"
+    for line in dev_vars.read_text(encoding="utf-8").splitlines() if dev_vars.exists() else []:
+        name, _, value = line.partition("=")
+        if name.strip() == "ANTHROPIC_API_KEY":
+            return value.strip().strip('"')
+    sys.exit("No ANTHROPIC_API_KEY in the environment or in .dev.vars")
+
+
 def run(models, effort, only, label=PROMPT_VERSION):
     import anthropic
 
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(api_key=api_key())
     for model in models:
         out_dir = RESULTS / f"{model}@{effort}@{label}"
         out_dir.mkdir(parents=True, exist_ok=True)

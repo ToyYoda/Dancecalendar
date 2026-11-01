@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import prompt from "./prompt.md";
 import schema from "./schema.json";
 
-// One Sonnet 5.5 call per Flyer at effort medium, v2 prompt and schema
+// One Sonnet 5.5 call per Flyer at effort medium, v3 prompt (v2 plus: a party without a printed start begins when its intro class ends) and the v2 schema
 // (.scratch/dance-calendar-mvp/issues/13-extraction-accuracy.md). eval/extract_eval.py reads the same files.
 
 export type ExtractedEvent = {

@@ -94,6 +94,15 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(html).not.toContain("Ort unbekannt");
   });
 
+  it("publishes a Party whose start was taken from the end of its intro class in one tap, asking to check the time", async () => {
+    const api = fakeApis({ extraction: flyer([{ intro_class_time: "21:15", start_time: "22:00", uncertain_fields: ["start_time"] }]) });
+
+    await deliver(imageMessage("media1"));
+
+    expect(api.sent.at(-1)!.text).toMatch(/⚠️ bitte prüfen: Uhrzeit/);
+    expect(api.sent.at(-1)!.buttons[0].title).toBe("Veröffentlichen");
+  });
+
   it("leaves out an Event without a start time, says so, and publishes the rest", async () => {
     const api = fakeApis({
       extraction: flyer([{}, { title: "Weihnachtsfeier", start_date: berlinDate(4), start_time: "" }]),

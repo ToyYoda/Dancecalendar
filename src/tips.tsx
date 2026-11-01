@@ -3,6 +3,7 @@ import { AlreadyDone, ConfirmPage, Done, flyerOf, loadSubmission, openCards, rea
 import type { Extraction } from "./extraction/extract";
 import { Layout } from "./layout";
 import { publishSubmission, randomToken } from "./publish";
+import { ruleWords, type Rule } from "./series";
 import { sendText } from "./whatsapp/graph";
 import { formatDate } from "./whatsapp/summary";
 
@@ -44,12 +45,20 @@ export async function cleanUpTips(env: Env) {
 // Mounted at /admin/tips, behind the Admin's password.
 export const tipReview = new Hono<{ Bindings: Env }>();
 
+// Free-text Series rules ("Anders …") wait here too: the Admin sets a real rule on the Series page.
 tipReview.get("/", async (c) => {
   const { results } = await c.env.DB.prepare(
     "SELECT confirm_token, received_on, extraction FROM submission WHERE source = 'tip' AND status = 'pending' ORDER BY created_at",
   ).all<{ confirm_token: string; received_on: string; extraction: string }>();
+  const { results: rules } = await c.env.DB.prepare(
+    `SELECT json_extract(template, '$.title') AS title, rule, edit_token FROM series
+     WHERE ended_at IS NULL AND json_extract(rule, '$.freq') = 'custom' ORDER BY created_at`,
+  ).all<{ title: string; rule: string; edit_token: string }>();
   return c.html(
     <Layout title="Tipps – DanceCalendar">
+      <p>
+        <a href="/admin">← Admin</a>
+      </p>
       <h1>Tipps</h1>
       {results.length === 0 ? (
         <p>Keine Tipps zu prüfen.</p>
@@ -69,6 +78,23 @@ tipReview.get("/", async (c) => {
               </li>
             );
           })}
+        </ul>
+      )}
+      <h2>Freie Wiederholungen</h2>
+      {rules.length === 0 ? (
+        <p>Keine Regeln zu prüfen.</p>
+      ) : (
+        <ul>
+          {rules.map((r) => (
+            <li>
+              <a href={`/s/${r.edit_token}`}>
+                <strong>{r.title}</strong>
+              </a>
+              : {ruleWords(JSON.parse(r.rule) as Rule)}
+              <br />
+              <small>Auf der Serienseite eine Wiederholung wählen oder die Serie beenden.</small>
+            </li>
+          ))}
         </ul>
       )}
     </Layout>,

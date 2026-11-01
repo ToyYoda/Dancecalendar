@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { admin } from "./admin";
+import { digestDue, EMAIL_CRON, sendDailyEmail } from "./admin-email";
 import { applyPage, cleanUpApplications } from "./application";
 import { confirmPage } from "./confirm-page";
 import { editPage } from "./edit-page";
@@ -35,9 +36,11 @@ const MAX_ATTEMPTS = 3; // the first try plus max_retries in wrangler.jsonc
 export default {
   fetch: app.fetch,
   // Hourly (wrangler.jsonc): held Flyers of unfinished applications go after 24 hours, Tip data after 30 days.
-  // Daily: every running Series generates its Events up to 12 weeks ahead.
+  // Daily: every running Series generates its Events up to 12 weeks ahead, and the Admin's email at 21:00 German time.
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
-    if (controller.cron === SERIES_CRON) ctx.waitUntil(extendSeries(env.DB, berlinDate(new Date(controller.scheduledTime))));
+    const now = new Date(controller.scheduledTime);
+    if (controller.cron === SERIES_CRON) ctx.waitUntil(extendSeries(env.DB, berlinDate(now)));
+    else if (controller.cron === EMAIL_CRON) ctx.waitUntil(digestDue(now) ? sendDailyEmail(env, now) : Promise.resolve());
     else ctx.waitUntil(Promise.all([cleanUpApplications(env), cleanUpTips(env)]));
   },
   async queue(batch: MessageBatch<Job>, env: Env, _ctx: ExecutionContext) {

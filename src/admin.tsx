@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import { basicAuth } from "hono/basic-auth";
+import { sendDailyEmail } from "./admin-email";
+import { adminTools } from "./admin-tools";
 import { Layout } from "./layout";
 import { tipReview } from "./tips";
 import { queueUpload, waitForUpload } from "./upload";
 
 // /admin, behind a password (the ADMIN_SECRET Worker secret) until Cloudflare Access comes with Deploy.
 // /admin/upload seeds the calendar with Flyers published under a chosen Organizer (see upload.tsx).
-// /admin/tips is the review queue of Tips (see tips.tsx).
+// /admin/tips is the review queue of Tips and free-text Series rules (see tips.tsx).
+// Organizers, Events, Series ending soon and Venues: admin-tools.tsx. The daily email: admin-email.ts.
 
 export const admin = new Hono<{ Bindings: Env }>();
 
@@ -16,6 +19,47 @@ admin.use("*", async (c, next) => {
 });
 
 admin.route("/tips", tipReview);
+admin.route("/", adminTools);
+
+admin.get("/", (c) => c.html(<Home />));
+
+// The daily email's job, run by hand: it sends only when something is pending.
+admin.post("/email", async (c) => {
+  const result = await sendDailyEmail(c.env, new Date());
+  const notes = {
+    sent: "✅ E-Mail gesendet.",
+    nothing: "Nichts zu melden, keine E-Mail gesendet.",
+    unconfigured: "Die E-Mail ist noch nicht eingerichtet (EMAIL, ADMIN_EMAIL, EMAIL_FROM).",
+  };
+  return c.html(<Home note={notes[result]} />);
+});
+
+function Home(props: { note?: string }) {
+  const links = [
+    ["/admin/tips", "Prüfen: Tipps und freie Wiederholungen"],
+    ["/admin/organizers", "Organizer"],
+    ["/admin/events", "Events"],
+    ["/admin/series", "Serien, die bald auslaufen"],
+    ["/admin/venues", "Orte"],
+    ["/admin/upload", "Flyer hochladen"],
+  ];
+  return (
+    <Layout title="Admin – DanceCalendar">
+      <h1>Admin</h1>
+      {props.note && <p>{props.note}</p>}
+      <ul>
+        {links.map(([href, label]) => (
+          <li>
+            <a href={href}>{label}</a>
+          </li>
+        ))}
+      </ul>
+      <form method="post" action="/admin/email" style="margin-top:1.5rem">
+        <button type="submit">Tägliche E-Mail jetzt senden</button>
+      </form>
+    </Layout>
+  );
+}
 
 admin.get("/upload", async (c) => c.html(<UploadForm organizers={await organizers(c.env.DB)} />));
 

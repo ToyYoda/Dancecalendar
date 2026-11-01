@@ -14,7 +14,7 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
 - Standing preferences: convenience first for both Organizers and Dancers; free for everyone; running costs near zero (a few €/month for AI extraction is fine); single maintainer (the Admin), who is the legally responsible person.
 - Decisions settled while charting (2026-10-31):
   - Feed-in: Flyer forwarded to a WhatsApp bot (web upload as second path); an AI vision model extracts one or more Events per Flyer; the Organizer confirms and Events go live immediately; a private edit link per Event handles changes and cancellations (cancelled Events stay visible, marked).
-  - Organizers are individuals with a Display name; join by applying, auto-approved (amended by "Organizer confirmation flow"; the Admin can remove them afterwards); identified by WhatsApp number.
+  - Organizers are individuals with a Display name (to be replaced by the Organizer's own name plus Organizer groups, see "Organizer name instead of a Display name, and Organizer groups"); join by applying, auto-approved (amended by "Organizer confirmation flow"; the Admin can remove them afterwards); identified by WhatsApp number.
   - Unregistered sender: bot asks "Is this your event?" (a "Tip" answer is remembered per number; amended by "Organizer application form"). Yes → apply link. No → Tip → Admin review queue; Tip Events shown under the Flyer's name, marked "added by the community".
   - Likely duplicates (same Venue, overlapping time) are warned about, not blocked.
   - Dancer side: mobile-first web overview only; no Dancer accounts; filters (style, center + radius km, type Party/Workshop/Course/Festival) encoded in the URL.
@@ -65,7 +65,6 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
 - Dancer accounts — filters live in the URL.
 - Translation of Event text — shown as written.
 - Automatic merging of duplicates — warnings only in the MVP (the one exception: an Organizer who confirms "same as this Tip" replaces the Tip Event).
-- An Organization concept above individual Organizers — Display name covers it for now.
 - Editing Events via WhatsApp chat — the edit link covers it.
 - Invite links — redundant since Organizer applications are auto-approved ([Organizer confirmation flow](issues/08-organizer-confirmation-flow.md)).
 - Proactive bot messages ("still running?" reminders, approval notices) — would need paid templates; the bot only replies.

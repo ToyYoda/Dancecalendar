@@ -2,6 +2,7 @@
 
 Type: task
 Labels: wayfinder:task
+Status: resolved
 
 ## Question
 
@@ -18,3 +19,14 @@ From the Admin's review of the onboarding (2026-11-01): after an Organizer sends
 
 - Test-first, tests green, deployed.
 - Demo: forward a Flyer → the reply arrives within about a second, then the summary.
+
+## Answer
+
+Done 2026-11-01 (commit 1bff5f0), deployed.
+
+- `acknowledgeFlyer` in `src/whatsapp/bot.ts` sends „Danke! Ich lese deinen Flyer – in ein paar Sekunden melde ich mich.“ before the download and the AI read, for an Organizer's Flyer, a remembered Tip number's Flyer, and the „Nein, ist ein Tipp“ tap (which also reads the Flyer).
+- Unknown senders don't get it on the image: their first reply is still „Ist das deine Veranstaltung?“, at once.
+- The queue passes `message.attempts` to `handleMessage`; the reply goes out on the first attempt only, so a failed read that the queue retries doesn't repeat it.
+- Tests: the reply comes before the summary; a failing read is still acknowledged, once across two attempts; the Tip paths show the reply before the thanks.
+
+Not checked with a real phone yet: forward a Flyer and the reply should arrive within about a second.

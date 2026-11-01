@@ -2,7 +2,7 @@
 
 Type: task
 Blocked by: 16
-Status: claimed
+Status: resolved
 Labels: wayfinder:task
 
 ## Scope
@@ -30,6 +30,15 @@ Since [Series and Courses](22-series-and-courses.md): occurrences are ordinary `
 ## Out of scope
 
 The optional map (OpenFreeMap + MapLibre); post-MVP unless trivial.
+
+## Answer
+
+Live since 2026-11-01 (20549f7). The phone demo passed in production: the Göttingen/Bachata/Party link showed the right Events, the calendar kept the filters, and the same URL gave the same view on a second phone.
+
+- `src/overview.tsx` at `/`, rendered on the server: Flyer feed by day with a day strip and ‹ › paging, a month calendar with a day list (`view=cal`), and Event details at `/events/<id>`. All filters are links in the URL (`c`, `r`, `styles`, `type`, `w`, `d`, `lang`); defaults stay out of it.
+- Amends [Dancer overview and filters](07-dancer-overview-prototype.md): without a week in the URL, the feed shows today and the next 7 days, not Monday–Sunday; the arrows page through Monday–Sunday weeks.
+- Distance is straight-line from the chosen place (by default the nearer of Kassel and Göttingen). Venues without coordinates show whatever the place filter. "Mein Standort" is the only script (geolocation rounded to about 1 km).
+- Badges for cancelled, Tip and Course Events; Series show their rule (German or English). Flyer images at `/flyers/<name>`, only for published Events, cached for a year.
 
 ## Comments
 

@@ -18,6 +18,7 @@ Replace the interim pages with the real text, in German and English:
   - no tracking, so no cookie banner
 - **Data deletion.**
 - **Terms of Use,** including the Flyer-rights grant and the partner-dance rule.
+- **OSM attribution** ("© OpenStreetMap contributors", ODbL) wherever geocoded Venue data is shown; the geocoders Photon and Nominatim are used since [Blocking questions in chat](21-blocking-questions.md), and the privacy policy should name them.
 
 All four are linked from the footer, the application form and the bot's first reply. The application form's Terms checkbox (`src/application.tsx`, since [Organizer application](20-organizer-application.md)) names the Terms of Use but doesn't link them yet.
 

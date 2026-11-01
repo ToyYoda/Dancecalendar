@@ -3,7 +3,7 @@ import { formatDate } from "./whatsapp/summary";
 
 // Turns a held submission's Events into calendar Events. Returns what was published, with edit tokens.
 
-export type Published = { title: string; startsAt: string; editToken: string };
+export type Published = { title: string; startsAt: string; editToken: string; updated: boolean };
 
 export type Held = { id: string; organizer_id: number; flyer_key: string; received_on: string };
 
@@ -21,7 +21,10 @@ export async function publishSubmission(
   if (meta.changes !== 1) return null;
   const published = await publishEvents(env.DB, submission, ready);
 
-  const lines = published.map((p) => `*${p.title}* – ${formatDate(p.startsAt.slice(0, 10), submission.received_on)}\nBearbeiten: ${editLink(env, p)}`);
+  const lines = published.map((p) => {
+    const updated = p.updated ? " (aktualisiert, der alte Link gilt weiter)" : "";
+    return `*${p.title}* – ${formatDate(p.startsAt.slice(0, 10), submission.received_on)}${updated}\nBearbeiten: ${editLink(env, p)}`;
+  });
   if (skipped.length) lines.push(`Nicht eingetragen: ${skipped.map((e) => e.title).join(", ")}`);
   return { published, text: `✅ Ist online!\n\n${lines.join("\n\n")}\n\nDie Links sind privat – nicht weiterleiten.` };
 }
@@ -36,6 +39,22 @@ async function publishEvents(
   const published: Published[] = [];
   for (const e of events) {
     const c = await columns(db, e);
+    // A repost the Organizer called an update replaces their existing Event, which keeps its edit link.
+    const updated =
+      e.update_of &&
+      (await db
+        .prepare(
+          `UPDATE event SET title = ?, type = ?, styles = ?, starts_at = ?, ends_at = ?, intro_class_at = ?, level = ?,
+                            description = ?, price = ?, venue_id = ?, flyer_key = ?
+           WHERE id = ? AND organizer_id = ? RETURNING edit_token`,
+        )
+        .bind(c.title, c.type, c.styles, c.starts_at, c.ends_at, c.intro_class_at, c.level, e.description || null, c.price, c.venue_id,
+          submission.flyer_key, e.update_of, submission.organizer_id)
+        .first<{ edit_token: string }>());
+    if (updated) {
+      published.push({ title: e.title, startsAt: c.starts_at, editToken: updated.edit_token, updated: true });
+      continue;
+    }
     const editToken = randomToken();
     await db
       .prepare(
@@ -59,7 +78,7 @@ async function publishEvents(
         editToken,
       )
       .run();
-    published.push({ title: e.title, startsAt: c.starts_at, editToken });
+    published.push({ title: e.title, startsAt: c.starts_at, editToken, updated: false });
   }
   return published;
 }
@@ -89,14 +108,16 @@ export function endsAt(e: ExtractedEvent): string | null {
   return `${next.toISOString().slice(0, 10)}T${e.end_time}`;
 }
 
-// Matched by name, ignoring case and spacing; otherwise created as printed (geocoding comes with ticket 21).
+// Matched by name, ignoring case and spacing; otherwise created as printed, with the coordinates
+// the geocoder found for exactly these venue fields (`venue_guess`, see src/whatsapp/questions.ts).
 // A Flyer that prints only an address gets a Venue named after that address.
 async function venueFor(db: D1Database, e: ExtractedEvent): Promise<number> {
   const known = await findVenue(db, e);
   if (known) return known;
+  const place = e.venue_guess?.query === venueQuery(e) ? e.venue_guess.place : null;
   const row = await db
-    .prepare("INSERT INTO venue (name, address) VALUES (?, ?) RETURNING id")
-    .bind(venueName(e), venueAddress(e))
+    .prepare("INSERT INTO venue (name, address, lat, lng) VALUES (?, ?, ?, ?) RETURNING id")
+    .bind(venueName(e), venueAddress(e), place?.lat ?? null, place?.lng ?? null)
     .first<{ id: number }>();
   return row!.id;
 }
@@ -108,11 +129,14 @@ export async function findVenue(db: D1Database, e: ExtractedEvent): Promise<numb
   return results.find((v) => normalize(v.name) === key)?.id ?? null;
 }
 
+// What the geocoder is asked for an Event's place; "" for an Event without one.
+export const venueQuery = (e: ExtractedEvent) => [e.venue_name, e.venue_address, e.city].filter(Boolean).join(", ");
+
 const venueAddress = (e: ExtractedEvent) => [e.venue_address, e.city].filter(Boolean).join(", ") || null;
 const venueName = (e: ExtractedEvent) => e.venue_name || venueAddress(e) || UNKNOWN_VENUE;
 export const UNKNOWN_VENUE = "(Ort unbekannt)";
 
-const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+export const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
 export function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));

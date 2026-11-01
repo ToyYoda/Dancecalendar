@@ -23,6 +23,8 @@ See [Admin view](11-admin-view.md). Everything is mobile-first.
 
   Each item links to its Admin page.
 
+Organizers can't change a known Venue's address or coordinates (Venues are matched by name and shared; see [Blocking questions in chat](21-blocking-questions.md)). The Admin needs a way to correct a Venue: name, address, and coordinates via the geocoder (`src/geocode.ts`).
+
 ## Done when
 
 - Tests are green (with a fixed clock for both DST offsets) and the slice is deployed.

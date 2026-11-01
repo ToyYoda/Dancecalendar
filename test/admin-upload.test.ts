@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Job } from "../src/index";
-import { fakeApis, flyer } from "./fake-apis";
+import { fakeApis, flyer, knownVenue } from "./fake-apis";
 import { feed, formFrom, get, post, runJob } from "./flow";
 
 const ADMIN = { authorization: `Basic ${btoa("admin:test-admin-secret")}` };
@@ -12,6 +12,7 @@ beforeEach(async () => {
     ...["event", "submission", "venue", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
     env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (1, '4915200000001', 'Salsa Kassel')"),
     env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (2, '4915200000002', 'Bachata Göttingen')"),
+    knownVenue(env.DB),
   ]);
 });
 

@@ -17,6 +17,8 @@ See [Organizer confirmation flow](08-organizer-confirmation-flow.md), [Admin vie
 
 Since [Organizer application](20-organizer-application.md), [Nein, ist ein Tipp] sets `contact.tip_at`, deletes the held Flyer and only thanks the sender (`answerOwnership` in `src/application.tsx`), and later Flyers from that number are only thanked. This ticket replaces both with the Tip flow.
 
+The duplicate-with-Tip question belongs in the "duplicate" step of `src/whatsapp/questions.ts` (since [Blocking questions in chat](21-blocking-questions.md)); today that step only asks about other Organizers' Events.
+
 ## Done when
 
 - Tests are green and the slice is deployed.

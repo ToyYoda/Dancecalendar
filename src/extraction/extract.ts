@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import prompt from "./prompt.md";
 import schema from "./schema.json";
+import type { Place } from "../geocode";
 
 // One Sonnet 5.5 call per Flyer at effort medium, v3 prompt (v2 plus: a party without a printed start begins when its intro class ends) and the v2 schema
 // (.scratch/dance-calendar-mvp/issues/13-extraction-accuracy.md). eval/extract_eval.py reads the same files.
@@ -25,6 +26,14 @@ export type ExtractedEvent = {
   series: { is_series: boolean; rule_text: string; frequency: string; explicit_dates: string[] };
   uncertain_fields: string[];
   notes: string;
+} & HeldAnswers;
+
+// Not from the model: what the Organizer answered while the Flyer was held (src/whatsapp/questions.ts).
+export type HeldAnswers = {
+  answered?: Partial<Record<"repost" | "time" | "venue" | "duplicate", true>>;
+  dropped?: boolean; // "Event weglassen" / "Meins weglassen"
+  update_of?: number; // a repost: the Organizer's existing Event this one replaces
+  venue_guess?: { query: string; place: Place | null }; // the geocoder's answer for these venue fields
 };
 
 export type Extraction = {

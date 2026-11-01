@@ -49,6 +49,7 @@ export function Card(props: {
   yellow: Map<string, string>;
   warnings?: string[];
   hidden?: TextField[];
+  venue?: string; // what the geocoder found for a new Venue
 }) {
   const { i, e, red, yellow } = props;
   const field = (name: TextField, label: string, type = "text", required = false) => {
@@ -106,6 +107,7 @@ export function Card(props: {
       {field("venue_name", "Ort")}
       {field("venue_address", "Adresse")}
       {field("city", "Stadt")}
+      {props.venue && <p class="series">📍 {props.venue}</p>}
       <div class={yellow.has("styles") ? "styles unc" : "styles"}>
         <span>Tanzstile</span>
         {Object.entries(STYLES).map(([value, label]) => (

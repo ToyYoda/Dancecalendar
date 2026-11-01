@@ -8,7 +8,10 @@
   "observability": { "enabled": true },
   "rules": [{ "type": "Text", "globs": ["**/*.md"], "fallthrough": true }],
   "vars": {
-    "PUBLIC_URL": "https://dancecalendar.dancecalendar.workers.dev"
+    "PUBLIC_URL": "https://dancecalendar.dancecalendar.workers.dev",
+    // Geocoders for new Venues (src/geocode.ts); "" switches one off.
+    "PHOTON_URL": "https://photon.komoot.io",
+    "NOMINATIM_URL": "https://nominatim.openstreetmap.org"
   },
   "d1_databases": [
     {

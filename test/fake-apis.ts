@@ -1,13 +1,18 @@
 import { vi } from "vitest";
 
-// Plays Meta's Graph API and the Anthropic API at the fetch boundary.
-// `sent` collects every WhatsApp message the bot sends, in order.
+// Plays Meta's Graph API, the Anthropic API and the geocoders (Photon, Nominatim) at the fetch boundary.
+// `sent` collects every WhatsApp message the bot sends, in order. `places` maps a word of a geocoder
+// query to what Photon finds for it; anything else isn't found. `photonDown` makes Photon fail.
 
 export type SentMessage = { to: string; text: string; buttons: { id: string; title: string }[] };
 
-export function fakeApis(options: { extraction?: object; anthropicError?: string } = {}) {
+export type FakePlace = { name: string; street: string; housenumber: string; postcode: string; city: string; lat: number; lng: number };
+
+export function fakeApis(options: { extraction?: object; anthropicError?: string; places?: Record<string, FakePlace>; photonDown?: boolean } = {}) {
   const sent: SentMessage[] = [];
   const anthropicCalls: any[] = [];
+  const geocoded: string[] = [];
+  const find = (q: string) => Object.entries(options.places ?? {}).find(([word]) => q.toLowerCase().includes(word.toLowerCase()))?.[1];
 
   const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const req = new Request(input as RequestInfo, init);
@@ -29,6 +34,20 @@ export function fakeApis(options: { extraction?: object; anthropicError?: string
     if (url.hostname === "lookaside.fbsbx.com") {
       return new Response(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), { headers: { "content-type": "image/jpeg" } });
     }
+    if (url.hostname === "photon.komoot.io") {
+      geocoded.push(`photon: ${url.searchParams.get("q")}`);
+      if (options.photonDown) return new Response("busy", { status: 503 });
+      const p = find(url.searchParams.get("q")!);
+      const features = p ? [{ geometry: { coordinates: [p.lng, p.lat] }, properties: { ...p, lat: undefined, lng: undefined } }] : [];
+      return Response.json({ type: "FeatureCollection", features });
+    }
+    if (url.hostname === "nominatim.openstreetmap.org") {
+      geocoded.push(`nominatim: ${url.searchParams.get("q")}`);
+      const p = find(url.searchParams.get("q")!);
+      if (!p) return Response.json([]);
+      const address = { road: p.street, house_number: p.housenumber, postcode: p.postcode, city: p.city };
+      return Response.json([{ lat: String(p.lat), lon: String(p.lng), name: p.name, address }]);
+    }
     if (url.hostname === "api.anthropic.com") {
       anthropicCalls.push(await req.json());
       if (options.anthropicError) {
@@ -48,7 +67,7 @@ export function fakeApis(options: { extraction?: object; anthropicError?: string
     throw new Error(`Unexpected fetch in test: ${req.method} ${req.url}`);
   });
 
-  return { sent, anthropicCalls, fetchSpy, texts: () => sent.map((m) => m.text) };
+  return { sent, anthropicCalls, geocoded, fetchSpy, texts: () => sent.map((m) => m.text) };
 }
 
 // What the model returns for a Flyer, in the schema of src/extraction/schema.json.
@@ -90,3 +109,7 @@ export function flyerEvent() {
 export function berlinDate(days: number): string {
   return new Date(Date.now() + days * 86_400_000).toLocaleDateString("en-CA", { timeZone: "Europe/Berlin" });
 }
+
+// The default Flyer's Venue, known already, so the bot asks no Venue question about it.
+export const knownVenue = (db: D1Database) =>
+  db.prepare("INSERT INTO venue (id, name, address, lat, lng) VALUES (1, 'Kulturfabrik Salzmann', 'Leipziger Str. 407, 34123 Kassel', 51.31, 9.53)");

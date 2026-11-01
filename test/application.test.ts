@@ -2,7 +2,7 @@ import { createExecutionContext, createScheduledController, waitOnExecutionConte
 import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
-import { fakeApis, flyer } from "./fake-apis";
+import { fakeApis, flyer, knownVenue } from "./fake-apis";
 import { deliver, feed, formFrom, get, post } from "./flow";
 import { buttonReply, imageMessage, ORGANIZER_NUMBER, textMessage } from "./whatsapp-fixtures";
 
@@ -15,6 +15,7 @@ beforeEach(async () => {
   await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')")
     .bind(ORGANIZER_NUMBER)
     .run();
+  await knownVenue(env.DB).run();
 });
 
 afterEach(() => vi.restoreAllMocks());

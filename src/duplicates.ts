@@ -6,17 +6,24 @@ import { formatDate } from "./whatsapp/summary";
 // on edit, never blocked, whoever posted the other Event. Events from the same Flyer don't count
 // (a Workshop before its Party), nor do cancelled ones.
 
-type Slot = { venueId: number; startsAt: string; endsAt: string | null; flyerKey: string | null; eventId: number | null };
+type Slot = {
+  venueId: number;
+  startsAt: string;
+  endsAt: string | null;
+  flyerKey: string | null;
+  eventId: number | null; // the Event itself, or the one a repost replaces
+  othersOf?: number; // only other Organizers' Events (the chat question; own ones are asked about as reposts)
+};
 
 const ASSUMED_HOURS = 2; // an Event without an end time
 const LONGEST_DAYS = 7; // how far back an overlapping Event can start (a Festival)
 
 // For an Event read from a Flyer, before it's published.
-export async function duplicatesOfExtracted(db: D1Database, e: ExtractedEvent, flyerKey: string): Promise<string[]> {
+export async function duplicatesOfExtracted(db: D1Database, e: ExtractedEvent, flyerKey: string, othersOf?: number): Promise<string[]> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(e.start_date) || !/^\d{2}:\d{2}$/.test(e.start_time)) return [];
   const venueId = await findVenue(db, e);
   if (!venueId || !(e.venue_name || e.venue_address || e.city)) return [];
-  return warnings(db, { venueId, startsAt: `${e.start_date}T${e.start_time}`, endsAt: endsAt(e), flyerKey, eventId: null });
+  return warnings(db, { venueId, startsAt: `${e.start_date}T${e.start_time}`, endsAt: endsAt(e), flyerKey, eventId: e.update_of ?? null, othersOf });
 }
 
 // For a published Event.
@@ -39,10 +46,11 @@ async function warnings(db: D1Database, slot: Slot): Promise<string[]> {
       `SELECT e.title, e.starts_at, e.ends_at, COALESCE(o.display_name, e.shown_as) AS posted_by
        FROM event e LEFT JOIN organizer o ON o.id = e.organizer_id
        WHERE e.venue_id = ? AND e.cancelled = 0 AND e.id IS NOT ? AND (? IS NULL OR e.flyer_key IS NOT ?)
+         AND (? IS NULL OR e.organizer_id IS NOT ?)
          AND e.starts_at < ? AND e.starts_at >= ?
        ORDER BY e.starts_at`,
     )
-    .bind(slot.venueId, slot.eventId, slot.flyerKey, slot.flyerKey, end, plusHours(slot.startsAt, -24 * LONGEST_DAYS))
+    .bind(slot.venueId, slot.eventId, slot.flyerKey, slot.flyerKey, slot.othersOf ?? null, slot.othersOf ?? null, end, plusHours(slot.startsAt, -24 * LONGEST_DAYS))
     .all<{ title: string; starts_at: string; ends_at: string | null; posted_by: string | null }>();
   return results
     .filter((o) => slot.startsAt < (o.ends_at ?? plusHours(o.starts_at, ASSUMED_HOURS)))

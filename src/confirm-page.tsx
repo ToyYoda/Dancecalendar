@@ -1,13 +1,13 @@
 import { Hono } from "hono";
 import { duplicatesOfExtracted } from "./duplicates";
 import { Card, CARD_CSS, fromForm, missing } from "./event-card";
-import { codeFlags } from "./extraction/checks";
 import type { ExtractedEvent, Extraction } from "./extraction/extract";
 import { Layout } from "./layout";
-import { editLink, publishSubmission, type Held, type Published } from "./publish";
+import { editLink, findVenue, publishSubmission, venueQuery, type Held, type Published } from "./publish";
 import { berlinDate } from "./whatsapp/bot";
 import { sendText } from "./whatsapp/graph";
-import { formatDate } from "./whatsapp/summary";
+import { guessVenue } from "./whatsapp/questions";
+import { formatDate, uncertainFields } from "./whatsapp/summary";
 
 // The private web confirm page (/c/<token>) behind [Ändern] and Admin uploads: one card per Event,
 // yellow = check, red = missing, and Publish stays disabled while a ticked Event misses something.
@@ -30,10 +30,14 @@ confirmPage.get("/:token", async (c) => {
   if (!s) return c.notFound();
   if (s.status !== "pending") return c.html(<AlreadyDone />);
   const today = berlinDate(new Date());
-  const events = (JSON.parse(s.extraction) as Extraction).events;
-  // A past Event can't be fixed on the page, so it starts unticked.
-  const include = events.map((e) => !(e.start_date && e.start_date < today));
-  return c.html(<ConfirmPage s={s} events={events} include={include} today={today} duplicates={await duplicates(c.env.DB, s, events)} />);
+  const extraction = JSON.parse(s.extraction) as Extraction;
+  const events = extraction.events;
+  // A past Event can't be fixed on the page, and one left out in the chat stays out, so both start unticked.
+  const include = events.map((e) => !e.dropped && !(e.start_date && e.start_date < today));
+  const notes = await cardNotes(c.env, s, events);
+  // Keeps what the geocoder found, so the next visit and the publish don't ask again.
+  await c.env.DB.prepare("UPDATE submission SET extraction = ? WHERE id = ?").bind(JSON.stringify(extraction), s.id).run();
+  return c.html(<ConfirmPage s={s} events={events} include={include} today={today} notes={notes} />);
 });
 
 confirmPage.get("/:token/flyer", async (c) => {
@@ -55,12 +59,11 @@ confirmPage.post("/:token", async (c) => {
   const include = events.map((_, i) => ticked.has(String(i)));
   const today = berlinDate(new Date());
   if (blocked(events, include, today)) {
-    return c.html(
-      <ConfirmPage s={s} events={events} include={include} today={today} duplicates={await duplicates(c.env.DB, s, events)} />,
-      422,
-    );
+    return c.html(<ConfirmPage s={s} events={events} include={include} today={today} notes={await cardNotes(c.env, s, events)} />, 422);
   }
 
+  // A new Venue gets the coordinates of what the page showed, or of the address typed in since.
+  for (const e of events) if (venueQuery(e) && !(await findVenue(c.env.DB, e))) await guessVenue(c.env, e);
   const ready = events.filter((_, i) => include[i]);
   const skipped = events.filter((_, i) => !include[i]);
   const result = await publishSubmission(c.env, s, ready, skipped);
@@ -83,16 +86,29 @@ async function load(db: D1Database, token: string) {
     .first<Submission>();
 }
 
-const duplicates = (db: D1Database, s: Submission, events: ExtractedEvent[]) =>
-  Promise.all(events.map((e) => duplicatesOfExtracted(db, e, s.flyer_key)));
+type Notes = { warnings: string[]; venue?: string };
+
+// Per card: a repost's update, likely duplicates, and for a new Venue what the geocoder found.
+async function cardNotes(env: Env, s: Submission, events: ExtractedEvent[]): Promise<Notes[]> {
+  return Promise.all(
+    events.map(async (e) => {
+      const warnings = await duplicatesOfExtracted(env.DB, e, s.flyer_key);
+      if (e.update_of) warnings.unshift("Ersetzt dein bestehendes Event, der alte Link gilt weiter.");
+      if (!venueQuery(e) || (await findVenue(env.DB, e))) return { warnings };
+      const place = await guessVenue(env, e);
+      const venue = place ? `Neuer Ort, auf der Karte gefunden: ${place.label}` : "Neuer Ort, auf der Karte nicht gefunden – bitte die Adresse prüfen.";
+      return { warnings, venue };
+    }),
+  );
+}
 
 const blocked = (events: ExtractedEvent[], include: boolean[], today: string) =>
   !include.some(Boolean) || events.some((e, i) => include[i] && Object.keys(missing(e, today)).length > 0);
 
-// What the model or the code checks found uncertain, by field.
+// What the model or the code checks found uncertain and the chat hasn't settled, by field.
 function uncertain(e: ExtractedEvent, receivedOn: string): Map<string, string> {
   const out = new Map<string, string>();
-  for (const f of [...e.uncertain_fields.map((f) => f.split(".")[0]), ...codeFlags(e, receivedOn)]) out.set(f, "bitte prüfen");
+  for (const f of uncertainFields(e, receivedOn)) out.set(f, "bitte prüfen");
   // Same hint as the chat's "Flyer vom letzten Jahr?", but here the Organizer can fix the date.
   if (e.uncertain_fields.includes("start_date") && e.start_date > addDays(receivedOn, 183)) {
     out.set("start_date", "fast ein Jahr entfernt – stimmt das Jahr?");
@@ -108,7 +124,7 @@ function addDays(iso: string, days: number): string {
 
 const publishLabel = (n: number) => (n === 1 ? "1 Event veröffentlichen" : `${n} Events veröffentlichen`);
 
-function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: boolean[]; today: string; duplicates: string[][] }) {
+function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: boolean[]; today: string; notes: Notes[] }) {
   const { s, events, include, today } = props;
   const isBlocked = blocked(events, include, today);
   return (
@@ -122,7 +138,7 @@ function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: 
       </p>
       <form id="confirm" method="post" data-today={today}>
         {events.map((e, i) => (
-          <Card i={i} e={e} include={include[i]} red={missing(e, today)} yellow={uncertain(e, s.received_on)} warnings={props.duplicates[i]} />
+          <Card i={i} e={e} include={include[i]} red={missing(e, today)} yellow={uncertain(e, s.received_on)} warnings={props.notes[i].warnings} venue={props.notes[i].venue} />
         ))}
         <button name="publish" type="submit" class="publish" disabled={isBlocked}>
           {publishLabel(include.filter(Boolean).length)}

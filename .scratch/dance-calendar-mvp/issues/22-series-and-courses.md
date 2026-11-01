@@ -19,6 +19,8 @@ See [Event data model](06-event-data-model.md), [ADR 0001](../../../docs/adr/000
   - An edit can apply to one occurrence or to the whole Series.
   - Cancelling one occurrence leaves the rest.
 
+Since [Blocking questions in chat](21-blocking-questions.md), the questions live in `src/whatsapp/questions.ts`; the Series-rule question goes between "repost" and "time" in `nextQuestion`, with its answer stored on the held Event like the others.
+
 ## Done when
 
 - Tests are green (Cron run with a fixed clock) and the slice is deployed.

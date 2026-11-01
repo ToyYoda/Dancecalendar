@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { berlinDate, fakeApis, flyer } from "./fake-apis";
+import { berlinDate, fakeApis, flyer, knownVenue } from "./fake-apis";
 import { deliver, feed, formFrom, get, inputTag, post } from "./flow";
 import { buttonReply, imageMessage, ORGANIZER_NUMBER } from "./whatsapp-fixtures";
 
@@ -11,6 +11,7 @@ beforeEach(async () => {
   await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')")
     .bind(ORGANIZER_NUMBER)
     .run();
+  await knownVenue(env.DB).run();
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -53,13 +54,13 @@ describe("the web confirm page behind [Ändern]", () => {
   });
 
   it("marks uncertain fields yellow and missing ones red, and keeps Publish disabled while anything is missing", async () => {
-    const api = fakeApis({ extraction: flyer([{ uncertain_fields: ["venue_name"], start_time: "" }]) });
+    const api = fakeApis({ extraction: flyer([{ uncertain_fields: ["venue_name"], start_date: "" }]) });
     const link = await openConfirmPage(api);
 
     const html = await (await get(link)).text();
 
     expect(inputTag(html, "venue_name.0")).toMatch(/class="[^"]*\bunc\b/);
-    expect(inputTag(html, "start_time.0")).toMatch(/class="[^"]*\bmiss\b/);
+    expect(inputTag(html, "start_date.0")).toMatch(/class="[^"]*\bmiss\b/);
     expect(inputTag(html, "title.0")).not.toMatch(/\b(unc|miss)\b/);
     expect(inputTag(html, "publish")).toContain("disabled");
   });
@@ -83,15 +84,15 @@ describe("the web confirm page behind [Ändern]", () => {
     expect(await (await get(editLink)).text()).toContain("Salsa Night XXL");
   });
 
-  it("won't publish while a ticked Event is missing its start time, and publishes the rest once it is unticked", async () => {
-    const api = fakeApis({ extraction: flyer([{}, { title: "Weihnachtsfeier", start_date: berlinDate(4), start_time: "" }]) });
+  it("won't publish while a ticked Event is missing its date, and publishes the rest once it is unticked", async () => {
+    const api = fakeApis({ extraction: flyer([{}, { title: "Weihnachtsfeier", start_date: "" }]) });
     const link = await openConfirmPage(api);
     const fields = formFrom(await (await get(link)).text());
 
     const refused = await submit(link, fields);
 
     expect(refused.status).toBe(422);
-    expect(inputTag(await refused.text(), "start_time.1")).toMatch(/\bmiss\b/);
+    expect(inputTag(await refused.text(), "start_date.1")).toMatch(/\bmiss\b/);
     expect(await feed()).not.toContain("Salsa Night");
 
     fields.delete("include");
@@ -105,15 +106,15 @@ describe("the web confirm page behind [Ändern]", () => {
     expect(api.sent.at(-1)!.text).toContain("Nicht eingetragen: Weihnachtsfeier");
   });
 
-  it("publishes an Event once its missing start time is filled in on the page", async () => {
-    const api = fakeApis({ extraction: flyer([{ start_time: "" }]) });
+  it("publishes an Event once its missing date is filled in on the page", async () => {
+    const api = fakeApis({ extraction: flyer([{ start_date: "" }]) });
     const link = await openConfirmPage(api);
     const fields = formFrom(await (await get(link)).text());
-    fields.set("start_time.0", "20:30");
+    fields.set("start_date.0", berlinDate(2));
 
     await submit(link, fields);
 
-    expect(await feed()).toContain("20:30");
+    expect(await feed()).toContain("Salsa Night");
   });
 
   it("refuses a date in the past", async () => {

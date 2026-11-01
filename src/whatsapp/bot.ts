@@ -1,7 +1,7 @@
 import { answerOwnership, askOwnership, TIP_THANKS } from "../application";
-import { duplicatesOfExtracted } from "../duplicates";
 import { extractFlyer, type Extraction } from "../extraction/extract";
-import { publishable, summary } from "./summary";
+import { answerButton, answerTyped, continueFlyer } from "./questions";
+import { publishable } from "./summary";
 import { downloadMedia, sendButtons, sendText } from "./graph";
 import { publishSubmission, randomToken } from "../publish";
 import type { InboundMessage } from "./types";
@@ -60,9 +60,9 @@ export async function handleMessage(env: Env, message: InboundMessage) {
   }
 
   if (message.type === "image") return receiveFlyer(env, message, organizer);
-  if (message.type === "interactive" && message.interactive?.button_reply) {
-    return pressButton(env, from, organizer, message.interactive.button_reply.id);
-  }
+  if (buttonId.startsWith("q|")) return answerButton(env, from, organizer.id, buttonId);
+  if (buttonId) return pressButton(env, from, organizer, buttonId);
+  if (message.type === "text" && (await answerTyped(env, from, organizer.id, message.text!.body))) return;
   if (message.type === "text") return sendText(env, from, "Schick mir einfach einen Flyer als Bild, dann trage ich die Veranstaltung ein.");
   return sendText(env, from, "Bitte schick den Flyer als Bild (Foto oder Screenshot).");
 }
@@ -108,16 +108,7 @@ export async function offerFlyer(
   await env.DB.prepare("INSERT INTO submission (id, organizer_id, flyer_key, received_on, extraction) VALUES (?, ?, ?, ?, ?)")
     .bind(id, organizer.id, flyerKey, receivedOn, JSON.stringify(extraction))
     .run();
-
-  const duplicates = await Promise.all(extraction.events.map((e) => duplicatesOfExtracted(env.DB, e, flyerKey)));
-  const text = summary(extraction.events, receivedOn, organizer.first_name, duplicates);
-  // Without a publishable Event there's nothing to publish as is, but a missing time or date can be fixed on the confirm page.
-  const buttons = [
-    ...(extraction.events.some((e) => publishable(e, receivedOn)) ? [{ id: `publish:${id}`, title: "Veröffentlichen" }] : []),
-    { id: `edit:${id}`, title: "Ändern ✏️" },
-    { id: `discard:${id}`, title: "Verwerfen" },
-  ];
-  return sendButtons(env, to, text, buttons);
+  return continueFlyer(env, to, id);
 }
 
 async function pressButton(env: Env, from: string, organizer: Organizer, buttonId: string) {
@@ -146,9 +137,9 @@ async function pressButton(env: Env, from: string, organizer: Organizer, buttonI
     );
   }
   if (action === "publish") {
-    const extraction = JSON.parse(submission.extraction) as Extraction;
-    const ready = extraction.events.filter((e) => publishable(e, submission.received_on));
-    const skipped = extraction.events.filter((e) => !publishable(e, submission.received_on));
+    const events = (JSON.parse(submission.extraction) as Extraction).events.filter((e) => !e.dropped);
+    const ready = events.filter((e) => publishable(e, submission.received_on));
+    const skipped = events.filter((e) => !publishable(e, submission.received_on));
     const result = await publishSubmission(env, submission, ready, skipped);
     return sendText(env, from, result ? result.text : "Dieser Flyer ist schon erledigt.");
   }

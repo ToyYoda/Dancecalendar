@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Job } from "../src/index";
-import { berlinDate, fakeApis, flyer, type FlyerEvent } from "./fake-apis";
+import { berlinDate, fakeApis, flyer, knownVenue, type FlyerEvent } from "./fake-apis";
 import { deliver, feed, formFrom, get, inputTag, post, runJob } from "./flow";
 import { buttonReply, imageMessage, ORGANIZER_NUMBER } from "./whatsapp-fixtures";
 
@@ -14,6 +14,7 @@ beforeEach(async () => {
       ORGANIZER_NUMBER,
     ),
     env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (2, '4915200000002', 'Bachata Göttingen')"),
+    knownVenue(env.DB),
   ]);
 });
 
@@ -31,7 +32,9 @@ async function publishFlyer(api: ReturnType<typeof fakeApis>) {
 
 // An Event already in the calendar, posted by the other Organizer.
 async function otherEvent(e: { title: string; venue: string; startsAt: string; endsAt?: string; cancelled?: number }) {
-  const venue = await env.DB.prepare("INSERT INTO venue (name) VALUES (?) RETURNING id").bind(e.venue).first<{ id: number }>();
+  const venue =
+    (await env.DB.prepare("SELECT id FROM venue WHERE name = ?").bind(e.venue).first<{ id: number }>()) ??
+    (await env.DB.prepare("INSERT INTO venue (name) VALUES (?) RETURNING id").bind(e.venue).first<{ id: number }>());
   await env.DB.prepare("INSERT INTO event (title, type, starts_at, ends_at, venue_id, organizer_id, cancelled) VALUES (?, 'party', ?, ?, ?, 2, ?)")
     .bind(e.title, e.startsAt, e.endsAt ?? null, venue!.id, e.cancelled ?? 0)
     .run();
@@ -131,23 +134,12 @@ describe("an Event's private edit link", () => {
 describe("a likely duplicate (same Venue, overlapping time)", () => {
   const night = (days: number, time: string) => `${berlinDate(days)}T${time}`;
 
-  it("is warned about in the chat summary, and publishing still works", async () => {
-    await otherEvent({ title: "Bachata Party", venue: "Kulturfabrik Salzmann", startsAt: night(3, "22:00"), endsAt: night(4, "03:00") });
-    const api = fakeApis();
-
-    const links = await publishFlyer(api);
-
-    const summary = api.sent.find((m) => m.buttons.length > 0)!.text;
-    expect(summary).toContain("Bachata Party");
-    expect(summary).toContain("Bachata Göttingen");
-    expect(summary).toContain("doppelt?");
-    expect(links).toHaveLength(1);
-  });
-
-  it("is warned about on the confirm page", async () => {
-    await otherEvent({ title: "Bachata Party", venue: "kulturfabrik  salzmann", startsAt: night(3, "20:00") });
+  // In the chat it's a question (test/questions.test.ts).
+  it("is warned about on the confirm page, even after keeping both in the chat", async () => {
+    await otherEvent({ title: "Bachata Party", venue: "Kulturfabrik Salzmann", startsAt: night(3, "20:00") });
     const api = fakeApis();
     await deliver(imageMessage("media1"));
+    await deliver(buttonReply(api.sent.at(-1)!.buttons.find((b) => b.title === "Beide behalten")!.id));
     await deliver(buttonReply(api.sent.at(-1)!.buttons.find((b) => b.title === "Ändern ✏️")!.id));
     const link = api.sent.at(-1)!.text.match(/https:\/\/dancecalendar\.test\/c\/\S+/)![0];
 

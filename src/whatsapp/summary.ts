@@ -28,7 +28,8 @@ const STYLE_NAMES: Record<string, string> = {
   west_coast_swing: "West Coast Swing",
 };
 
-// Why an Event can't be published, or null if it can. Questions for a missing date or time come with ticket 21.
+// Why an Event can't be published, or null if it can. A missing start time is asked about in the chat
+// first (questions.ts); a missing date is fixed on the confirm page.
 export function blocker(e: ExtractedEvent, receivedOn: string): string | null {
   if (!e.start_date) return "ohne Datum – wird nicht eingetragen";
   if (!e.start_time) return "ohne Uhrzeit – wird nicht eingetragen";
@@ -42,30 +43,36 @@ export function blocker(e: ExtractedEvent, receivedOn: string): string | null {
 
 export const publishable = (e: ExtractedEvent, receivedOn: string) => blocker(e, receivedOn) === null;
 
-// `duplicates` holds each Event's likely-duplicate warnings, by index.
-export function summary(events: ExtractedEvent[], receivedOn: string, firstName: string | null, duplicates: string[][] = []): string {
+export function summary(events: ExtractedEvent[], receivedOn: string, firstName: string | null): string {
   const count = events.length === 1 ? "1 Event" : `${events.length} Events`;
   const hello = firstName ? `Danke, ${firstName}!` : "Danke!";
-  const blocks = events.map((e, i) => eventBlock(e, receivedOn, duplicates[i] ?? []));
-  return [`${hello} Ich habe ${count} auf dem Flyer erkannt:`, ...blocks].join("\n\n");
+  return [`${hello} Ich habe ${count} auf dem Flyer erkannt:`, ...events.map((e) => eventBlock(e, receivedOn))].join("\n\n");
 }
 
-function eventBlock(e: ExtractedEvent, receivedOn: string, duplicates: string[]): string {
+// Fields the Organizer has answered a question about in the chat no longer need checking.
+const ANSWERED_FIELDS = { time: ["start_time"], venue: ["venue_name", "venue_address", "city"] };
+
+// What the model or the code checks found uncertain, minus what the Organizer has answered.
+export function uncertainFields(e: ExtractedEvent, receivedOn: string): Set<string> {
+  const settled = new Set(Object.entries(ANSWERED_FIELDS).flatMap(([q, fields]) => (e.answered?.[q as "time"] ? fields : [])));
+  return new Set([...e.uncertain_fields.map((f) => f.split(".")[0]), ...codeFlags(e, receivedOn)].filter((f) => !settled.has(f)));
+}
+
+function eventBlock(e: ExtractedEvent, receivedOn: string): string {
   const lines = [`*${e.title || "(ohne Titel)"}*`];
   const when = [formatDate(e.start_date, receivedOn), e.start_time].filter(Boolean).join(" · ");
   lines.push(e.intro_class_time ? `${when} (Einsteigerkurs ${e.intro_class_time})` : when);
   lines.push(`📍 ${[e.venue_name, e.venue_address, e.city].filter(Boolean).join(", ")}`);
   lines.push([TYPE_NAMES[e.type], e.styles.map((s) => STYLE_NAMES[s] ?? s).join(", ")].filter(Boolean).join(" · "));
   if (e.series.is_series) lines.push(`🔁 ${e.series.rule_text} – vorerst nur dieser Termin`);
+  if (e.update_of) lines.push("✏️ ersetzt dein bestehendes Event, der alte Link gilt weiter");
 
   const why = blocker(e, receivedOn);
   if (why) {
     lines.push(`⚠️ ${why}`);
   } else {
-    const uncertain = new Set([...e.uncertain_fields.map((f) => f.split(".")[0]), ...codeFlags(e, receivedOn)]);
-    const names = [...new Set([...uncertain].map((f) => FIELD_NAMES[f]).filter(Boolean))];
+    const names = [...new Set([...uncertainFields(e, receivedOn)].map((f) => FIELD_NAMES[f]).filter(Boolean))];
     if (names.length) lines.push(`⚠️ bitte prüfen: ${names.join(", ")}`);
-    for (const d of duplicates) lines.push(`⚠️ ${d}`);
   }
   return lines.join("\n");
 }

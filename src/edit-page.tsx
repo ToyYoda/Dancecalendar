@@ -3,9 +3,10 @@ import { duplicatesOfEvent } from "./duplicates";
 import { Card, CARD_CSS, fromForm, missing } from "./event-card";
 import type { ExtractedEvent } from "./extraction/extract";
 import { Layout } from "./layout";
-import { columns } from "./publish";
+import { columns, findVenue, venueQuery } from "./publish";
 import { queueUpload, waitForUpload } from "./upload";
 import { berlinDate } from "./whatsapp/bot";
+import { guessVenue } from "./whatsapp/questions";
 
 // The target of an Event's private edit link (/e/<token>, no login): change any field with the confirm
 // page's card, cancel the Event (it stays in the feed, marked) or take that back, and upload another
@@ -47,6 +48,7 @@ editPage.post("/:token", async (c) => {
   const red = missing(e, berlinDate(new Date()));
   if (Object.keys(red).length) return c.html(<EditPage token={token} row={row} event={e} red={red} warnings={[]} />, 422);
 
+  if (venueQuery(e) && !(await findVenue(c.env.DB, e))) await guessVenue(c.env, e); // a new Venue's coordinates
   const col = await columns(c.env.DB, e);
   await c.env.DB.prepare(
     `UPDATE event SET title = ?, type = ?, styles = ?, starts_at = ?, ends_at = ?, intro_class_at = ?, level = ?, price = ?, venue_id = ?

@@ -1,6 +1,6 @@
 import { env, exports } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { berlinDate, fakeApis, flyer } from "./fake-apis";
+import { berlinDate, fakeApis, flyer, knownVenue } from "./fake-apis";
 import { deliver, feed } from "./flow";
 import { buttonReply, documentMessage, imageMessage, ORGANIZER_NUMBER, textMessage } from "./whatsapp-fixtures";
 
@@ -11,6 +11,7 @@ beforeEach(async () => {
   await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')")
     .bind(ORGANIZER_NUMBER)
     .run();
+  await knownVenue(env.DB).run();
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -70,20 +71,21 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(await page.text()).toContain("Salsa Night");
   });
 
-  it("reuses a known Venue instead of creating it again", async () => {
-    await env.DB.prepare("INSERT INTO venue (id, name, address) VALUES (7, 'Kulturfabrik  salzmann', 'Kassel')").run();
-    const api = fakeApis();
+  it("reuses a known Venue instead of creating it again, without asking about it", async () => {
+    const api = fakeApis({ extraction: flyer([{ venue_name: "KULTURFABRIK  salzmann" }]) });
     await deliver(imageMessage("media1"));
 
     await deliver(buttonReply(api.sent.at(-1)!.buttons[0].id));
 
     const { results } = await env.DB.prepare("SELECT venue_id FROM event").all<{ venue_id: number }>();
-    expect(results).toEqual([{ venue_id: 7 }]);
+    expect(results).toEqual([{ venue_id: 1 }]);
+    expect(api.geocoded).toEqual([]);
   });
 
   it("names the Venue after its address when the Flyer prints only an address", async () => {
     const api = fakeApis({ extraction: flyer([{ venue_name: "", venue_address: "Wilhelmshöher Allee 254 - Deck 4", city: "" }]) });
     await deliver(imageMessage("media1"));
+    await deliver(buttonReply(api.sent.at(-1)!.buttons.find((b) => b.title === "Ohne Adresse")!.id));
 
     await deliver(buttonReply(api.sent.at(-1)!.buttons[0].id));
 
@@ -101,12 +103,12 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(api.sent.at(-1)!.buttons[0].title).toBe("Veröffentlichen");
   });
 
-  it("leaves out an Event without a start time, says so, and publishes the rest", async () => {
+  it("leaves out an Event without a date, says so, and publishes the rest", async () => {
     const api = fakeApis({
-      extraction: flyer([{}, { title: "Weihnachtsfeier", start_date: berlinDate(4), start_time: "" }]),
+      extraction: flyer([{}, { title: "Weihnachtsfeier", start_date: "" }]),
     });
     await deliver(imageMessage("media1"));
-    expect(api.sent.at(-1)!.text).toMatch(/Weihnachtsfeier[\s\S]*ohne Uhrzeit/);
+    expect(api.sent.at(-1)!.text).toMatch(/Weihnachtsfeier[\s\S]*ohne Datum/);
 
     await deliver(buttonReply(api.sent.at(-1)!.buttons[0].id));
 
@@ -143,7 +145,7 @@ describe("a registered Organizer forwards a Flyer", () => {
   });
 
   it("offers no Veröffentlichen when no Event can be published as is", async () => {
-    const api = fakeApis({ extraction: flyer([{ start_time: "" }]) });
+    const api = fakeApis({ extraction: flyer([{ start_date: "" }]) });
 
     await deliver(imageMessage("media1"));
 

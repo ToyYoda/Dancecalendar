@@ -50,3 +50,8 @@ A registered Organizer forwards a Flyer, taps [Veröffentlichen], and the Events
 ## Out of scope
 
 Blocking questions, Series, Venue geocoding (Venues are matched by name or created bare), duplicates and Tips.
+
+## Comments
+
+- 2026-11-01, Development mode: Meta's webhook guide says "Make sure your app is in Live mode; some webhooks will not be sent if your app is in Dev mode." It doesn't say which ones, so the demo runs in Live mode as planned.
+- 2026-11-01, eval re-run: the prompt and schema were moved to `src/extraction/` and are byte-identical to v2. A fresh run (`--label v2-src`) gave 25/25 Events, the right Event count on 17/17 Flyers, and 0 silent errors at $0.23 and 3.0 s median, the same as v2. One field differed from the first v2 run: the Venue on F02 was wrong, but it was flagged, so the Organizer would see it. This is normal run-to-run variation.

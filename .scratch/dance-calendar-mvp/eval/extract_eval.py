@@ -33,12 +33,12 @@ SYSTEM = (EXTRACTION / "prompt.md").read_text(encoding="utf-8").rstrip("\n")
 
 
 
-def run(models, effort, only):
+def run(models, effort, only, label=PROMPT_VERSION):
     import anthropic
 
     client = anthropic.Anthropic()
     for model in models:
-        out_dir = RESULTS / f"{model}@{effort}@{PROMPT_VERSION}"
+        out_dir = RESULTS / f"{model}@{effort}@{label}"
         out_dir.mkdir(parents=True, exist_ok=True)
         for fid, flyer in GT.items():
             if only and fid not in only:
@@ -257,8 +257,9 @@ if __name__ == "__main__":
     ap.add_argument("--models", default=",".join(MODELS))
     ap.add_argument("--effort", default="medium")
     ap.add_argument("--only", default="")
+    ap.add_argument("--label", default=PROMPT_VERSION, help="results folder suffix, e.g. v2-src for a fresh re-run")
     a = ap.parse_args()
     if a.cmd == "run":
-        run(a.models.split(","), a.effort, set(filter(None, a.only.split(","))))
+        run(a.models.split(","), a.effort, set(filter(None, a.only.split(","))), a.label)
     else:
         score()

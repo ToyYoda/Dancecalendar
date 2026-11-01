@@ -2,7 +2,7 @@
 
 Type: task
 Blocked by: 21
-Status: claimed
+Status: resolved
 Labels: wayfinder:task
 
 ## Scope
@@ -30,6 +30,16 @@ Since [Blocking questions in chat](21-blocking-questions.md), the questions live
 ## Out of scope
 
 The Admin's "12 Wochen verlängern" and the email listing for Series running out (that's [Admin tools](25-admin-tools-and-email.md)).
+
+## Answer
+
+Live since 2026-11-01 (f45e409). The demo passed in production: a weekly Party Flyer → "🔁 Jeden …" in the summary → published → the Series page listed 12 dates → one date cancelled ("abgesagt" in the feed) → the Series' start time changed and the dates ahead followed.
+
+- Rules (`src/series.ts`): weekly, every N weeks, Nth or last weekday of the month, and "custom" (typed, generates nothing until the Admin checks it). Stored on `series` with the shared fields and `generated_until` (migration 0007).
+- Events are generated 12 weeks ahead at publishing and by a daily cron (`30 2 * * *`), never past 12 weeks after the last sign of life. Every repost, save or cancel counts as one.
+- Chat: a Series without a date asks for the next one, then an ambiguous rule is asked about ([Alle 2 Wochen] [2. Mi im Monat] [Anders …]). The summary shows the rule in plain words with its first dates. The same Series Flyer again extends the Series without a question.
+- Links: one Series link (`/s/<token>`) per Series. It changes the shared fields or the rule from a new next date on, lists the dates with their own edit links, and ends the Series. Dates changed on their own keep their change. The confirm page has a "Wiederholung" select.
+- Handed on: free-text rules and ending a removed Organizer's Series → "Admin tools"; Tip Series → "Tips"; showing Courses → "Full Dancer overview".
 
 ## Comments
 

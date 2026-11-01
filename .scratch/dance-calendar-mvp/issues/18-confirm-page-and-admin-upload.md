@@ -1,7 +1,7 @@
 # Web confirm page and Admin Flyer upload
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 17
 Labels: wayfinder:task
 
@@ -26,6 +26,18 @@ See [Organizer confirmation flow](08-organizer-confirmation-flow.md) and [Admin 
 ## Out of scope
 
 Tip review cards (that's [Tips](24-tips.md), which reuses this page) and Venue geocoding.
+
+## Answer
+
+Live since 2026-11-01 (0d06f8a, fixes in 43bd48d and 7095b4a). Both demos passed in production: a WhatsApp Flyer (Latin Social) went chat → [Ändern] → confirm page → online, and sample Flyer 07 went `/admin/upload` → confirm page (date corrected) → online.
+
+- `/c/<token>` confirm page as specified. The token is set lazily on [Ändern]; `submission.source` marks Admin uploads (migration 0003). A past Event starts unticked; the server re-checks on POST.
+- [Ändern] is offered even when nothing can be published as is, because the page is where a missing time or a wrong date gets fixed until "Blocking questions in chat" lands.
+- Chat and page publish through one claim (`publishSubmission`), so a Flyer can't go online twice.
+- `/admin/*` uses Basic auth with the `ADMIN_SECRET` Worker secret until Cloudflare Access. An upload goes R2 → `admin_upload` job on the same queue → waiting page → confirm page; no WhatsApp message. A failed extraction is retried twice, then the waiting page shows the error.
+- Extraction prompt v3: a Party without a printed start begins when its intro class ends, flagged uncertain (Flyer 07 now 22:00; the other class-before-party Flyers unchanged).
+- Found on the way: a Flyer without a year, sent long after the date, is placed a year ahead with no warning. Ticketed as "Wrong year on an old Flyer without a year".
+- The Worker's Anthropic key is the one in the git-ignored `.dev.vars`; after changing it there, copy it to the Worker with `wrangler secret put ANTHROPIC_API_KEY` (the Worker can't read `.dev.vars`). The eval reads it from `.dev.vars` too.
 
 ## Comments
 

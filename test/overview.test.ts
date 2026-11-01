@@ -60,7 +60,7 @@ async function add(e: Ev) {
 const page = async (query = "") => (await get(`http://dancecalendar.test/${query}`)).text();
 
 describe("the Flyer feed", () => {
-  it("shows today and the next 7 days around Kassel and Göttingen by default", async () => {
+  it("shows today and the next 7 days everywhere, without km, until a place is known", async () => {
     await add({ title: "Gestern Party", day: -1 });
     await add({ title: "Heute Party", day: 0, time: "23:30" });
     await add({ title: "Göttingen Party", day: 2, venue: 2 });
@@ -71,11 +71,39 @@ describe("the Flyer feed", () => {
 
     expect(html).toContain("Heute Party");
     expect(html).toContain("Göttingen Party");
+    expect(html).toContain("Fulda Party");
     expect(html).toContain("Kulturfabrik Salzmann");
     expect(html).toContain("Salsa Kassel");
     expect(html).not.toContain("Gestern Party");
-    expect(html).not.toContain("Fulda Party");
     expect(html).not.toContain("Ferne Party");
+    expect(html).not.toMatch(/\d km/);
+    expect(html).toContain('class="hint"'); // allow the location or pick a place on the map
+    expect(html).toContain("data-autogeo"); // the browser is asked for the position
+  });
+
+  it("has no city chips, only my location and a place on the map", async () => {
+    const html = await page();
+
+    expect(html).not.toContain("Kassel + Göttingen");
+    expect(html).not.toContain("c=kassel");
+    expect(html).not.toContain("c=goettingen");
+    expect(html).toContain("Mein Standort");
+    expect(html).toContain('href="/karte"');
+    expect(html).not.toContain("r=10"); // no radius without a place
+    expect(await page("?c=51.31,9.48")).toContain("r=10");
+  });
+
+  it("treats an old city link like no place", async () => {
+    await add({ title: "Fulda Party", venue: 3 });
+
+    const html = await page("?c=kassel&r=25");
+
+    expect(html).toContain("Fulda Party");
+    expect(html).not.toMatch(/\d km/);
+  });
+
+  it("loads nothing from other sites until the map is opened", async () => {
+    expect(await page()).not.toContain("openfreemap");
   });
 
   it("opens a Göttingen-only, Bachata-only, Party-only link with the right Events", async () => {
@@ -85,22 +113,23 @@ describe("the Flyer feed", () => {
     await add({ title: "Bachata Workshop Göttingen", venue: 2, styles: ["bachata"], type: "workshop" });
     await add({ title: "Ohne Stil Göttingen", venue: 2, styles: [] });
 
-    const html = await page("?c=goettingen&r=25&styles=bachata&type=party");
+    const html = await page("?c=51.54,9.92&r=25&styles=bachata&type=party");
 
     expect(html).toContain("Bachata Göttingen");
     expect(html).not.toContain("Salsa Göttingen");
     expect(html).not.toContain("Bachata Kassel");
     expect(html).not.toContain("Bachata Workshop Göttingen");
     expect(html).not.toContain("Ohne Stil Göttingen"); // hidden once a style is picked
-    expect(await page("?c=goettingen&r=25")).toContain("Ohne Stil Göttingen");
+    expect(await page("?c=51.54,9.92&r=25")).toContain("Ohne Stil Göttingen");
   });
 
   it("shows far-away Events with überall, and Events at a Venue without coordinates always", async () => {
     await add({ title: "Fulda Party", venue: 3 });
     await add({ title: "Pelzer Party", venue: 4 });
 
-    expect(await page("?r=all")).toContain("Fulda Party");
-    expect(await page("?c=goettingen&r=10")).toContain("Pelzer Party");
+    expect(await page("?c=51.54,9.92&r=all")).toContain("Fulda Party");
+    expect(await page("?c=51.54,9.92&r=10")).not.toContain("Fulda Party");
+    expect(await page("?c=51.54,9.92&r=10")).toContain("Pelzer Party");
   });
 
   it("takes a shared location, rounded to about a kilometre", async () => {
@@ -181,13 +210,30 @@ describe("the calendar view", () => {
     await add({ title: "Kassel Salsa", day: 2 });
     await add({ title: "Göttingen Salsa", day: 2, venue: 2 });
 
-    const html = await page(`?view=cal&c=kassel&r=25&d=${berlinDate(2)}`);
+    const html = await page(`?view=cal&c=51.31,9.48&r=25&d=${berlinDate(2)}`);
 
     expect(html).toContain("Kassel Salsa");
     expect(html).not.toContain("Göttingen Salsa");
     expect(html).toMatch(/class="cell[^"]*sel/);
     // Switching back to the feed keeps the place.
-    expect(html).toMatch(/href="\/\?c=kassel&amp;r=25"/);
+    expect(html).toMatch(/href="\/\?c=51.31,9.48&amp;r=25"/);
+  });
+});
+
+describe("the map to pick a place", () => {
+  it("loads MapLibre from this site and the tiles from OpenFreeMap, and goes back with the filters kept", async () => {
+    const html = await page("karte?styles=salsa&c=51.31,9.48&lang=en");
+
+    expect(html).toContain('src="/vendor/maplibre-gl.js"');
+    expect(html).toContain('href="/vendor/maplibre-gl.css"');
+    expect(html).toContain("tiles.openfreemap.org");
+    expect(html).toContain('data-center="51.31,9.48"');
+    expect(html).toContain('data-back="/?styles=salsa&amp;lang=en"'); // the picked place is added as c
+    expect(html).toContain('lang="en"');
+  });
+
+  it("is linked from the place filter, keeping the other filters", async () => {
+    expect(await page("?styles=bachata")).toContain('href="/karte?styles=bachata"');
   });
 });
 

@@ -19,7 +19,7 @@ const PAGES: Record<string, { de: string; en: string; body: (op: Operator, lang:
   "/datenloeschung": { de: "Datenlöschung", en: "Data deletion", body: (op, lang) => (lang === "en" ? <DeletionEn op={op} /> : <DeletionDe op={op} />) },
 };
 
-const UPDATED = { de: "Stand: 1. November 2026", en: "Last updated: 1 November 2026" };
+const UPDATED = { de: "Stand: 1. November 2026", en: "Last updated: 1 November 2026" }; // bump when the text changes
 
 const CSS = `
   main li { border: 0; padding: .25rem 0; }
@@ -153,7 +153,10 @@ function PrivacyDe(props: { op: Operator }) {
 
       <h2>2. Kurz gesagt</h2>
       <ul>
-        <li>Keine Cookies, kein Tracking, keine Analyse- oder Werbedienste, keine eingebetteten Inhalte Dritter. Darum gibt es kein Cookie-Banner.</li>
+        <li>
+          Keine Cookies, kein Tracking, keine Analyse- oder Werbedienste. Darum gibt es kein Cookie-Banner. Inhalte Dritter lädt nur die Karte zum
+          Ortwählen, und erst, wenn du sie öffnest (Abschnitt 3).
+        </li>
         <li>Tänzer*innen brauchen kein Konto. Filter stehen nur in der Adresse (URL) der Seite.</li>
         <li>Telefonnummern und wer einen Tipp geschickt hat, erscheinen nie öffentlich.</li>
       </ul>
@@ -165,8 +168,14 @@ function PrivacyDe(props: { op: Operator }) {
         lit. f DSGVO (sicherer Betrieb der Website).
       </p>
       <p>
-        Wählst du „Mein Standort“, fragt dein Browser um Erlaubnis. Die Koordinaten stehen dann in der Adresse der Seite, dienen nur dem Filter nach Entfernung
-        und werden nicht gespeichert.
+        Damit Entfernungen von dir aus gelten, fragt die Seite deinen Browser nach deinem Standort; der Browser fragt dich um Erlaubnis. Gibst du ihn frei,
+        stehen die auf etwa einen Kilometer gerundeten Koordinaten in der Adresse der Seite. Sie dienen nur dem Filter nach Entfernung und werden nicht
+        gespeichert. Ohne Freigabe siehst du alle Events ohne Entfernungen.
+      </p>
+      <p>
+        Öffnest du „Auf Karte wählen“, lädt dein Browser Kartenbilder von OpenFreeMap (openfreemap.org). Dabei erhält OpenFreeMap deine IP-Adresse und die
+        Kartenausschnitte, die du ansiehst. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (die von dir gewählte Karte anzeigen). Ohne Öffnen der Karte wird
+        nichts dorthin übertragen.
       </p>
 
       <h2>4. Der WhatsApp-Bot</h2>
@@ -291,7 +300,10 @@ function PrivacyEn(props: { op: Operator }) {
 
       <h2>2. In short</h2>
       <ul>
-        <li>No cookies, no tracking, no analytics or advertising services, no embedded third-party content. That's why there is no cookie banner.</li>
+        <li>
+          No cookies, no tracking, no analytics or advertising services. That's why there is no cookie banner. Only the map for picking a place loads
+          third-party content, and only once you open it (section 3).
+        </li>
         <li>Dancers need no account. Filters live only in the page address (URL).</li>
         <li>Phone numbers, and who sent a Tip, are never shown publicly.</li>
       </ul>
@@ -303,8 +315,13 @@ function PrivacyEn(props: { op: Operator }) {
         website securely).
       </p>
       <p>
-        If you choose "My location", your browser asks for permission. The coordinates then sit in the page address, are used only to filter by distance, and are
-        not stored.
+        So that distances are measured from you, the page asks your browser for your location, and the browser asks you for permission. If you allow it, the
+        coordinates, rounded to about a kilometre, sit in the page address. They are used only to filter by distance and are not stored. Without permission you
+        see every Event, without distances.
+      </p>
+      <p>
+        If you open "Pick on map", your browser loads map images from OpenFreeMap (openfreemap.org), which receives your IP address and the map areas you view.
+        Legal basis: Art. 6(1)(f) GDPR (showing the map you chose). Nothing is sent there unless you open the map.
       </p>
 
       <h2>4. The WhatsApp bot</h2>

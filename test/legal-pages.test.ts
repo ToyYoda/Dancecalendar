@@ -26,7 +26,7 @@ describe("legal pages", () => {
     expect(html).toContain("Datenschutzerklärung");
     expect(html).not.toContain("Vorläufig");
     expect(html).toContain("Erika Muster");
-    for (const text of ["Cloudflare", "Anthropic", "WhatsApp Ireland", "Photon", "Nominatim", "90 Tage", "30 Tage", "Widerspruch", "Hessische Beauftragte"]) {
+    for (const text of ["Cloudflare", "Anthropic", "WhatsApp Ireland", "Photon", "Nominatim", "OpenFreeMap", "90 Tage", "30 Tage", "Widerspruch", "Hessische Beauftragte"]) {
       expect(html).toContain(text);
     }
   });

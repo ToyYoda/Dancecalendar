@@ -5,22 +5,19 @@ import { berlinDate } from "./whatsapp/bot";
 
 // The Dancer overview at "/": a Flyer feed paged by week (the default) and a month calendar with a day
 // list (?view=cal), both under one row of filters kept in the URL, so a link shows the same view on
-// any phone. No accounts, no cookies; the only script asks the browser for "Mein Standort".
-// Decisions: .scratch/dance-calendar-mvp/issues/07-dancer-overview-prototype.md (variant D),
-// 10-region-boundary.md and 23-dancer-overview.md.
+// any phone. No accounts, no cookies. Distances are measured from the Dancer's position (the browser is
+// asked on a visit without one) or a place picked on the map at /karte; without either, every Event shows
+// and no km. Decisions: .scratch/dance-calendar-mvp/issues/07-dancer-overview-prototype.md (variant D),
+// 10-region-boundary.md, 23-dancer-overview.md and 33-distance-from-my-position.md.
 
 type Lang = "de" | "en";
 
 // URL parameters, all optional:
-// c = kassel | goettingen | "lat,lng" (without it: Kassel and Göttingen), r = 10|25|50|100|all (default 50),
+// c = "lat,lng" (without it: no distances, every Event), r = 10|25|50|100|all (default 50, only with c),
 // styles = salsa,bachata,…, type = party|workshop|course|festival, view = cal, w = a week's Monday,
 // d = the calendar's selected day, lang = en.
 type Filters = { c: string; r: string; styles: string[]; type: string; view: string; w: string; d: string; lang: Lang };
 
-const CENTERS: Record<string, { lat: number; lng: number; name: string }> = {
-  kassel: { lat: 51.3127, lng: 9.4797, name: "Kassel" },
-  goettingen: { lat: 51.5413, lng: 9.9158, name: "Göttingen" },
-};
 const RADII = ["10", "25", "50", "100", "all"];
 const DEFAULT_RADIUS = "50";
 const STYLES: [string, string][] = [
@@ -36,7 +33,9 @@ const T = {
   de: {
     all: "Alle", party: "Party", workshop: "Workshop", course: "Kurs", festival: "Festival",
     parties: "Partys", workshops: "Workshops", courses: "Kurse", festivals: "Festivals",
-    region: "Kassel + Göttingen", anywhere: "überall", me: "Mein Standort", noGeo: "Standort nicht verfügbar",
+    anywhere: "überall", me: "Mein Standort", noGeo: "Standort nicht verfügbar", map: "Auf Karte wählen", here: "Ab hier",
+    noPlace: "Alle Orte", hint: "Für Entfernungen: Standort freigeben oder einen Ort auf der Karte wählen.",
+    pick: "Tippe auf die Karte, um den Ort zu wählen.", use: "Von hier messen",
     radius: "Umkreis", none: "Keine Events für diese Filter.", cancelled: "Abgesagt", tip: "von der Community hinzugefügt",
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
     series: "Serie", link: "Link", styles: "Tanzstil", day: "Tag", feed: "Flyer", calendar: "Kalender", back: "Zurück",
@@ -45,7 +44,9 @@ const T = {
   en: {
     all: "All", party: "Party", workshop: "Workshop", course: "Course", festival: "Festival",
     parties: "Parties", workshops: "Workshops", courses: "Courses", festivals: "Festivals",
-    region: "Kassel + Göttingen", anywhere: "anywhere", me: "My location", noGeo: "Location not available",
+    anywhere: "anywhere", me: "My location", noGeo: "Location not available", map: "Pick on map", here: "From here",
+    noPlace: "All places", hint: "For distances: allow your location or pick a place on the map.",
+    pick: "Tap the map to pick the place.", use: "Measure from here",
     radius: "Radius", none: "No events for these filters.", cancelled: "Cancelled", tip: "added by the community",
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
     series: "Series", link: "Link", styles: "Style", day: "Day", feed: "Flyers", calendar: "Calendar", back: "Back",
@@ -108,6 +109,13 @@ overview.get("/events/:id", async (c) => {
   return c.html(<DetailPage f={f} e={{ ...row, km: distance(row, f) }} />);
 });
 
+// The map to pick the place distances are measured from. MapLibre comes from this site (public/vendor);
+// only this page loads tiles from OpenFreeMap, so a visitor's IP goes there only after choosing the map.
+overview.get("/karte", (c) => {
+  const f = filters(new URL(c.req.url).searchParams);
+  return c.html(<MapPage f={f} />);
+});
+
 // Flyer images of published Events only: a held or discarded Flyer stays private. Keys are random and
 // never change, so browsers may keep them for a year.
 overview.get("/flyers/:name", async (c) => {
@@ -128,7 +136,7 @@ function filters(p: URLSearchParams): Filters {
   const c = p.get("c") ?? "";
   const r = p.get("r") ?? "";
   return {
-    c: CENTERS[c] || coordinates(c) ? c : "",
+    c: coordinates(c) ? c : "",
     r: RADII.includes(r) ? r : "",
     styles: list("styles").filter((s) => STYLES.some(([k]) => k === s)),
     type: (TYPES as readonly string[]).includes(p.get("type") ?? "") ? p.get("type")! : "",
@@ -160,13 +168,11 @@ function coordinates(c: string): { lat: number; lng: number } | null {
   return m ? { lat: Number(m[1]), lng: Number(m[2]) } : null;
 }
 
-const centers = (f: Filters) => (f.c ? [CENTERS[f.c] ?? coordinates(f.c)!] : Object.values(CENTERS));
-
-// Straight-line km from the chosen place (the nearer of Kassel and Göttingen by default); null when
-// the Venue has no coordinates.
+// Straight-line km from the chosen place; null without a place or when the Venue has no coordinates.
 function distance(v: { lat: number | null; lng: number | null }, f: Filters): number | null {
-  if (v.lat === null || v.lng === null) return null;
-  return Math.min(...centers(f).map((c) => haversine(c, { lat: v.lat!, lng: v.lng! })));
+  const from = coordinates(f.c);
+  if (!from || v.lat === null || v.lng === null) return null;
+  return haversine(from, { lat: v.lat, lng: v.lng });
 }
 
 function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
@@ -185,7 +191,7 @@ function matches(e: Shown, f: Filters): boolean {
   if (f.type === "course" && !isCourse(e)) return false;
   if (f.type === "festival" && e.type !== "festival") return false;
   const radius = f.r || DEFAULT_RADIUS;
-  return radius === "all" || e.km === null || e.km <= Number(radius);
+  return !f.c || radius === "all" || e.km === null || e.km <= Number(radius);
 }
 
 const isCourse = (e: Row) => e.registration_required === 1;
@@ -224,10 +230,16 @@ async function eventsByDay(db: D1Database, f: Filters, days: string[]): Promise<
 
 // ---- Pages ----
 
-function Page(props: { f: Filters; title?: string; children: any }) {
+function Page(props: { f: Filters; title?: string; head?: any; children: any }) {
   const t = T[props.f.lang];
+  const head = (
+    <>
+      <style>{CSS}</style>
+      {props.head}
+    </>
+  );
   return (
-    <Layout title={props.title ? `${props.title} – DanceCalendar` : "DanceCalendar"} lang={props.f.lang} head={<style>{CSS}</style>}>
+    <Layout title={props.title ? `${props.title} – DanceCalendar` : "DanceCalendar"} lang={props.f.lang} head={head}>
       <header class="top">
         <div>
           <a class="home" href={href(props.f, { w: "", d: "" })}>
@@ -248,7 +260,6 @@ function Page(props: { f: Filters; title?: string; children: any }) {
 function FilterBar(props: { f: Filters }) {
   const { f } = props;
   const t = T[f.lang];
-  const place = CENTERS[f.c]?.name ?? (f.c ? t.me : t.region);
   const r = f.r || DEFAULT_RADIUS;
   const toggleStyle = (s: string) => (f.styles.includes(s) ? f.styles.filter((x) => x !== s) : [...f.styles, s]);
   return (
@@ -263,29 +274,26 @@ function FilterBar(props: { f: Filters }) {
       </div>
       <details class="place">
         <summary class="chip on">
-          📍 {r === "all" ? t.anywhere : `${place} · ${r} km`} ▾
+          📍 {!f.c ? t.noPlace : r === "all" ? `${t.here} · ${t.anywhere}` : `${t.here} · ${r} km`} ▾
         </summary>
         <div class="row">
-          <a class={`chip ${f.c ? "" : "on"}`} href={href(f, { c: "" })}>
-            {t.region}
-          </a>
-          {Object.entries(CENTERS).map(([k, v]) => (
-            <a class={`chip ${f.c === k ? "on" : ""}`} href={href(f, { c: k })}>
-              {v.name}
-            </a>
-          ))}
-          <a class={`chip ${coordinates(f.c) ? "on" : ""}`} href={href(f, { c: "" })} data-geo data-fail={t.noGeo}>
+          <a class="chip" href={href(f, { c: "" })} data-geo data-fail={t.noGeo}>
             📍 {t.me}
           </a>
+          <a class="chip" href={href(f, {}, "/karte")}>
+            🗺 {t.map}
+          </a>
         </div>
-        <div class="row">
-          <span class="label">{t.radius}</span>
-          {RADII.map((x) => (
-            <a class={`chip ${r === x ? "on" : ""}`} href={href(f, { r: x })}>
-              {x === "all" ? t.anywhere : `${x} km`}
-            </a>
-          ))}
-        </div>
+        {f.c && (
+          <div class="row">
+            <span class="label">{t.radius}</span>
+            {RADII.map((x) => (
+              <a class={`chip ${r === x ? "on" : ""}`} href={href(f, { r: x })}>
+                {x === "all" ? t.anywhere : `${x} km`}
+              </a>
+            ))}
+          </div>
+        )}
       </details>
       <div class="scroll">
         {STYLES.map(([k, name]) => (
@@ -304,6 +312,11 @@ function FilterBar(props: { f: Filters }) {
           </a>
         ))}
       </div>
+      {!f.c && (
+        <p class="hint" data-autogeo>
+          {t.hint}
+        </p>
+      )}
     </nav>
   );
 }
@@ -454,6 +467,53 @@ function CalendarPage(props: { f: Filters; today: string; sel: string; first: st
   );
 }
 
+// Tap a point, then "Von hier messen" opens the overview with that place, rounded to about a kilometre.
+function MapPage(props: { f: Filters }) {
+  const { f } = props;
+  const t = T[f.lang];
+  const head = (
+    <>
+      <link rel="stylesheet" href="/vendor/maplibre-gl.css" />
+      <script src="/vendor/maplibre-gl.js" />
+    </>
+  );
+  return (
+    <Page f={f} title={t.map} head={head}>
+      <p class="hint">{t.pick}</p>
+      <div id="map" data-center={f.c || "51.43,9.70"} data-zoom={f.c ? "10" : "8"} data-style={MAP_STYLE} data-back={href(f, { c: "" })} />
+      <div class="maprow">
+        <a class="chip" href={href(f)}>
+          ‹ {t.back}
+        </a>
+        <button id="use" class="chip on" disabled>
+          {t.use}
+        </button>
+      </div>
+      <script dangerouslySetInnerHTML={{ __html: MAP_SCRIPT }} />
+    </Page>
+  );
+}
+
+const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+
+const MAP_SCRIPT = `(() => {
+  const el = document.getElementById("map"), use = document.getElementById("use");
+  const [lat, lng] = el.dataset.center.split(",").map(Number);
+  const map = new maplibregl.Map({ container: el, style: el.dataset.style, center: [lng, lat], zoom: Number(el.dataset.zoom) });
+  let marker, picked;
+  map.on("click", (ev) => {
+    picked = ev.lngLat;
+    marker = marker || new maplibregl.Marker({ color: "#c2185b" }).setLngLat(picked).addTo(map);
+    marker.setLngLat(picked);
+    use.disabled = false;
+  });
+  use.addEventListener("click", () => {
+    if (!picked) return;
+    const back = el.dataset.back;
+    location.href = back + (back.includes("?") ? "&" : "?") + "c=" + picked.lat.toFixed(2) + "," + picked.lng.toFixed(2);
+  });
+})();`;
+
 function DetailPage(props: { f: Filters; e: Shown }) {
   const { f, e } = props;
   const t = T[f.lang];
@@ -590,17 +650,25 @@ const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(asDate(s).
 const range = (from: string, n: number) => Array.from({ length: n }, (_, i) => addDays(from, i));
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 
-// "Mein Standort": asks the browser once, rounds to about a kilometre and opens the same view from there.
-// Without permission the link says so, and the city chips stay the way to pick a place.
-const GEO_SCRIPT = `document.querySelectorAll("[data-geo]").forEach((a) => a.addEventListener("click", (ev) => {
-  if (!navigator.geolocation) return;
-  ev.preventDefault();
-  navigator.geolocation.getCurrentPosition((p) => {
-    const u = new URL(a.href, location.href);
+// The Dancer's position, rounded to about a kilometre, opens the same view measured from there. Asked by
+// "Mein Standort", and on its own on a page without a place (data-autogeo) unless the browser already
+// knows the answer is no; nothing is stored, so a denial just leaves every Event without km.
+const GEO_SCRIPT = `(() => {
+  const go = (href, fail) => navigator.geolocation.getCurrentPosition((p) => {
+    const u = new URL(href, location.href);
     u.searchParams.set("c", p.coords.latitude.toFixed(2) + "," + p.coords.longitude.toFixed(2));
-    location.href = u.pathname + "?" + u.searchParams.toString().replace(/%2C/g, ",");
-  }, () => { a.textContent = a.dataset.fail; }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
-}));`;
+    location.replace(u.pathname + "?" + u.searchParams.toString().replace(/%2C/g, ","));
+  }, fail, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
+  document.querySelectorAll("[data-geo]").forEach((a) => a.addEventListener("click", (ev) => {
+    if (!navigator.geolocation) return;
+    ev.preventDefault();
+    go(a.href, () => { a.textContent = a.dataset.fail; });
+  }));
+  if (!document.querySelector("[data-autogeo]") || !navigator.geolocation) return;
+  const ask = () => go(location.href, () => {});
+  if (navigator.permissions) navigator.permissions.query({ name: "geolocation" }).then((s) => { if (s.state !== "denied") ask(); }, ask);
+  else ask();
+})();`;
 
 const CSS = `
   :root { --bg:#f6f4f1; --card:#fff; --ink:#1d1a17; --mute:#6f6861; --line:#e4dfd8;
@@ -624,6 +692,10 @@ const CSS = `
   .place summary::-webkit-details-marker { display:none; }
   .place .row { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center; }
   .place .label { font-size:12px; color:var(--mute); }
+  .hint { margin:0 16px 6px; font-size:12px; color:var(--mute); }
+  #map { height:65vh; margin:0 16px; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+  .maprow { display:flex; justify-content:space-between; gap:8px; margin:10px 16px; }
+  .maprow button { font:inherit; cursor:pointer; } .maprow button:disabled { opacity:.4; cursor:default; }
   .scroll { display:flex; gap:6px; overflow-x:auto; padding:0 16px; scrollbar-width:none; }
   .bar { display:flex; justify-content:space-between; align-items:center; padding:10px 16px 0; }
   .bar .range { font-weight:700; }

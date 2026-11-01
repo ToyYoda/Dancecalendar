@@ -30,6 +30,12 @@ All four are linked from the footer, the application form and the bot's first re
 
 - Decide home vs. c/o address for the Impressum.
 - Review the final text. Not legal advice.
+- Meta Live mode, moved here from [slice 17](17-whatsapp-happy-path.md). In the Meta app:
+  - upload an app icon (512–1024 px)
+  - enter the privacy and data-deletion URLs and the EU data-protection contact
+  - switch the app to Live mode
+
+  The privacy page must carry the operator's real name and contact first. Live mode is needed before any number other than the Admin's can reach the bot, so before the first invited Organizer.
 
 ## Out of scope
 

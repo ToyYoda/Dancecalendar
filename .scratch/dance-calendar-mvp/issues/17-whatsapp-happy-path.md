@@ -2,7 +2,7 @@
 
 Type: task
 Blocked by: 16
-Status: claimed
+Status: resolved
 Labels: wayfinder:task
 
 ## Scope
@@ -51,7 +51,24 @@ A registered Organizer forwards a Flyer, taps [Veröffentlichen], and the Events
 
 Blocking questions, Series, Venue geocoding (Venues are matched by name or created bare), duplicates and Tips.
 
+## Answer
+
+Done, 2026-11-01. The bot answers on +49 1520 4333041 and publishes to https://dancecalendar.dancecalendar.workers.dev.
+
+- **Flow:**
+  - The webhook (`src/whatsapp/webhook.ts`) checks the signature, drops duplicate message ids (`inbound_message`) and puts the message on the Queue `dancecalendar-jobs`.
+  - The consumer (`src/whatsapp/bot.ts`) handles STOP/START/Admin and the greeting, which is sent once per number. Unknown senders get the "nur eingeladene" reply.
+  - For an image it stores the Flyer in R2 `dancecalendar-flyers` (`eu`), extracts it with Sonnet 5.5 (refusal fallback on), and holds it as a `submission`. It then replies with the summary and the buttons.
+  - Documents and PDFs get "Bitte schick den Flyer als Bild".
+- **Publish rules** (`src/whatsapp/summary.ts`): an Event isn't published when it has no date or time, is dated before the Flyer arrived, or has a guessed date more than 6 months ahead, which is likely last year's Flyer. The summary says why. When nothing can be published, only [Verwerfen] is offered. Dates show the year when it differs from the year the Flyer arrived.
+- **Venues** (`src/publish.ts`) are matched by name, ignoring case and spacing, or created bare. A Flyer that prints only an address gets a Venue named after that address.
+- **Prompt:** after the eval re-run, one rule was added. A name printed next to the street ("Hauptstraße 5 – Deck 4") is the venue_name. This was found in the live demo and is not yet re-evaluated.
+- **Tests:** 30 tests, with signed webhook payloads and the Graph and Anthropic APIs faked at `fetch`.
+- **Demo checked** from the Admin's phone, using the Admin's own Flyers instead of sample 03: Flyer → summary → Veröffentlichen → Events in the week feed, with working edit links.
+- **Moved out:** the Meta Live-mode steps (icon, privacy URLs, EU contact, switch) went to [Legal pages](27-legal-pages.md). Dev mode is enough while only the Admin's number posts.
+
 ## Comments
 
-- 2026-11-01, Development mode: Meta's webhook guide says "Make sure your app is in Live mode; some webhooks will not be sent if your app is in Dev mode." It doesn't say which ones, so the demo runs in Live mode as planned.
+- 2026-11-01, Development mode: Meta's webhook guide says "Make sure your app is in Live mode; some webhooks will not be sent if your app is in Dev mode." It doesn't say which ones, so the plan was to run the demo in Live mode. In practice, Dev mode delivered real message webhooks from the Admin's own number. That number is an app admin, so this doesn't prove delivery for other numbers.
+- 2026-11-01, Meta setup traps: the WABA ID is not the business portfolio ID. The WABA also needs "Webhooks abonnieren" switched on (subscribed_apps), or no messages arrive.
 - 2026-11-01, eval re-run: the prompt and schema were moved to `src/extraction/` and are byte-identical to v2. A fresh run (`--label v2-src`) gave 25/25 Events, the right Event count on 17/17 Flyers, and 0 silent errors at $0.23 and 3.0 s median, the same as v2. One field differed from the first v2 run: the Venue on F02 was wrong, but it was flagged, so the Organizer would see it. This is normal run-to-run variation.

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { geocode, type Place } from "./geocode";
 import { Layout } from "./layout";
 import { normalize } from "./publish";
+import { deleteUnusedFlyers } from "./retention";
 import { addDays, endSeries, HORIZON_DAYS, signOfLife } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 import { formatDate } from "./whatsapp/summary";
@@ -91,20 +92,6 @@ export async function removeOrganizer(env: Env, id: number, today: string) {
     env.DB.prepare("DELETE FROM submission WHERE organizer_id = ? AND status = 'pending' RETURNING flyer_key").bind(id),
   ]);
   await deleteUnusedFlyers(env, [...events.results, ...held.results].map((r) => r.flyer_key));
-}
-
-// Deletes the Flyer images nothing refers to any more: no Event, Series or held Flyer.
-async function deleteUnusedFlyers(env: Env, keys: (string | null)[]) {
-  for (const key of new Set(keys.filter((k): k is string => Boolean(k)))) {
-    const used = await env.DB.prepare(
-      `SELECT 1 FROM event WHERE flyer_key = ?1
-       UNION ALL SELECT 1 FROM series WHERE json_extract(template, '$.flyer_key') = ?1 AND ended_at IS NULL
-       UNION ALL SELECT 1 FROM submission WHERE flyer_key = ?1 AND status = 'pending' LIMIT 1`,
-    )
-      .bind(key)
-      .first();
-    if (!used) await env.FLYERS.delete(key);
-  }
 }
 
 // ---- Events ----

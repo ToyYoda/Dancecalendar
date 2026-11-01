@@ -176,8 +176,9 @@ describe("the daily cron", () => {
     await runCron(7);
     expect(await dates()).toEqual([...before, plusDays(before.at(-1)!, 7)]);
 
+    // Nothing new; the dates more than 3 months back are gone by then (retention).
     await runCron(120);
-    expect((await dates()).length).toBe(before.length + 1);
+    expect((await dates()).at(-1)).toBe(plusDays(before.at(-1)!, 7));
   });
 });
 

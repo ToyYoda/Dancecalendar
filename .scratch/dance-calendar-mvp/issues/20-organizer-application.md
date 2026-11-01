@@ -1,7 +1,7 @@
 # Organizer application
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 17
 Labels: wayfinder:task
 
@@ -30,6 +30,17 @@ See [Organizer application form](12-organizer-application.md) and [Organizer con
 ## Out of scope
 
 The Admin's view of new Organizers (that's [Admin tools](25-admin-tools-and-email.md)).
+
+## Answer
+
+Live since 2026-11-01 (a38f90f). Both demos passed in production, from the Admin's own number with its Organizer row parked (number suffixed `-paused`), since there was no second phone: Flyer → [Ja, meine] → form → the bot continued with the summary → published; an aged link showed "Der Link ist abgelaufen". The number was restored afterwards.
+
+- Unknown sender's Flyer → R2 + `application` row (migration 0005) → "Ist das deine Veranstaltung?" [Ja, meine] / [Nein, ist ein Tipp]; no extraction before the answer.
+- [Ja, meine] → single-use apply link `/a/<token>`, valid 24 h from the Flyer's arrival, then the Flyer is read. The form (Display name with existing names offered and joinable, private first name, one Terms/Flyer-rights checkbox) auto-approves; the bot sends the held Flyer's summary once both form and extraction are done, exactly once.
+- [Nein, ist ein Tipp] → `contact.tip_at`, Flyer deleted, sender thanked; later Flyers only thanked until "Tips". A "Ja" without the form isn't remembered.
+- Blocked numbers get only "Du kannst hier keine Events mehr eintragen."
+- First cron (hourly, `17 * * * *`) deletes held Flyers after 24 h.
+- Ops lessons: numbers are stored as WhatsApp sends them (digits with country code, no `+`); the seed's demo Organizer (id 1, `+490000000000`) is not the Admin's row; `wrangler d1 --remote` fails with 7403 until `wrangler login` is fresh and no stray `CLOUDFLARE_API_TOKEN` is set in the terminal.
 
 ## Comments
 

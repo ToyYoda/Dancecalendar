@@ -6,6 +6,10 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  "rules": [{ "type": "Text", "globs": ["**/*.md"], "fallthrough": true }],
+  "vars": {
+    "PUBLIC_URL": "https://dancecalendar.dancecalendar.workers.dev"
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -13,5 +17,16 @@
       "database_id": "6ff5739a-a0d1-4bad-98dd-93ed50555207",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FLYERS",
+      "bucket_name": "dancecalendar-flyers",
+      "jurisdiction": "eu"
+    }
+  ],
+  "queues": {
+    "producers": [{ "binding": "JOBS", "queue": "dancecalendar-jobs" }],
+    "consumers": [{ "queue": "dancecalendar-jobs", "max_batch_size": 1, "max_retries": 2 }]
+  }
 }

@@ -1,0 +1,163 @@
+{
+  "type": "object",
+  "properties": {
+    "is_event_flyer": {
+      "type": "boolean"
+    },
+    "flyer_language": {
+      "type": "string",
+      "enum": [
+        "de",
+        "en",
+        "es",
+        "other"
+      ]
+    },
+    "display_name_on_flyer": {
+      "type": "string"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "party",
+              "workshop",
+              "festival"
+            ]
+          },
+          "styles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "salsa",
+                "bachata",
+                "kizomba",
+                "urban_kiz",
+                "west_coast_swing"
+              ]
+            }
+          },
+          "start_date": {
+            "type": "string"
+          },
+          "weekday_on_flyer": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "string"
+          },
+          "intro_class_time": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "end_time": {
+            "type": "string"
+          },
+          "venue_name": {
+            "type": "string"
+          },
+          "venue_address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "price_text": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "registration_required": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "series": {
+            "type": "object",
+            "properties": {
+              "is_series": {
+                "type": "boolean"
+              },
+              "rule_text": {
+                "type": "string"
+              },
+              "frequency": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "weekly",
+                  "every_n_weeks",
+                  "nth_weekday_of_month",
+                  "unclear"
+                ]
+              },
+              "explicit_dates": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "is_series",
+              "rule_text",
+              "frequency",
+              "explicit_dates"
+            ],
+            "additionalProperties": false
+          },
+          "uncertain_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "type",
+          "styles",
+          "start_date",
+          "weekday_on_flyer",
+          "start_time",
+          "intro_class_time",
+          "end_date",
+          "end_time",
+          "venue_name",
+          "venue_address",
+          "city",
+          "price_text",
+          "level",
+          "registration_required",
+          "description",
+          "series",
+          "uncertain_fields",
+          "notes"
+        ]
+      }
+    }
+  },
+  "required": [
+    "is_event_flyer",
+    "flyer_language",
+    "display_name_on_flyer",
+    "events"
+  ],
+  "additionalProperties": false
+}

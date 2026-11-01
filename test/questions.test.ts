@@ -42,7 +42,7 @@ describe("a missing start time", () => {
 
     expect(last(api).text).toContain("Ich habe 2 Events");
     await publish(api);
-    expect((await feed()).match(/21:00/g)).toHaveLength(2);
+    expect((await feed()).match(/<b>21:00/g)).toHaveLength(2);
   });
 
   it("takes a typed time, and asks again when it can't read it", async () => {

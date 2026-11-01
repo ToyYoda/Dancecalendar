@@ -1,8 +1,8 @@
 import type { Child } from "hono/jsx";
 
-export function Layout(props: { title: string; head?: Child; children: Child }) {
+export function Layout(props: { title: string; lang?: "de" | "en"; head?: Child; children: Child }) {
   return (
-    <html lang="de">
+    <html lang={props.lang ?? "de"}>
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />

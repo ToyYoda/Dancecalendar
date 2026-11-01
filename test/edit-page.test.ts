@@ -106,13 +106,13 @@ describe("an Event's private edit link", () => {
     const res = await post(`${link}/cancel`, "");
 
     expect(res.status).toBe(303);
-    expect(await feed()).toMatch(/Salsa Night[^<]*abgesagt/);
+    expect(await feed()).toMatch(/class="card cancelled"[\s\S]*Salsa Night[\s\S]*Abgesagt/);
     const page = await (await get(link)).text();
     expect(page).toContain("abgesagt");
 
     await post(`${link}/reinstate`, "");
 
-    expect(await feed()).not.toContain("abgesagt");
+    expect(await feed()).not.toContain("card cancelled");
   });
 
   it("shows the Flyer", async () => {

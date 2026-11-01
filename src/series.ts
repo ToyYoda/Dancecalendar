@@ -60,7 +60,8 @@ export function ruleDates(rule: Rule, after: string, until: string): string[] {
 }
 
 // "Jeden Freitag", "Alle 2 Wochen mittwochs", "Jeden 2. Mittwoch im Monat", "Jeden letzten Freitag im Monat".
-export function ruleWords(rule: Rule): string {
+export function ruleWords(rule: Rule, lang: "de" | "en" = "de"): string {
+  if (lang === "en") return ruleWordsEn(rule);
   const day = WEEKDAY[weekdayOf(rule.anchor)];
   switch (rule.freq) {
     case "weekly":
@@ -71,6 +72,23 @@ export function ruleWords(rule: Rule): string {
       return rule.n === -1 ? `Jeden letzten ${day} im Monat` : `Jeden ${rule.n}. ${day} im Monat`;
     case "custom":
       return `„${rule.text}“`;
+  }
+}
+
+const WEEKDAY_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const ORDINAL_EN = ["", "1st", "2nd", "3rd", "4th"];
+
+function ruleWordsEn(rule: Rule): string {
+  const day = WEEKDAY_EN[weekdayOf(rule.anchor)];
+  switch (rule.freq) {
+    case "weekly":
+      return `Every ${day}`;
+    case "every_n_weeks":
+      return `Every ${rule.n} weeks on ${day}s`;
+    case "nth_weekday":
+      return `Every ${rule.n === -1 ? "last" : ORDINAL_EN[rule.n]} ${day} of the month`;
+    case "custom":
+      return `“${rule.text}”`;
   }
 }
 

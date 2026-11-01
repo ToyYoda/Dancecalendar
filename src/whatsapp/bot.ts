@@ -1,7 +1,7 @@
 import { extractFlyer, type Extraction } from "../extraction/extract";
-import { formatDate, publishable, summary } from "./summary";
+import { publishable, summary } from "./summary";
 import { downloadMedia, sendButtons, sendText } from "./graph";
-import { publishEvents, randomToken } from "../publish";
+import { publishSubmission, randomToken } from "../publish";
 import type { InboundMessage } from "./types";
 
 // Handles one inbound WhatsApp message (queue consumer). The bot only ever replies, so every
@@ -83,13 +83,12 @@ async function receiveFlyer(env: Env, message: InboundMessage, organizer: Organi
     .run();
 
   const text = summary(extraction.events, receivedOn, organizer.first_name);
-  const buttons = extraction.events.some((e) => publishable(e, receivedOn))
-    ? [
-        { id: `publish:${id}`, title: "Veröffentlichen" },
-        { id: `edit:${id}`, title: "Ändern ✏️" },
-        { id: `discard:${id}`, title: "Verwerfen" },
-      ]
-    : [{ id: `discard:${id}`, title: "Verwerfen" }];
+  // Without a publishable Event there's nothing to publish as is, but a missing time or date can be fixed on the confirm page.
+  const buttons = [
+    ...(extraction.events.some((e) => publishable(e, receivedOn)) ? [{ id: `publish:${id}`, title: "Veröffentlichen" }] : []),
+    { id: `edit:${id}`, title: "Ändern ✏️" },
+    { id: `discard:${id}`, title: "Verwerfen" },
+  ];
   return sendButtons(env, message.from, text, buttons);
 }
 
@@ -108,21 +107,25 @@ async function pressButton(env: Env, from: string, organizer: Organizer, buttonI
     return sendText(env, from, "Verworfen.");
   }
   if (action === "edit") {
-    return sendText(env, from, "Ändern im Browser kommt bald. Bis dahin: Verwerfen und den Flyer korrigiert nochmal schicken.");
+    // A URL can't share a message with reply buttons, so the confirm page's link comes on its own.
+    const row = await env.DB.prepare("UPDATE submission SET confirm_token = COALESCE(confirm_token, ?) WHERE id = ? RETURNING confirm_token")
+      .bind(randomToken(), id)
+      .first<{ confirm_token: string }>();
+    return sendText(
+      env,
+      from,
+      `Hier kannst du alles prüfen, ändern und veröffentlichen:\n${env.PUBLIC_URL}/c/${row!.confirm_token}\n\nDer Link ist privat – nicht weiterleiten.`,
+    );
   }
   if (action === "publish") {
     const extraction = JSON.parse(submission.extraction) as Extraction;
     const ready = extraction.events.filter((e) => publishable(e, submission.received_on));
     const skipped = extraction.events.filter((e) => !publishable(e, submission.received_on));
-    const published = await publishEvents(env.DB, submission, ready);
-    await env.DB.prepare("UPDATE submission SET status = 'published' WHERE id = ?").bind(id).run();
-
-    const lines = published.map((p) => `*${p.title}* – ${formatDate(p.startsAt.slice(0, 10), submission.received_on)}\nBearbeiten: ${env.PUBLIC_URL}/e/${p.editToken}`);
-    if (skipped.length) lines.push(`Nicht eingetragen: ${skipped.map((e) => e.title).join(", ")}`);
-    return sendText(env, from, `✅ Ist online!\n\n${lines.join("\n\n")}\n\nDie Links sind privat – nicht weiterleiten.`);
+    const result = await publishSubmission(env, submission, ready, skipped);
+    return sendText(env, from, result ? result.text : "Dieser Flyer ist schon erledigt.");
   }
 }
 
-function berlinDate(d: Date): string {
+export function berlinDate(d: Date): string {
   return d.toLocaleDateString("en-CA", { timeZone: "Europe/Berlin" });
 }

@@ -1,26 +1,10 @@
-import { createExecutionContext, createMessageBatch, getQueueResult } from "cloudflare:test";
 import { env, exports } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import worker from "../src/index";
-import type { InboundMessage } from "../src/whatsapp/types";
 import { berlinDate, fakeApis, flyer } from "./fake-apis";
+import { deliver, feed } from "./flow";
 import { buttonReply, documentMessage, imageMessage, ORGANIZER_NUMBER, textMessage } from "./whatsapp-fixtures";
 
 const STRANGER = "4917600000009";
-
-// Runs one inbound message through the queue consumer, as the queue would after the webhook.
-async function deliver(payload: any) {
-  const message: InboundMessage = payload.entry[0].changes[0].value.messages[0];
-  const batch = createMessageBatch("dancecalendar-jobs", [{ id: message.id, timestamp: new Date(), attempts: 1, body: message }]);
-  const ctx = createExecutionContext();
-  await worker.queue(batch, env, ctx);
-  const result = await getQueueResult(batch, ctx);
-  expect(result.retryMessages).toEqual([]);
-}
-
-async function feed() {
-  return (await exports.default.fetch("http://dancecalendar.test/")).text();
-}
 
 beforeEach(async () => {
   await env.DB.batch(
@@ -139,7 +123,7 @@ describe("a registered Organizer forwards a Flyer", () => {
     await deliver(imageMessage("media1"));
 
     expect(api.sent.at(-1)!.text).toContain("liegt in der Vergangenheit");
-    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Verwerfen"]);
+    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Ändern ✏️", "Verwerfen"]);
   });
 
   it("won't publish a guessed date almost a year away, which suggests last year's Flyer", async () => {
@@ -148,15 +132,15 @@ describe("a registered Organizer forwards a Flyer", () => {
     await deliver(imageMessage("media1"));
 
     expect(api.sent.at(-1)!.text).toContain("vom letzten Jahr");
-    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Verwerfen"]);
+    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Ändern ✏️", "Verwerfen"]);
   });
 
-  it("offers only Verwerfen when no Event can be published", async () => {
+  it("offers no Veröffentlichen when no Event can be published as is", async () => {
     const api = fakeApis({ extraction: flyer([{ start_time: "" }]) });
 
     await deliver(imageMessage("media1"));
 
-    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Verwerfen"]);
+    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Ändern ✏️", "Verwerfen"]);
   });
 
   it("discards the Flyer on Verwerfen", async () => {

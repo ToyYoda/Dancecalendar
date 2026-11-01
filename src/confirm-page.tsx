@@ -1,0 +1,316 @@
+import { Hono } from "hono";
+import { codeFlags } from "./extraction/checks";
+import type { ExtractedEvent, Extraction } from "./extraction/extract";
+import { Layout } from "./layout";
+import { editLink, publishSubmission, type Held, type Published } from "./publish";
+import { berlinDate } from "./whatsapp/bot";
+import { sendText } from "./whatsapp/graph";
+import { formatDate } from "./whatsapp/summary";
+
+// The private web confirm page (/c/<token>) behind [Ändern] and Admin uploads: one card per Event,
+// yellow = check, red = missing, and Publish stays disabled while a ticked Event misses something.
+// Variant C of prototypes/organizer-confirmation-prototype.html.
+
+type Submission = Held & {
+  extraction: string;
+  status: string;
+  source: "whatsapp" | "admin";
+  confirm_token: string;
+  whatsapp_number: string;
+  first_name: string | null;
+  display_name: string;
+};
+
+const TEXT_FIELDS = [
+  "title",
+  "start_date",
+  "start_time",
+  "end_time",
+  "intro_class_time",
+  "end_date",
+  "venue_name",
+  "venue_address",
+  "city",
+  "price_text",
+  "level",
+] as const;
+type TextField = (typeof TEXT_FIELDS)[number];
+
+const TYPES = { party: "Party", workshop: "Workshop", festival: "Festival" } as const;
+const STYLES = { salsa: "Salsa", bachata: "Bachata", kizomba: "Kizomba", urban_kiz: "Urban Kiz", west_coast_swing: "West Coast Swing" };
+
+export const confirmPage = new Hono<{ Bindings: Env }>();
+
+confirmPage.get("/:token", async (c) => {
+  const s = await load(c.env.DB, c.req.param("token"));
+  if (!s) return c.notFound();
+  if (s.status !== "pending") return c.html(<AlreadyDone />);
+  const today = berlinDate(new Date());
+  const events = (JSON.parse(s.extraction) as Extraction).events;
+  // A past Event can't be fixed on the page, so it starts unticked.
+  const include = events.map((e) => !(e.start_date && e.start_date < today));
+  return c.html(<ConfirmPage s={s} events={events} include={include} today={today} />);
+});
+
+confirmPage.get("/:token/flyer", async (c) => {
+  const s = await load(c.env.DB, c.req.param("token"));
+  const object = s && (await c.env.FLYERS.get(s.flyer_key));
+  if (!object) return c.notFound();
+  return c.body(object.body, 200, { "content-type": object.httpMetadata?.contentType ?? "image/jpeg", "cache-control": "private" });
+});
+
+confirmPage.post("/:token", async (c) => {
+  const s = await load(c.env.DB, c.req.param("token"));
+  if (!s) return c.notFound();
+  if (s.status !== "pending") return c.html(<AlreadyDone />, 409);
+
+  const form = await c.req.formData();
+  const original = (JSON.parse(s.extraction) as Extraction).events;
+  const events = original.map((e, i) => fromForm(form, i, e));
+  const ticked = new Set(form.getAll("include").map(String));
+  const include = events.map((_, i) => ticked.has(String(i)));
+  const today = berlinDate(new Date());
+  if (blocked(events, include, today)) {
+    return c.html(<ConfirmPage s={s} events={events} include={include} today={today} />, 422);
+  }
+
+  const ready = events.filter((_, i) => include[i]);
+  const skipped = events.filter((_, i) => !include[i]);
+  const result = await publishSubmission(c.env, s, ready, skipped);
+  if (!result) return c.html(<AlreadyDone />, 409);
+  if (s.source === "whatsapp") {
+    // Outside the 24-hour window this fails; the page shows the same links anyway.
+    await sendText(c.env, s.whatsapp_number, result.text).catch((err) => console.error("confirm page reply failed", err));
+  }
+  return c.html(<Done env={c.env} s={s} published={result.published} skipped={skipped} />);
+});
+
+async function load(db: D1Database, token: string) {
+  return db
+    .prepare(
+      `SELECT s.id, s.organizer_id, s.flyer_key, s.received_on, s.extraction, s.status, s.source, s.confirm_token,
+              o.whatsapp_number, o.first_name, o.display_name
+       FROM submission s JOIN organizer o ON o.id = s.organizer_id WHERE s.confirm_token = ?`,
+    )
+    .bind(token)
+    .first<Submission>();
+}
+
+function fromForm(form: FormData, i: number, original: ExtractedEvent): ExtractedEvent {
+  const e = { ...original };
+  for (const f of TEXT_FIELDS) e[f] = String(form.get(`${f}.${i}`) ?? "").trim();
+  const type = String(form.get(`type.${i}`));
+  if (type in TYPES) e.type = type as ExtractedEvent["type"];
+  e.styles = form.getAll(`styles.${i}`).map(String).filter((s) => s in STYLES);
+  return e;
+}
+
+// Why a field keeps the Event from being published, by field.
+function missing(e: ExtractedEvent, today: string): Partial<Record<TextField, string>> {
+  const out: Partial<Record<TextField, string>> = {};
+  if (!e.title) out.title = "fehlt – ohne Titel kein Eintrag";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(e.start_date)) out.start_date = "fehlt – ohne Datum kein Eintrag";
+  else if (e.start_date < today) out.start_date = "liegt in der Vergangenheit";
+  if (!/^\d{2}:\d{2}$/.test(e.start_time)) out.start_time = "fehlt – ohne Uhrzeit kein Eintrag";
+  return out;
+}
+
+const blocked = (events: ExtractedEvent[], include: boolean[], today: string) =>
+  !include.some(Boolean) || events.some((e, i) => include[i] && Object.keys(missing(e, today)).length > 0);
+
+// What the model or the code checks found uncertain, by field.
+function uncertain(e: ExtractedEvent, receivedOn: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const f of [...e.uncertain_fields.map((f) => f.split(".")[0]), ...codeFlags(e, receivedOn)]) out.set(f, "bitte prüfen");
+  // Same hint as the chat's "Flyer vom letzten Jahr?", but here the Organizer can fix the date.
+  if (e.uncertain_fields.includes("start_date") && e.start_date > addDays(receivedOn, 183)) {
+    out.set("start_date", "fast ein Jahr entfernt – stimmt das Jahr?");
+  }
+  return out;
+}
+
+function addDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+const publishLabel = (n: number) => (n === 1 ? "1 Event veröffentlichen" : `${n} Events veröffentlichen`);
+
+function ConfirmPage(props: { s: Submission; events: ExtractedEvent[]; include: boolean[]; today: string }) {
+  const { s, events, include, today } = props;
+  const isBlocked = blocked(events, include, today);
+  return (
+    <Layout title="Events prüfen – DanceCalendar" head={<style>{CSS}</style>}>
+      <h1>Events prüfen</h1>
+      <img class="flyer" src={`/c/${s.confirm_token}/flyer`} alt="Flyer" />
+      <p>
+        {s.source === "whatsapp" && s.first_name ? `Hallo ${s.first_name}! ` : ""}
+        Das habe ich auf dem Flyer erkannt. <span class="unc-key">Gelb</span> = bitte prüfen, <span class="miss-key">rot</span> = fehlt.
+        Wird veröffentlicht als <strong>{s.display_name}</strong>.
+      </p>
+      <form id="confirm" method="post" data-today={today}>
+        {events.map((e, i) => (
+          <Card i={i} e={e} include={include[i]} red={missing(e, today)} yellow={uncertain(e, s.received_on)} />
+        ))}
+        <button name="publish" type="submit" class="publish" disabled={isBlocked}>
+          {publishLabel(include.filter(Boolean).length)}
+        </button>
+        <p class="hint" hidden={!isBlocked}>
+          Rote Felder füllen oder das Event abwählen.
+        </p>
+      </form>
+      <script dangerouslySetInnerHTML={{ __html: SCRIPT }} />
+    </Layout>
+  );
+}
+
+function Card(props: { i: number; e: ExtractedEvent; include: boolean; red: Partial<Record<TextField, string>>; yellow: Map<string, string> }) {
+  const { i, e, red, yellow } = props;
+  const field = (name: TextField, label: string, type = "text", required = false) => {
+    const why = red[name] ?? yellow.get(name);
+    return (
+      <div>
+        <label for={`${name}.${i}`}>{label}</label>
+        <input
+          id={`${name}.${i}`}
+          name={`${name}.${i}`}
+          type={type}
+          value={e[name]}
+          class={red[name] ? "miss" : yellow.has(name) ? "unc" : undefined}
+          data-required={required ? "" : undefined}
+        />
+        {why && <div class={red[name] ? "why r" : "why"}>{red[name] ? why : `⚠️ ${why}`}</div>}
+      </div>
+    );
+  };
+  return (
+    <fieldset class={props.include ? "card" : "card dropped"}>
+      <legend>
+        <span>{e.title || "(ohne Titel)"}</span>
+        <label>
+          <input type="checkbox" name="include" value={String(i)} checked={props.include} /> eintragen
+        </label>
+      </legend>
+      {field("title", "Titel", "text", true)}
+      <div class="row">
+        <div>
+          <label for={`type.${i}`}>Art</label>
+          <select id={`type.${i}`} name={`type.${i}`} class={yellow.has("type") ? "unc" : undefined}>
+            {Object.entries(TYPES).map(([value, label]) => (
+              <option value={value} selected={e.type === value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {field("start_date", "Datum", "date", true)}
+      </div>
+      <div class="row">
+        {field("start_time", "Beginn", "time", true)}
+        {field("end_time", "Ende", "time")}
+      </div>
+      <div class="row">
+        {field("intro_class_time", "Einsteigerkurs", "time")}
+        {field("end_date", "Bis (mehrtägig)", "date")}
+      </div>
+      {e.series.is_series && <p class="series">🔁 {e.series.rule_text} – vorerst nur dieser Termin</p>}
+      {field("venue_name", "Ort")}
+      {field("venue_address", "Adresse")}
+      {field("city", "Stadt")}
+      <div class={yellow.has("styles") ? "styles unc" : "styles"}>
+        <span>Tanzstile</span>
+        {Object.entries(STYLES).map(([value, label]) => (
+          <label>
+            <input type="checkbox" name={`styles.${i}`} value={value} checked={e.styles.includes(value)} /> {label}
+          </label>
+        ))}
+      </div>
+      <div class="row">
+        {field("price_text", "Preis")}
+        {field("level", "Level")}
+      </div>
+    </fieldset>
+  );
+}
+
+function Done(props: { env: Env; s: Submission; published: Published[]; skipped: ExtractedEvent[] }) {
+  return (
+    <Layout title="Ist online – DanceCalendar">
+      <h1>✅ Ist online!</h1>
+      <ul>
+        {props.published.map((p) => (
+          <li>
+            <strong>{p.title}</strong> – {formatDate(p.startsAt.slice(0, 10), props.s.received_on)}
+            <br />
+            Bearbeiten: <a href={editLink(props.env, p)} style="overflow-wrap: anywhere">{editLink(props.env, p)}</a>
+          </li>
+        ))}
+      </ul>
+      {props.skipped.length > 0 && <p>Nicht eingetragen: {props.skipped.map((e) => e.title).join(", ")}</p>}
+      <p>
+        Die Links sind privat – nicht weiterleiten.
+        {props.s.source === "whatsapp" ? " Du bekommst sie auch per WhatsApp." : ""}
+      </p>
+      <p>
+        <a href="/">Zum Kalender</a>
+      </p>
+    </Layout>
+  );
+}
+
+function AlreadyDone() {
+  return (
+    <Layout title="Erledigt – DanceCalendar">
+      <h1>Dieser Flyer ist schon erledigt.</h1>
+      <p>
+        <a href="/">Zum Kalender</a>
+      </p>
+    </Layout>
+  );
+}
+
+const CSS = `
+  .flyer { display: block; max-width: 100%; max-height: 45vh; margin: 0 auto 1rem; border-radius: 8px; }
+  .card { border: 1px solid #e4dfd8; border-radius: 10px; padding: .75rem; margin: 1rem 0; }
+  .card.dropped { opacity: .45; }
+  .card legend { display: flex; gap: 1rem; justify-content: space-between; width: 100%; font-weight: bold; padding: 0 .25rem; box-sizing: border-box; }
+  .card legend label { font-weight: normal; margin: 0; color: inherit; font-size: 1rem; }
+  .card label, .styles > span { display: block; font-size: .8rem; color: #6f6861; margin-top: .5rem; }
+  .card input:not([type=checkbox]), .card select { width: 100%; box-sizing: border-box; border: 1px solid #e4dfd8; border-radius: 6px; padding: .4rem .5rem; font: inherit; background: #fff; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+  .styles label { display: inline-block; margin-right: .75rem; color: inherit; font-size: .9rem; }
+  .styles.unc { background: #fff8e1; border-radius: 6px; padding: 0 .25rem .25rem; }
+  .card :is(input, select).unc, .unc-key { background: #fff8e1; border-color: #e0b100; }
+  .card :is(input, select).miss, .miss-key { background: #fde2e2; border-color: #d33; }
+  .why { font-size: .8rem; color: #8a6d00; }
+  .why.r { color: #a30000; }
+  .series { font-size: .9rem; margin: .5rem 0 0; }
+  .publish { width: 100%; padding: .75rem; font: inherit; font-weight: bold; border: 0; border-radius: 8px; background: #c2185b; color: #fff; }
+  .publish:disabled { background: #ccc; color: #666; }
+  .hint { font-size: .85rem; color: #6f6861; }
+`;
+
+// Keeps the Publish button in step with the ticks and the required fields; the server checks again.
+const SCRIPT = `(() => {
+  const form = document.getElementById("confirm"), today = form.dataset.today;
+  const button = form.querySelector("[name=publish]"), hint = form.querySelector(".hint");
+  const check = () => {
+    let live = 0, blocked = false;
+    for (const card of form.querySelectorAll(".card")) {
+      const on = card.querySelector("[name=include]").checked;
+      card.classList.toggle("dropped", !on);
+      if (on) live++;
+      for (const input of card.querySelectorAll("[data-required]")) {
+        const missing = !input.value.trim() || (input.type === "date" && input.value < today);
+        input.classList.toggle("miss", missing);
+        if (on && missing) blocked = true;
+      }
+    }
+    button.disabled = blocked || live === 0;
+    hint.hidden = !button.disabled;
+    button.textContent = live === 1 ? "1 Event veröffentlichen" : live + " Events veröffentlichen";
+  };
+  form.addEventListener("input", check);
+  form.addEventListener("change", check);
+})();`;

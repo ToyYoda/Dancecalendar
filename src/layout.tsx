@@ -1,6 +1,6 @@
 import type { Child } from "hono/jsx";
 
-export function Layout(props: { title: string; children: Child }) {
+export function Layout(props: { title: string; head?: Child; children: Child }) {
   return (
     <html lang="de">
       <head>
@@ -14,6 +14,7 @@ export function Layout(props: { title: string; children: Child }) {
           li { padding: .5rem 0; border-bottom: 1px solid #ddd; }
           footer { margin-top: 2rem; font-size: .875rem; }
         `}</style>
+        {props.head}
       </head>
       <body>
         {props.children}

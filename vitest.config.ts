@@ -17,6 +17,7 @@ export default defineConfig(async () => {
             WHATSAPP_ACCESS_TOKEN: "test-access-token",
             WHATSAPP_PHONE_NUMBER_ID: "1000",
             ANTHROPIC_API_KEY: "test-anthropic-key",
+            ADMIN_SECRET: "test-admin-secret",
           },
         },
       }),

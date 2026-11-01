@@ -1,10 +1,34 @@
 import type { ExtractedEvent } from "./extraction/extract";
+import { formatDate } from "./whatsapp/summary";
 
 // Turns a held submission's Events into calendar Events. Returns what was published, with edit tokens.
 
 export type Published = { title: string; startsAt: string; editToken: string };
 
-export async function publishEvents(
+export type Held = { id: string; organizer_id: number; flyer_key: string; received_on: string };
+
+// Publishes a held submission once, from the chat or the confirm page: whoever claims it first wins,
+// a late second attempt gets null. `text` is the "✅ Ist online!" reply with the edit links.
+export async function publishSubmission(
+  env: Env,
+  submission: Held,
+  ready: ExtractedEvent[],
+  skipped: ExtractedEvent[],
+): Promise<{ published: Published[]; text: string } | null> {
+  const { meta } = await env.DB.prepare("UPDATE submission SET status = 'published' WHERE id = ? AND status = 'pending'")
+    .bind(submission.id)
+    .run();
+  if (meta.changes !== 1) return null;
+  const published = await publishEvents(env.DB, submission, ready);
+
+  const lines = published.map((p) => `*${p.title}* – ${formatDate(p.startsAt.slice(0, 10), submission.received_on)}\nBearbeiten: ${editLink(env, p)}`);
+  if (skipped.length) lines.push(`Nicht eingetragen: ${skipped.map((e) => e.title).join(", ")}`);
+  return { published, text: `✅ Ist online!\n\n${lines.join("\n\n")}\n\nDie Links sind privat – nicht weiterleiten.` };
+}
+
+export const editLink = (env: Env, p: Published) => `${env.PUBLIC_URL}/e/${p.editToken}`;
+
+async function publishEvents(
   db: D1Database,
   submission: { organizer_id: number; flyer_key: string },
   events: ExtractedEvent[],

@@ -71,7 +71,9 @@ export async function handleMessage(env: Env, message: InboundMessage) {
 function greeting(env: Env): string {
   return (
     "Hallo! 👋 Ich bin der DanceCalendar-Bot. Ich lese Flyer mit KI aus – bitte prüf, was ich erkenne.\n" +
-    `Datenschutz: ${env.PUBLIC_URL}/datenschutz · Mensch erreichen: „Admin" schreiben · Abmelden: STOP`
+    `Datenschutz: ${env.PUBLIC_URL}/datenschutz\n` +
+    `Regeln: ${env.PUBLIC_URL}/nutzungsbedingungen\n` +
+    `Mensch erreichen: „Admin" schreiben · Abmelden: STOP`
   );
 }
 

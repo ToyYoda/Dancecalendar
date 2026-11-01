@@ -178,8 +178,15 @@ function ApplyForm(props: { names: string[]; displayName?: string; firstName?: s
         <input id="first_name" name="first_name" value={props.firstName ?? ""} required maxlength={60} autocomplete="given-name" />
         <div class="hint">Nicht öffentlich, nur für den Admin.</div>
         <label class="check">
-          <input type="checkbox" name="terms" required /> Ich akzeptiere die Nutzungsbedingungen und erlaube DanceCalendar, meine Flyer
-          und Events öffentlich zu zeigen.
+          <input type="checkbox" name="terms" required /> Ich akzeptiere die{" "}
+          <a href="/nutzungsbedingungen" target="_blank">
+            Nutzungsbedingungen
+          </a>{" "}
+          und erlaube DanceCalendar, meine Flyer und Events öffentlich zu zeigen. Ich habe die Rechte daran. Wie wir mit deinen Daten umgehen, steht im{" "}
+          <a href="/datenschutz" target="_blank">
+            Datenschutz
+          </a>
+          .
         </label>
         <button type="submit">Anmelden</button>
       </form>

@@ -2,12 +2,13 @@ import { addDays, HORIZON_DAYS } from "./series";
 
 // Retention (the legal ticket's limits), run by the daily cron: past Events go about 3 months after they
 // happened, with their Flyers in R2; so do Series long over, handled submissions, and Flyers an
-// Organizer never published. Tip data has its own 30-day clean-up (tips.tsx).
+// Organizer never published, and "Admin" requests. Tip data has its own 30-day clean-up (tips.tsx).
 // Decisions: .scratch/dance-calendar-mvp/issues/26-retention-and-backups.md
 
 const KEPT_DAYS = 90; // past Events, handled submissions and ended Series
 const ABANDONED_DAYS = 30; // an Organizer's Flyer left unconfirmed
 const MESSAGE_IDS_DAYS = 7; // Meta re-delivers within hours; the ids only stop duplicates
+const ADMIN_REQUESTS_DAYS = 90; // "Admin" typed in the chat; the privacy policy promises this
 
 export async function cleanUpPast(env: Env, today: string) {
   const db = env.DB;
@@ -25,6 +26,7 @@ export async function cleanUpPast(env: Env, today: string) {
     db.prepare("DELETE FROM submission WHERE status IN ('published', 'discarded') AND created_at < ? RETURNING flyer_key").bind(cutoff),
     db.prepare("DELETE FROM submission WHERE status = 'pending' AND source <> 'tip' AND created_at < ? RETURNING flyer_key").bind(addDays(today, -ABANDONED_DAYS)),
     db.prepare("DELETE FROM inbound_message WHERE received_at < ?").bind(addDays(today, -MESSAGE_IDS_DAYS)),
+    db.prepare("DELETE FROM admin_request WHERE created_at < ?").bind(addDays(today, -ADMIN_REQUESTS_DAYS)),
   ]);
   await deleteUnusedFlyers(env, [...events.results, ...series.results, ...handled.results, ...abandoned.results].map((r) => r.flyer_key));
 }

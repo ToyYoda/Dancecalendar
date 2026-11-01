@@ -10,7 +10,7 @@ const TODAY = "2026-11-01"; // a fixed clock: Events before 2026-08-03 are past 
 
 beforeEach(async () => {
   await env.DB.batch([
-    ...["event", "series", "submission", "inbound_message", "venue", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
+    ...["event", "series", "submission", "inbound_message", "admin_request", "venue", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
     env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, '4917600000001', 'Salsa Kassel', 'Ana')"),
     knownVenue(env.DB),
   ]);
@@ -124,6 +124,18 @@ describe("retention", () => {
 
     const { results } = await env.DB.prepare("SELECT message_id FROM inbound_message").all();
     expect(results).toEqual([{ message_id: "new" }]);
+  });
+
+  it('forgets "Admin" requests after 3 months', async () => {
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO admin_request (whatsapp_number, created_at) VALUES ('4917600000002', '2026-07-01 10:00:00')"),
+      env.DB.prepare("INSERT INTO admin_request (whatsapp_number, created_at) VALUES ('4917600000003', '2026-10-01 10:00:00')"),
+    ]);
+
+    await cleanUpPast(env, TODAY);
+
+    const { results } = await env.DB.prepare("SELECT whatsapp_number FROM admin_request").all();
+    expect(results).toEqual([{ whatsapp_number: "4917600000003" }]);
   });
 
   it("runs with the daily cron, before the Series generate their dates", async () => {

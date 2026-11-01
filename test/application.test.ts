@@ -68,6 +68,8 @@ describe("an unregistered sender's Flyer", () => {
     expect(html).toContain('name="display_name"');
     expect(html).toContain('name="first_name"');
     expect(html).toContain('name="terms"');
+    expect(html).toContain('href="/nutzungsbedingungen"');
+    expect(html).toContain('href="/datenschutz"');
     expect(html).toContain("Salsa Kassel"); // suggested to join
   });
 

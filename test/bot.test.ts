@@ -17,7 +17,7 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("a registered Organizer forwards a Flyer", () => {
-  it("greets a new number once, with the AI disclosure, privacy link, human route and STOP", async () => {
+  it("greets a new number once, with the AI disclosure, privacy and Terms links, human route and STOP", async () => {
     const api = fakeApis();
 
     await deliver(imageMessage("media1"));
@@ -26,6 +26,7 @@ describe("a registered Organizer forwards a Flyer", () => {
     const greetings = api.texts().filter((t) => t.includes("KI"));
     expect(greetings).toHaveLength(1);
     expect(greetings[0]).toContain("https://dancecalendar.test/datenschutz");
+    expect(greetings[0]).toContain("https://dancecalendar.test/nutzungsbedingungen");
     expect(greetings[0]).toContain("Admin");
     expect(greetings[0]).toContain("STOP");
   });

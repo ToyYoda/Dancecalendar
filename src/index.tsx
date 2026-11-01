@@ -4,7 +4,7 @@ import { digestDue, EMAIL_CRON, sendDailyEmail } from "./admin-email";
 import { applyPage, cleanUpApplications } from "./application";
 import { confirmPage } from "./confirm-page";
 import { editPage } from "./edit-page";
-import { DataDeletion, PrivacyPolicy } from "./legal-pages";
+import { legalPages } from "./legal-pages";
 import { overview } from "./overview";
 import { cleanUpPast } from "./retention";
 import { extendSeries } from "./series";
@@ -18,8 +18,7 @@ import { webhook } from "./whatsapp/webhook";
 // Not strict: "/admin/upload/" finds the same page as "/admin/upload".
 const app = new Hono<{ Bindings: Env }>({ strict: false });
 
-app.get("/datenschutz", (c) => c.html(<PrivacyPolicy />));
-app.get("/datenloeschung", (c) => c.html(<DataDeletion />));
+app.route("/", legalPages);
 app.route("/e", editPage);
 app.route("/s", seriesPage);
 app.route("/a", applyPage);

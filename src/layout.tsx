@@ -18,10 +18,24 @@ export function Layout(props: { title: string; lang?: "de" | "en"; head?: Child;
       </head>
       <body>
         {props.children}
-        <footer>
-          <a href="/datenschutz">Datenschutz</a> · <a href="/datenloeschung">Datenlöschung</a>
-        </footer>
+        <Footer lang={props.lang ?? "de"} />
       </body>
     </html>
+  );
+}
+
+// The legal pages (src/legal-pages.tsx) and the OpenStreetMap credit for geocoded Venues, on every page.
+function Footer(props: { lang: "de" | "en" }) {
+  const en = props.lang === "en";
+  const q = en ? "?lang=en" : "";
+  return (
+    <footer>
+      <a href={`/impressum${q}`}>{en ? "Imprint" : "Impressum"}</a> · <a href={`/datenschutz${q}`}>{en ? "Privacy" : "Datenschutz"}</a> ·{" "}
+      <a href={`/nutzungsbedingungen${q}`}>{en ? "Terms" : "Nutzungsbedingungen"}</a> ·{" "}
+      <a href={`/datenloeschung${q}`}>{en ? "Data deletion" : "Datenlöschung"}</a> ·{" "}
+      <a href={`/impressum${q}#melden`}>{en ? "Report an Event" : "Event melden"}</a>
+      <br />
+      {en ? "Location data" : "Ortsdaten"} © <a href="https://www.openstreetmap.org/copyright">{en ? "OpenStreetMap contributors" : "OpenStreetMap-Mitwirkende"}</a> (ODbL)
+    </footer>
   );
 }

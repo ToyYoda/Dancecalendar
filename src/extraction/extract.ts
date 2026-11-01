@@ -50,7 +50,7 @@ export async function extractFlyer(apiKey: string, image: ArrayBuffer, mediaType
       {
         role: "user",
         content: [
-          { type: "image", source: { type: "base64", media_type: mediaType as "image/jpeg", data: Buffer.from(image).toString("base64") } },
+          { type: "image", source: { type: "base64", media_type: mediaType as "image/jpeg", data: toBase64(image) } },
           { type: "text", text: `Flyer received on ${receivedOn}.` },
         ],
       },
@@ -60,4 +60,11 @@ export async function extractFlyer(apiKey: string, image: ArrayBuffer, mediaType
   if (response.stop_reason !== "end_turn") return NOT_A_FLYER;
   const text = response.content.find((b) => b.type === "text");
   return text?.type === "text" ? (JSON.parse(text.text) as Extraction) : NOT_A_FLYER;
+}
+
+function toBase64(bytes: ArrayBuffer): string {
+  const view = new Uint8Array(bytes);
+  let binary = "";
+  for (let i = 0; i < view.length; i += 0x8000) binary += String.fromCharCode(...view.subarray(i, i + 0x8000));
+  return btoa(binary);
 }

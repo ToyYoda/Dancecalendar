@@ -1,7 +1,7 @@
 # Blocking questions in chat, with Venue geocoding
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 18
 Labels: wayfinder:task
 
@@ -27,6 +27,15 @@ The web confirm page shows the same Venue match and lets the Organizer change it
 ## Out of scope
 
 The duplicate-with-Tip question (that's [Tips](24-tips.md)).
+
+## Answer
+
+Live since 2026-11-01 (7ebf4cb, fix 6fdfed8). The demo passed in production after the Admin cleared all Events, Venues and held Flyers (Organizers kept): a Flyer with no start time at a new Venue → time answered → Venue found and confirmed → summary → published, and the Venue has coordinates.
+
+- Questions before the summary, worked out afresh from the held Events each time (`src/whatsapp/questions.ts`): reposted Event (update keeps the old edit link) → missing start time (suggested time / typed / leave out) → new Venue (geocoded, confirm / typed address / without address) → duplicate of another Organizer's Event (keep both / leave mine out). Typed answers wait in `submission.awaiting` (migration 0006).
+- Geocoding (`src/geocode.ts`): Photon biased to Kassel/Göttingen, Nominatim as fallback, URLs as Worker vars. A Venue with an address is looked up by address alone, since an unknown name in front of it makes Photon miss or pick the wrong place; without an address, by name.
+- The confirm page shows a new Venue's match and geocodes changed fields on publish; the edit page geocodes a newly named Venue.
+- Handed on: fixing a known Venue's address/coordinates → "Admin tools"; OSM attribution and naming the geocoders → "Legal pages"; the Series-rule question → "Series and Courses"; the duplicate-with-Tip question → "Tips".
 
 ## Comments
 

@@ -55,7 +55,7 @@ Done 2026-11-01 (commit 6dad434).
 - **Privacy policy** names Cloudflare, Anthropic, WhatsApp Ireland (processor and independent controller), Photon and Nominatim, the retention periods from `retention.ts`/`tips.tsx`/`application.tsx`, the 8-week backup rotation, the highlighted Art. 21 objection and the HBDI. To keep it true, "Admin" requests are now deleted after 90 days by the daily retention cron.
 - Checklist items these pages cover are ticked in [research/legal-requirements.md](../research/legal-requirements.md).
 
-Meta Live mode: done by the Admin on 2026-11-01. App icon [assets/app-icon.png](../assets/app-icon.png) (source [app-icon.svg](../assets/app-icon.svg)); privacy, Terms of Service and data-deletion URLs and the EU data-protection contact set under App settings → Basic; app published. Other numbers can now reach the bot.
+Meta Live mode: done by the Admin on 2026-11-01. App icon [assets/app-icon.png](../assets/app-icon.png) (source [app-icon.svg](../assets/app-icon.svg)); privacy, Terms of Service and data-deletion URLs and the EU data-protection contact set under App settings → Basic; app published. Other numbers can now reach the bot: a second number applied and published an Event the same day.
 
 Still for the Admin (Deploy on the map): review the final text (not legal advice).
 

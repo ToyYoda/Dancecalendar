@@ -236,7 +236,7 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
   const t = T[props.f.lang];
   const head = (
     <>
-      <style>{CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
       {props.head}
     </>
   );
@@ -260,6 +260,8 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
   );
 }
 
+// Two rows: what (the types as tabs, the Flyer/Kalender switch at the end) and where/which (the place,
+// whose options and hint open as a menu, then the styles). The menu closes on a tap elsewhere.
 function FilterBar(props: { f: Filters }) {
   const { f } = props;
   const t = T[f.lang];
@@ -267,59 +269,66 @@ function FilterBar(props: { f: Filters }) {
   const toggleStyle = (s: string) => (f.styles.includes(s) ? f.styles.filter((x) => x !== s) : [...f.styles, s]);
   return (
     <nav class="filters">
-      <div class="views">
-        <a class={f.view ? "" : "on"} href={href(f, { view: "", d: "" })}>
-          🖼 {t.feed}
-        </a>
-        <a class={f.view ? "on" : ""} href={href(f, { view: "cal", w: "" })}>
-          📅 {t.calendar}
-        </a>
-      </div>
-      <details class="place">
-        <summary class="chip on">
-          📍 {!f.c ? t.noPlace : r === "all" ? `${t.here} · ${t.anywhere}` : `${t.here} · ${r} km`} ▾
-        </summary>
-        <div class="row">
-          <a class="chip" href={href(f, { c: "" })} data-geo data-fail={t.noGeo}>
-            📍 {t.me}
+      <div class="tier">
+        <div class="types">
+          <a class={f.type ? "" : "on"} href={href(f, { type: "" })}>
+            {t.all}
           </a>
-          <a class="chip" href={href(f, {}, "/karte")}>
-            🗺 {t.map}
+          {TYPES.map((k) => (
+            <a class={f.type === k ? "on" : ""} href={href(f, { type: k })}>
+              {t[PLURAL[k]]}
+            </a>
+          ))}
+        </div>
+        <div class="views">
+          <a class={f.view ? "" : "on"} href={href(f, { view: "", d: "" })} title={t.feed} aria-label={t.feed}>
+            🖼<span>{t.feed}</span>
+          </a>
+          <a class={f.view ? "on" : ""} href={href(f, { view: "cal", w: "" })} title={t.calendar} aria-label={t.calendar}>
+            📅<span>{t.calendar}</span>
           </a>
         </div>
-        {f.c && (
-          <div class="row">
-            <span class="label">{t.radius}</span>
-            {RADII.map((x) => (
-              <a class={`chip ${r === x ? "on" : ""}`} href={href(f, { r: x })}>
-                {x === "all" ? t.anywhere : `${x} km`}
-              </a>
-            ))}
-          </div>
-        )}
-      </details>
+      </div>
       <div class="scroll">
+        <details class="place" {...(f.c ? {} : { "data-autogeo": "" })}>
+          <summary class={f.c ? "chip pl set" : "chip pl"}>
+            📍 {!f.c ? t.noPlace : r === "all" ? `${t.here} · ${t.anywhere}` : `${t.here} · ${r} km`}
+            <i>▾</i>
+          </summary>
+          <div class="menu">
+            {!f.c && <p class="hint">{t.hint}</p>}
+            <div class="row">
+              <a class="chip" href={href(f, { c: "" })} data-geo data-fail={t.noGeo}>
+                📍 {t.me}
+              </a>
+              <a class="chip" href={href(f, {}, "/karte")}>
+                🗺 {t.map}
+              </a>
+            </div>
+            {f.c && (
+              <div class="row">
+                <span class="label">{t.radius}</span>
+                {RADII.map((x) => (
+                  <a class={`chip ${r === x ? "on" : ""}`} href={href(f, { r: x })}>
+                    {x === "all" ? t.anywhere : `${x} km`}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
+        <span class="sep" />
         {STYLES.map(([k, name]) => (
           <a class={`chip ${f.styles.includes(k) ? "on" : ""}`} href={href(f, { styles: toggleStyle(k) })}>
             {name}
           </a>
         ))}
       </div>
-      <div class="types">
-        <a class={f.type ? "" : "on"} href={href(f, { type: "" })}>
-          {t.all}
-        </a>
-        {TYPES.map((k) => (
-          <a class={f.type === k ? "on" : ""} href={href(f, { type: k })}>
-            {t[PLURAL[k]]}
-          </a>
-        ))}
-      </div>
-      {!f.c && (
-        <p class="hint" data-autogeo>
-          {t.hint}
-        </p>
-      )}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `document.addEventListener("click",(e)=>{const d=document.querySelector(".filters .place[open]");if(d&&!d.contains(e.target))d.open=false;});`,
+        }}
+      />
     </nav>
   );
 }
@@ -1751,25 +1760,50 @@ const CSS = `
     background:var(--neon); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 14px rgba(255,61,139,.35)); }
   header.top small { display:block; color:var(--mute); font-size:12px; margin-top:4px; letter-spacing:.02em; }
   .lang { border:1px solid var(--line); border-radius:999px; padding:5px 11px; font-size:12px; font-weight:700; color:var(--mute); }
-  .filters { position:sticky; top:0; z-index:4; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.06);
-    background:rgba(12,10,16,.72); -webkit-backdrop-filter:blur(18px) saturate(1.6); backdrop-filter:blur(18px) saturate(1.6); }
-  .views, .types { display:flex; margin:0 16px 8px; background:var(--seg); border:1px solid var(--line); border-radius:999px; padding:3px; }
-  .views a, .types a { flex:1; text-align:center; padding:6px 0; border-radius:999px; font-size:13px; color:var(--mute); transition:color .15s, background .15s; }
-  .views a.on, .types a.on { background:var(--ink); color:var(--bg); font-weight:700; }
-  .types { margin:8px 16px 0; }
   .chip { display:inline-block; border:1px solid var(--line); background:var(--seg); color:var(--ink); border-radius:999px; padding:5px 12px; font-size:13px; white-space:nowrap; }
   .chip.on { background:var(--neon); color:#fff; border-color:transparent; font-weight:700; box-shadow:0 0 18px rgba(255,61,139,.35); }
-  .place { margin:0 16px 6px; }
+  .hint { margin:0 16px 6px; font-size:12px; color:var(--mute); }
+
+  /* the filters: two quiet rows of frosted glass */
+  .filters { position:sticky; top:0; z-index:4; padding:4px 0 10px; border-bottom:1px solid rgba(255,255,255,.06);
+    background:rgba(12,10,16,.66); -webkit-backdrop-filter:blur(18px) saturate(1.6); backdrop-filter:blur(18px) saturate(1.6); }
+  .filters .tier { display:flex; align-items:center; gap:10px; padding:0 16px; }
+  .filters .types { flex:1; min-width:0; display:flex; gap:18px; overflow-x:auto; scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg, #000 88%, transparent); mask-image:linear-gradient(90deg, #000 88%, transparent); }
+  .filters .types a { position:relative; flex:none; padding:10px 0 9px; font-size:14px; font-weight:600; color:var(--mute); transition:color .15s; }
+  .filters .types a:hover { color:var(--ink); }
+  .filters .types a.on { color:var(--ink); font-weight:800; }
+  @media (max-width: 420px) { .filters .types { gap:11px; } .filters .types a { font-size:13.5px; } .filters .views a { padding:5px 7px; } }
+  .filters .types a.on::after { content:""; position:absolute; left:0; right:0; bottom:3px; height:3px; border-radius:3px; background:var(--neon);
+    box-shadow:0 0 12px rgba(255,61,139,.7); }
+  .filters .views { flex:none; display:flex; padding:2px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); }
+  .filters .views a { display:flex; align-items:center; gap:6px; padding:5px 9px; border-radius:8px; font-size:13px; line-height:1; color:var(--mute);
+    filter:grayscale(1) opacity(.7); transition:background .15s, filter .15s; }
+  .filters .views a.on { background:rgba(255,255,255,.12); color:var(--ink); font-weight:700; filter:none; }
+  .filters .views span { display:none; }
+  @media (min-width: 520px) { .filters .views span { display:inline; } }
+  .filters .scroll { display:flex; align-items:center; gap:6px; overflow-x:auto; padding:2px 16px; scrollbar-width:none; }
+  .filters .scroll > .chip { padding:5px 12px; font-size:12.5px; background:transparent; border-color:rgba(255,255,255,.14); color:#d9d0e4; }
+  .filters .scroll > .chip:hover { border-color:rgba(255,255,255,.3); color:var(--ink); }
+  .filters .scroll > .chip.on { background:var(--neon); border-color:transparent; color:#fff; }
+  .filters .sep { flex:none; width:1px; height:18px; margin:0 4px; background:rgba(255,255,255,.14); }
+  /* the place: a chip whose options open as a menu below the filters (not clipped by the scrolling row) */
+  .place { flex:none; }
   .place summary { list-style:none; cursor:pointer; }
   .place summary::-webkit-details-marker { display:none; }
-  .place summary.chip.on { background:var(--seg); border-color:var(--line); box-shadow:none; font-weight:600; }
-  .place .row { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center; }
-  .place .label { font-size:12px; color:var(--mute); }
-  .hint { margin:0 16px 6px; font-size:12px; color:var(--mute); }
+  .place .pl { font-size:12.5px; font-weight:600; background:rgba(255,255,255,.08); border-color:transparent; }
+  .place .pl.set { color:var(--ink); box-shadow:inset 0 0 0 1px rgba(255,61,139,.55); }
+  .place .pl i { font-style:normal; display:inline-block; margin-left:4px; font-size:10px; opacity:.6; transition:transform .2s; }
+  .place[open] .pl i { transform:rotate(180deg); }
+  .place .menu { position:absolute; left:16px; right:16px; top:calc(100% - 2px); max-width:420px; padding:12px; border-radius:16px;
+    background:#1a1620; border:1px solid rgba(255,255,255,.1); box-shadow:0 18px 40px rgba(0,0,0,.55); }
+  .place .menu p { margin:0 0 10px; font-size:12px; line-height:1.45; color:var(--mute); }
+  .place .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .place .row + .row { margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.07); }
+  .place .label { font-size:12px; color:var(--mute); margin-right:2px; }
   #map { height:65vh; margin:0 16px; border-radius:16px; overflow:hidden; border:1px solid var(--line); }
   .maprow { display:flex; justify-content:space-between; gap:8px; margin:10px 16px; }
   .maprow button { font:inherit; cursor:pointer; } .maprow button:disabled { opacity:.4; cursor:default; }
-  .scroll { display:flex; gap:6px; overflow-x:auto; padding:0 16px; scrollbar-width:none; }
   .bar { display:flex; justify-content:space-between; align-items:center; padding:14px 16px 0; }
   .bar .range { font-weight:800; letter-spacing:-.01em; }
   .bar .nav a, .bar .nav .off { display:inline-block; text-align:center; line-height:30px; border:1px solid var(--line); background:var(--seg); border-radius:50%; width:32px; height:32px; }

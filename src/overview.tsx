@@ -397,7 +397,7 @@ const PANEL_SCRIPT = `(() => {
 
 const PROTO_CSS = `
   .proto-switch { position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:50; display:flex; gap:14px; align-items:center;
-    background:#111; color:#fff; border-radius:999px; padding:8px 16px; font:600 13px system-ui; box-shadow:0 6px 20px rgba(0,0,0,.35); }
+    background:#111; color:#fff; border:1px solid #333; border-radius:999px; padding:8px 16px; font:600 13px system-ui; box-shadow:0 6px 20px rgba(0,0,0,.35); }
   .proto-switch a { color:#ffeb3b; font-size:16px; }
   .side .mini { display:none; }
   #panel { display:none; }
@@ -408,7 +408,7 @@ const PROTO_CSS = `
   .card.wall .hero { position:relative; overflow:hidden; isolation:isolate; aspect-ratio:4 / 5; }
   .card.wall .hero::before { content:""; position:absolute; inset:-20px; z-index:-1; background:var(--img) center / cover; filter:blur(18px) brightness(.55); }
   .card.wall .hero img { width:100%; height:100%; max-height:none; object-fit:contain; }
-  .card.wall .body { padding:10px 14px 12px; } .card.wall .ttl { font-weight:800; font-size:16px; }
+  .card.wall .body { display:block; padding:10px 14px 12px; } .card.wall .ttl { font-weight:800; font-size:16px; }
   /* tablet: two Flyers side by side, the day heading across both */
   @media (min-width: 600px) and (max-width: 899px) {
     body:has(.v-A) { max-width:none; }
@@ -478,13 +478,14 @@ const PROTO_CSS = `
     .v-B .mgrid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:8px; text-align:center; font-size:12px; }
     .v-B .mgrid .dow { color:var(--mute); font-size:10px; }
     .v-B .mgrid a { padding:4px 0; border-radius:6px; } .v-B .mgrid a.out { opacity:.3; }
-    .v-B .mgrid a.has { background:#f8d7e3; font-weight:700; } .v-B .mgrid a.today { outline:2px solid var(--party); }
+    .v-B .mgrid a.has { background:rgba(255,61,139,.22); font-weight:700; } .v-B .mgrid a.today { outline:2px solid var(--party); }
     .v-B .strip { display:none; }
     .v-B .bar, .v-B h2.day { padding-left:0; padding-right:0; }
     .v-B .card { display:grid; grid-template-columns:200px 1fr; margin:8px 0 12px; }
     .v-B .card .hero img { height:100%; min-height:200px; max-height:260px; }
     .v-B .card .ov { display:none; }
     .v-B .card .body { padding:16px 20px; font-size:14px; }
+    .v-B .card .body .ttl { display:none; }
     .v-B .card .body::before { content:attr(data-title); display:block; font-size:20px; font-weight:800; margin-bottom:6px; }
 
     /* C: Wochenbrett – a column per day, details open in a panel on the right */
@@ -496,12 +497,12 @@ const PROTO_CSS = `
     .v-C .strip { display:none; }
     .v-C .bar { padding:12px 24px 0; }
     .v-C .days { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(160px, 1fr); gap:10px; padding:10px 24px; overflow-x:auto; }
-    .v-C .days section { background:#ece7e0; border-radius:12px; padding:0 8px 8px; min-height:60vh; }
+    .v-C .days section { background:var(--card); border-radius:12px; padding:0 8px 8px; min-height:60vh; }
     .v-C h2.day { padding:10px 2px; font-size:14px; position:sticky; top:0; }
     .v-C .card { margin:0 0 10px; border-radius:10px; }
     .v-C .card.open { outline:3px solid var(--party); }
     .v-C .hero img { height:200px; max-height:none; }
-    .v-C .ov { padding:20px 8px 6px; font-size:12px; } .v-C .ov .ttl { font-size:14px; }
+    .v-C .ov { display:block; padding:20px 8px 6px; font-size:12px; } .v-C .ov .ttl { font-size:14px; }
     .v-C .card .body { display:none; }
     .v-C #panel:not([hidden]) { display:block; position:sticky; top:0; height:100vh; overflow:auto; background:var(--card); border-left:1px solid var(--line); padding-top:8px; }
     .v-C #panel .close { float:right; margin:4px 12px; border:0; background:none; font-size:20px; cursor:pointer; }
@@ -566,8 +567,8 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
                 <span class="cnt">{list.length === 1 ? "1 Event" : `${list.length} Events`}</span>
               </h2>
             ) : (
-              <h2 class="day" id={`day-${d}`}>
-                {d === today ? `${t.today}, ` : ""}
+              <h2 class={d === today ? "day today" : "day"} id={`day-${d}`}>
+                {d === today && <span class="now">{t.today}</span>}
                 {longDay(d, f.lang)}
               </h2>
             )}
@@ -736,7 +737,7 @@ const STORY_CSS = `
     background:conic-gradient(from 210deg, var(--festival), var(--party), #7b1fa2, var(--workshop), var(--festival)); }
   .ring .disc::before { content:""; position:absolute; inset:2.5px; border-radius:50%; border:2.5px solid var(--bg);
     background:var(--img, linear-gradient(135deg,#3949ab,#8e24aa)) center top / cover, #222; }
-  .ring.seen .disc { background:#cfc8bf; }
+  .ring.seen .disc { background:#3a3342; }
   .ring.none .disc { background:none; border:2px dashed var(--line); padding:0; }
   .ring.none .disc::before { display:none; }
   .ring.none { opacity:.45; }
@@ -802,9 +803,9 @@ function Card(props: { f: Filters; o: OnDay; day?: string; wall?: boolean }) {
       ? `${weekdayShort(e.starts_at.slice(0, 10), f.lang)} – ${weekdayShort(e.ends_at!.slice(0, 10), f.lang)}`
       : timeRange(e);
     return (
-      <a class={e.cancelled ? "card wall cancelled" : "card wall"} href={href(f, {}, `/events/${e.id}`)}>
+      <a class={e.cancelled ? "card wall cancelled" : "card wall"} href={href(f, {}, `/events/${e.id}`)} style={glow(e)}>
         {e.flyer_key ? (
-          <div class="hero" style={`--img:url('/${e.flyer_key}')`}>
+          <div class="hero">
             <img src={`/${e.flyer_key}`} alt={`Flyer: ${e.title}`} loading="lazy" />
           </div>
         ) : (
@@ -828,7 +829,7 @@ function Card(props: { f: Filters; o: OnDay; day?: string; wall?: boolean }) {
     );
   }
   return (
-    <a class={e.cancelled ? "card cancelled" : "card"} href={href(f, {}, `/events/${e.id}`)} data-title={e.title} data-day={props.day ? `${weekdayShort(props.day, f.lang)} ${Number(props.day.slice(8))}.${Number(props.day.slice(5, 7))}.` : ""}>
+    <a class={e.cancelled ? "card cancelled" : "card"} href={href(f, {}, `/events/${e.id}`)} style={glow(e)} data-title={e.title} data-day={props.day ? `${weekdayShort(props.day, f.lang)} ${Number(props.day.slice(8))}.${Number(props.day.slice(5, 7))}.` : ""}>
       {e.flyer_key ? (
         <div class="hero">
           <img src={`/${e.flyer_key}`} alt="Flyer" loading="lazy" />
@@ -843,15 +844,23 @@ function Card(props: { f: Filters; o: OnDay; day?: string; wall?: boolean }) {
         </div>
       )}
       <div class="body">
-        <b>{when}</b> · <TypeLabel f={f} e={e} /> · {e.venue}
-        {km(e)}
-        <br />
-        <Tags f={f} e={e} />
-        <div class="by">{e.posted_by}</div>
+        <span class={o.dayN ? "time long" : "time"}>{when}</span>
+        <div class="stub">
+          <div class="ttl">{e.title}</div>
+          <div class="meta">
+            <TypeLabel f={f} e={e} /> · {e.venue}
+            {km(e)}
+          </div>
+          <Tags f={f} e={e} />
+          {e.posted_by && e.posted_by !== e.title && <div class="by">{e.posted_by}</div>}
+        </div>
       </div>
     </a>
   );
 }
+
+// The Flyer behind its card, blurred into a halo of its own colours on the dark page.
+const glow = (e: Row) => (e.flyer_key ? `--img:url('/${e.flyer_key}')` : undefined);
 
 function CalendarPage(props: { f: Filters; today: string; sel: string; first: string; byDay: Map<string, OnDay[]> }) {
   const { f, today, sel, first, byDay } = props;
@@ -987,7 +996,11 @@ function DetailPage(props: { f: Filters; e: Shown }) {
         <span class="ttl">{e.title}</span>
       </h1>
       <Badges f={f} e={e} />
-      {e.flyer_key && <img class="flyer" src={`/${e.flyer_key}`} alt="Flyer" />}
+      {e.flyer_key && (
+        <div class="flyerbox" style={glow(e)}>
+          <img class="flyer" src={`/${e.flyer_key}`} alt="Flyer" />
+        </div>
+      )}
       <dl class="facts">
         <dt>📅</dt>
         <dd>{when}</dd>
@@ -1122,80 +1135,117 @@ const GEO_SCRIPT = `(() => {
   else ask();
 })();`;
 
+// "Nach Acht": the Dancer pages are a dark dance floor and the Flyers are its light. Each Flyer glows in its
+// own colours (see glow), the info sits on a ticket stub below it, and the filters float over the feed as
+// frosted glass. System fonts only, so no font host learns who looks.
 const CSS = `
-  :root { --bg:#f6f4f1; --card:#fff; --ink:#1d1a17; --mute:#6f6861; --line:#e4dfd8;
-          --party:#c2185b; --workshop:#1f6feb; --festival:#b26a00; --course:#2e7d32; }
-  body { background:var(--bg); color:var(--ink); padding:0 0 1rem; }
+  :root { color-scheme:dark; --bg:#0c0a10; --card:#18141e; --ink:#f5f0ea; --mute:#a197ab; --line:#2e2738; --seg:#1d1824;
+          --party:#ff3d8b; --workshop:#4f9dff; --festival:#ffb02e; --course:#3ddc84; --neon:linear-gradient(95deg,#ff3d8b,#b04bff 55%,#ffb02e); }
+  html { background:var(--bg); }
+  body { color:var(--ink); padding:0 0 1rem; background:
+    radial-gradient(42rem 30rem at 0% -8%, rgba(255,61,139,.20), transparent 65%),
+    radial-gradient(40rem 32rem at 100% 4%, rgba(124,77,255,.20), transparent 65%),
+    radial-gradient(36rem 30rem at 50% 110%, rgba(255,176,46,.10), transparent 70%), var(--bg);
+    background-attachment:fixed; -webkit-font-smoothing:antialiased; }
   a { color:inherit; text-decoration:none; }
-  footer { padding:0 16px; } footer a { text-decoration:underline; }
-  header.top { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:var(--card); border-bottom:1px solid var(--line); }
-  header.top .home { font-weight:700; font-size:17px; }
-  header.top small { display:block; color:var(--mute); font-size:12px; }
-  .lang { border:1px solid var(--line); border-radius:8px; padding:4px 8px; font-size:13px; }
-  .filters { position:sticky; top:0; z-index:4; background:var(--bg); padding:8px 0 6px; border-bottom:1px solid var(--line); }
-  .views, .types { display:flex; margin:0 16px 8px; background:#e9e4dd; border-radius:10px; padding:3px; }
-  .views a, .types a { flex:1; text-align:center; padding:6px 0; border-radius:8px; font-size:13px; }
-  .views a.on, .types a.on { background:var(--card); box-shadow:0 1px 2px rgba(0,0,0,.1); font-weight:600; }
+  ::selection { background:var(--party); color:#fff; }
+  :focus-visible { outline:2px solid var(--party); outline-offset:2px; }
+  footer { padding:0 16px; color:var(--mute); } footer a { text-decoration:underline; text-decoration-color:var(--line); }
+  header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 16px 12px; }
+  header.top .home { display:inline-block; font-weight:900; font-style:italic; font-size:26px; line-height:1; letter-spacing:-.035em; text-transform:uppercase;
+    background:var(--neon); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 14px rgba(255,61,139,.35)); }
+  header.top small { display:block; color:var(--mute); font-size:12px; margin-top:4px; letter-spacing:.02em; }
+  .lang { border:1px solid var(--line); border-radius:999px; padding:5px 11px; font-size:12px; font-weight:700; color:var(--mute); }
+  .filters { position:sticky; top:0; z-index:4; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.06);
+    background:rgba(12,10,16,.72); -webkit-backdrop-filter:blur(18px) saturate(1.6); backdrop-filter:blur(18px) saturate(1.6); }
+  .views, .types { display:flex; margin:0 16px 8px; background:var(--seg); border:1px solid var(--line); border-radius:999px; padding:3px; }
+  .views a, .types a { flex:1; text-align:center; padding:6px 0; border-radius:999px; font-size:13px; color:var(--mute); transition:color .15s, background .15s; }
+  .views a.on, .types a.on { background:var(--ink); color:var(--bg); font-weight:700; }
   .types { margin:8px 16px 0; }
-  .chip { display:inline-block; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:5px 11px; font-size:13px; white-space:nowrap; }
-  .chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .chip { display:inline-block; border:1px solid var(--line); background:var(--seg); color:var(--ink); border-radius:999px; padding:5px 12px; font-size:13px; white-space:nowrap; }
+  .chip.on { background:var(--neon); color:#fff; border-color:transparent; font-weight:700; box-shadow:0 0 18px rgba(255,61,139,.35); }
   .place { margin:0 16px 6px; }
   .place summary { list-style:none; cursor:pointer; }
   .place summary::-webkit-details-marker { display:none; }
+  .place summary.chip.on { background:var(--seg); border-color:var(--line); box-shadow:none; font-weight:600; }
   .place .row { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center; }
   .place .label { font-size:12px; color:var(--mute); }
   .hint { margin:0 16px 6px; font-size:12px; color:var(--mute); }
-  #map { height:65vh; margin:0 16px; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+  #map { height:65vh; margin:0 16px; border-radius:16px; overflow:hidden; border:1px solid var(--line); }
   .maprow { display:flex; justify-content:space-between; gap:8px; margin:10px 16px; }
   .maprow button { font:inherit; cursor:pointer; } .maprow button:disabled { opacity:.4; cursor:default; }
   .scroll { display:flex; gap:6px; overflow-x:auto; padding:0 16px; scrollbar-width:none; }
-  .bar { display:flex; justify-content:space-between; align-items:center; padding:10px 16px 0; }
-  .bar .range { font-weight:700; }
-  .bar .nav a, .bar .nav .off { display:inline-block; text-align:center; line-height:30px; border:1px solid var(--line); background:var(--card); border-radius:8px; width:32px; height:32px; }
+  .bar { display:flex; justify-content:space-between; align-items:center; padding:14px 16px 0; }
+  .bar .range { font-weight:800; letter-spacing:-.01em; }
+  .bar .nav a, .bar .nav .off { display:inline-block; text-align:center; line-height:30px; border:1px solid var(--line); background:var(--seg); border-radius:50%; width:32px; height:32px; }
   .bar .nav .off { opacity:.35; }
   .strip { display:flex; gap:4px; justify-content:space-between; overflow-x:auto; padding:8px 16px 2px; scrollbar-width:none; }
   .pill { flex:none; width:40px; text-align:center; border-radius:12px; background:var(--card); border:1px solid var(--line); padding:4px 0; font-size:11px; }
   .pill b { display:block; font-size:16px; }
   .pill.none { opacity:.35; }
   .pill .cnt { display:inline-block; min-width:16px; border-radius:8px; background:var(--party); color:#fff; font-size:10px; }
-  h2.day { padding:16px 16px 4px; margin:0; font-size:18px; scroll-margin-top:190px; }
-  .card { display:block; margin:8px 16px 14px; border-radius:16px; overflow:hidden; background:var(--card); box-shadow:0 2px 8px rgba(0,0,0,.08); }
-  .hero { position:relative; background:#222; }
+  h2.day { padding:28px 16px 6px; margin:0; font-size:15px; font-weight:700; color:var(--mute); letter-spacing:.01em; scroll-margin-top:190px;
+    display:flex; align-items:center; gap:10px; }
+  h2.day::after { content:""; flex:1; height:1px; background:linear-gradient(90deg, var(--line), transparent); }
+  h2.day.today { color:var(--ink); }
+  h2.day .now { font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; color:#fff; background:var(--party); padding:3px 9px;
+    border-radius:999px; box-shadow:0 0 16px rgba(255,61,139,.6); animation:pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow:0 0 4px rgba(255,61,139,.2); } }
+
+  /* The card: the whole Flyer, its colours bleeding into the floor, then a ticket stub */
+  .card { position:relative; isolation:isolate; display:block; margin:10px 16px 26px; border-radius:18px; background:none; }
+  .card::before { content:""; position:absolute; z-index:-1; inset:3% -12px -14px; border-radius:30px; opacity:.75; transition:opacity .25s;
+    background:var(--img, linear-gradient(135deg,#3949ab,#8e24aa)) center / cover; filter:blur(34px) saturate(1.8); }
+  .card:hover::before, .card:focus-visible::before { opacity:1; }
+  .hero { position:relative; background:#000; border-radius:18px 18px 0 0; overflow:hidden; }
   .hero img { display:block; width:100%; max-height:70vh; object-fit:cover; object-position:top; }
-  .hero.text { background:linear-gradient(135deg,#3949ab,#8e24aa); color:#fff; font-size:24px; font-weight:800; text-align:center; padding:36px 20px; }
-  .ov { position:absolute; left:0; right:0; bottom:0; padding:30px 14px 12px; background:linear-gradient(transparent, rgba(0,0,0,.8)); color:#fff; font-size:14px; }
-  .ov .ttl { font-size:19px; font-weight:800; }
-  .card .body { padding:10px 14px 12px; font-size:13px; }
-  .card .by { color:var(--mute); margin-top:4px; }
-  .card.cancelled .hero { filter:grayscale(1) brightness(.6); }
+  .hero.text { background:linear-gradient(135deg,#3949ab,#8e24aa); color:#fff; font-size:26px; font-weight:900; font-style:italic; text-transform:uppercase;
+    letter-spacing:-.02em; text-align:center; padding:48px 20px; }
+  .ov { display:none; }
+  .card .body { position:relative; display:flex; gap:14px; align-items:flex-start; padding:14px 16px 15px; font-size:13px; color:var(--mute);
+    background:var(--card); border-radius:0 0 18px 18px; border-top:2px dashed rgba(255,255,255,.12); }
+  /* the ticket's notches */
+  .card .body::before, .card .body::after { content:""; position:absolute; top:-11px; width:20px; height:20px; border-radius:50%; background:var(--bg); }
+  .card .body::before { left:-10px; } .card .body::after { right:-10px; }
+  .card .time { flex:none; min-width:64px; font-size:26px; font-weight:900; line-height:1; letter-spacing:-.03em; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .card .time.long { font-size:15px; line-height:1.3; }
+  .card .stub { min-width:0; }
+  .card .stub .ttl { font-size:16px; font-weight:800; line-height:1.2; color:var(--ink); margin-bottom:2px; }
+  .card .by { color:var(--mute); margin-top:6px; font-size:12px; opacity:.8; }
+  .card.cancelled .hero { filter:grayscale(1) brightness(.5); } .card.cancelled::before { opacity:.12; filter:blur(30px) grayscale(1); }
   .cancelled .ttl { text-decoration:line-through; }
   .tags { display:inline; }
-  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:999px; background:#efe9e2; color:#4a433d; margin:3px 4px 0 0; }
-  .badge { display:inline-block; font-size:11px; padding:1px 6px; border-radius:4px; font-weight:600; margin:3px 4px 0 0; }
-  .b-cancel { background:#fde2e2; color:#a30000; } .b-tip { background:#e8f0fe; color:#1a4fb4; } .b-reg { background:#e6f4ea; color:#1e6b2f; }
+  .tag { display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.08); color:#d8cfe2; margin:5px 4px 0 0; }
+  .badge { display:inline-block; font-size:11px; padding:2px 7px; border-radius:6px; font-weight:700; margin:5px 4px 0 0; }
+  .b-cancel { background:rgba(255,80,80,.16); color:#ff8a8a; } .b-tip { background:rgba(79,157,255,.16); color:#8fc0ff; } .b-reg { background:rgba(61,220,132,.14); color:#7fe8ad; }
   .t-party{color:var(--party)} .t-workshop{color:var(--workshop)} .t-festival{color:var(--festival)} .t-course{color:var(--course)}
+  .t-party, .t-workshop, .t-festival, .t-course { font-weight:700; }
   .muted { color:var(--mute); }
-  .empty { padding:40px 16px; text-align:center; color:var(--mute); }
-  .grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:8px 8px 0; }
+  .empty { padding:60px 16px; text-align:center; color:var(--mute); }
+  .grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; padding:8px 8px 0; }
   .dow { text-align:center; font-size:11px; color:var(--mute); padding:4px 0; }
-  .cell { background:var(--card); min-height:50px; border-radius:6px; padding:3px; font-size:12px; position:relative; border:2px solid transparent; }
-  .cell.out { opacity:.35; } .cell.past { opacity:.5; } .cell.sel { border-color:var(--ink); }
+  .cell { background:var(--card); min-height:50px; border-radius:8px; padding:3px; font-size:12px; position:relative; border:2px solid transparent; }
+  .cell.out { opacity:.35; } .cell.past { opacity:.5; } .cell.sel { border-color:var(--party); box-shadow:0 0 14px rgba(255,61,139,.35); }
   .cell.today .n { background:var(--party); color:#fff; border-radius:50%; }
   .cell .n { display:inline-block; width:20px; text-align:center; }
   .cell .dots { display:flex; gap:2px; flex-wrap:wrap; margin-top:2px; }
   .cell .dot { width:7px; height:7px; border-radius:50%; }
   .cell .fest { position:absolute; left:-2px; right:-2px; bottom:3px; height:5px; background:var(--festival); }
-  .item { display:flex; gap:12px; background:var(--card); border-radius:12px; padding:10px; margin:0 16px 8px; border-left:5px solid var(--line); }
-  .item .when { font-weight:700; min-width:56px; }
+  .item { display:flex; gap:12px; background:var(--card); border-radius:14px; padding:12px; margin:0 16px 8px; border-left:4px solid var(--line); }
+  .item .when { font-weight:900; min-width:56px; font-variant-numeric:tabular-nums; }
   .item .ttl, .item .muted { display:block; }
-  .item .ttl { font-weight:600; } .item .muted { font-size:13px; }
-  .kind { font-size:12px; font-weight:700; text-transform:uppercase; padding:0 16px; }
-  h1 { margin:4px 16px; font-size:22px; }
+  .item .ttl { font-weight:700; } .item .muted { font-size:13px; }
+  .kind { font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:0 16px; }
+  h1 { margin:4px 16px; font-size:28px; font-weight:900; line-height:1.1; letter-spacing:-.02em; }
   .badges { padding:0 0 0 0; }
   body > .badges, h1 + .badges { display:block; padding:0 16px; }
-  .flyer { display:block; width:calc(100% - 32px); margin:10px 16px; border-radius:10px; }
-  .facts { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:10px 16px; font-size:14px; }
+  .flyerbox { position:relative; isolation:isolate; margin:16px 16px 18px; }
+  .flyerbox::before { content:""; position:absolute; z-index:-1; inset:4%; background:var(--img) center / cover; filter:blur(40px) saturate(1.7); opacity:.7; }
+  .flyer { display:block; width:100%; border-radius:14px; }
+  .facts { display:grid; grid-template-columns:auto 1fr; gap:8px 14px; margin:10px 16px; padding:14px 16px; font-size:14px; background:var(--card); border-radius:16px; border:1px solid var(--line); }
   .facts dt { color:var(--mute); } .facts dd { margin:0; }
-  .desc { margin:0 16px; white-space:pre-line; }
+  .desc { margin:14px 16px; white-space:pre-line; }
   body > p { margin:10px 16px; }
+  body > p > a { color:var(--mute); }
+  @media (prefers-reduced-motion: reduce) { h2.day .now { animation:none; } .card::before { transition:none; } }
 `;

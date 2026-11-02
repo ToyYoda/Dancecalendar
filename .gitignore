@@ -17,3 +17,6 @@ __pycache__/
 
 # Database exports hold Organizers' WhatsApp numbers.
 backup-*.sql
+
+# Design-review screenshots show real sample Flyers (names, faces)
+.scratch/*/prototypes/design-review/

@@ -16,7 +16,7 @@ type Lang = "de" | "en";
 // c = "lat,lng" (without it: no distances, every Event), r = 10|25|50|100|all (default 50, only with c),
 // styles = salsa,bachata,…, type = party|workshop|course|festival, view = cal, w = a week's Monday,
 // d = the calendar's selected day, lang = en.
-type Filters = { c: string; r: string; styles: string[]; type: string; view: string; w: string; d: string; lang: Lang };
+type Filters = { c: string; r: string; styles: string[]; type: string; view: string; w: string; d: string; lang: Lang; v: string };
 
 const RADII = ["10", "25", "50", "100", "all"];
 const DEFAULT_RADIUS = "50";
@@ -144,6 +144,7 @@ function filters(p: URLSearchParams): Filters {
     w: p.get("w") ?? "",
     d: p.get("d") ?? "",
     lang: p.get("lang") === "en" ? "en" : "de",
+    v: VARIANTS.some(([k]) => k === p.get("variant")) ? p.get("variant")! : "",
   };
 }
 
@@ -159,6 +160,7 @@ function href(f: Filters, changes: Partial<Filters> = {}, path = "/"): string {
   if (g.view && g.d) p.set("d", g.d);
   if (!g.view && g.w) p.set("w", g.w);
   if (g.lang === "en") p.set("lang", "en");
+  if (g.v) p.set("variant", g.v);
   const q = p.toString().replace(/%2C/g, ",");
   return q ? `${path}?${q}` : path;
 }
@@ -321,6 +323,147 @@ function FilterBar(props: { f: Filters }) {
   );
 }
 
+// ---- PROTOTYPE: design review variants (issues/29-design-review-and-desktop.md) ----
+// Three desktop layouts of the Flyer feed on this route, switched with ?variant= and the bar at the bottom.
+// Below 900px every variant is today's phone layout. Throwaway: lives on the prototype/design-review branch.
+const VARIANTS: [string, string][] = [
+  ["", "Heute (Spalte)"],
+  ["A", "Pinnwand"],
+  ["B", "Seitenleiste + Agenda"],
+  ["C", "Wochenbrett + Panel"],
+];
+
+function Switcher(props: { f: Filters }) {
+  const i = VARIANTS.findIndex(([k]) => k === props.f.v);
+  const at = (n: number) => VARIANTS[(i + n + VARIANTS.length) % VARIANTS.length][0];
+  return (
+    <div class="proto-switch">
+      <a href={href(props.f, { v: at(-1) })} data-key="ArrowLeft">←</a>
+      <span>
+        {props.f.v || "–"} · {VARIANTS[i][1]}
+      </span>
+      <a href={href(props.f, { v: at(1) })} data-key="ArrowRight">→</a>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `document.addEventListener("keydown",(e)=>{if(e.target.closest("input,textarea,[contenteditable]"))return;const a=document.querySelector('.proto-switch [data-key="'+e.key+'"]');if(a)location.href=a.href;});`,
+        }}
+      />
+    </div>
+  );
+}
+
+function MiniMonth(props: { f: Filters; today: string; byDay: Map<string, OnDay[]> }) {
+  const { f, today } = props;
+  const first = `${today.slice(0, 7)}-01`;
+  const start = addDays(first, -((weekday(first) + 6) % 7));
+  const dows = f.lang === "de" ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  return (
+    <div class="mini">
+      <b>{monthName(first, f.lang)}</b>
+      <div class="mgrid">
+        {dows.map((d) => (
+          <span class="dow">{d}</span>
+        ))}
+        {range(start, 42).map((d) => {
+          const n = props.byDay.get(d)?.length ?? 0;
+          const cls = [d.slice(0, 7) !== today.slice(0, 7) ? "out" : "", d === today ? "today" : "", n ? "has" : ""].join(" ");
+          return (
+            <a class={cls} href={n ? `#day-${d}` : href(f, { view: "cal", d })}>
+              {Number(d.slice(8))}
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const PANEL_SCRIPT = `(() => {
+  const panel = document.getElementById("panel");
+  if (!panel) return;
+  document.addEventListener("click", async (ev) => {
+    const a = ev.target.closest(".v-C .card");
+    if (!a || innerWidth < 900) return;
+    ev.preventDefault();
+    const html = await (await fetch(a.href)).text();
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    doc.querySelectorAll("header.top, footer, script, .proto-switch").forEach((n) => n.remove());
+    panel.innerHTML = '<button class="close" onclick="this.parentNode.hidden=true">✕</button>' + doc.body.innerHTML;
+    panel.hidden = false;
+    document.querySelectorAll(".v-C .card.open").forEach((c) => c.classList.remove("open"));
+    a.classList.add("open");
+  });
+})();`;
+
+const PROTO_CSS = `
+  .proto-switch { position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:50; display:flex; gap:14px; align-items:center;
+    background:#111; color:#fff; border-radius:999px; padding:8px 16px; font:600 13px system-ui; box-shadow:0 6px 20px rgba(0,0,0,.35); }
+  .proto-switch a { color:#ffeb3b; font-size:16px; }
+  .side .mini { display:none; }
+  #panel { display:none; }
+  @media (min-width: 900px) {
+    body:has(.v-A), body:has(.v-B), body:has(.v-C) { max-width:none; }
+    body:has(.v-A) footer, body:has(.v-B) footer, body:has(.v-C) footer { padding:0 32px 70px; }
+
+    /* A: Pinnwand – one top bar, each day a row of Flyer cards */
+    .v-A .filters { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding:10px 32px; }
+    .v-A .filters > * { margin:0 !important; }
+    .v-A .views, .v-A .types { flex:none; }
+    .v-A .scroll { padding:0; flex-wrap:wrap; }
+    .v-A .bar, .v-A .strip { padding-left:32px; padding-right:32px; } .v-A .strip { justify-content:flex-start; gap:8px; }
+    .v-A h2.day { padding:24px 32px 6px; }
+    .v-A .views a, .v-A .types a, .v-C .views a, .v-C .types a { padding:6px 14px; white-space:nowrap; }
+    .v-A .days { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:18px; padding:0 32px; align-items:start; }
+    .v-A .days section, .v-A .days .cards { display:contents; }
+    .v-A .days h2.day { display:none; }
+    .v-A .days { padding-top:16px; }
+    .v-A .card { position:relative; }
+    .v-A .card::before { content:attr(data-day); position:absolute; top:10px; left:10px; z-index:2; background:#fff; color:var(--ink); padding:3px 9px; border-radius:8px; font-weight:800; font-size:13px; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+    .v-A .card { margin:0; }
+    .v-A .hero img { height:340px; max-height:none; }
+
+    /* B: Seitenleiste – filters and a month on the left, an agenda of rows on the right */
+    .v-B .layout { display:grid; grid-template-columns:300px 1fr; gap:28px; max-width:1180px; margin:0 auto; padding:0 24px; }
+    .v-B .side { position:sticky; top:12px; align-self:start; }
+    .v-B .side .filters { position:static; border:0; background:none; padding:12px 0; }
+    .v-B .side .filters > * { margin-left:0; margin-right:0; }
+    .v-B .side .scroll { flex-wrap:wrap; padding:0; }
+    .v-B .side .types { flex-wrap:wrap; }
+    .v-B .side .mini { display:block; background:var(--card); border-radius:14px; padding:12px; margin-top:8px; }
+    .v-B .mgrid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:8px; text-align:center; font-size:12px; }
+    .v-B .mgrid .dow { color:var(--mute); font-size:10px; }
+    .v-B .mgrid a { padding:4px 0; border-radius:6px; } .v-B .mgrid a.out { opacity:.3; }
+    .v-B .mgrid a.has { background:#f8d7e3; font-weight:700; } .v-B .mgrid a.today { outline:2px solid var(--party); }
+    .v-B .strip { display:none; }
+    .v-B .bar, .v-B h2.day { padding-left:0; padding-right:0; }
+    .v-B .card { display:grid; grid-template-columns:200px 1fr; margin:8px 0 12px; }
+    .v-B .card .hero img { height:100%; min-height:200px; max-height:260px; }
+    .v-B .card .ov { display:none; }
+    .v-B .card .body { padding:16px 20px; font-size:14px; }
+    .v-B .card .body::before { content:attr(data-title); display:block; font-size:20px; font-weight:800; margin-bottom:6px; }
+
+    /* C: Wochenbrett – a column per day, details open in a panel on the right */
+    .v-C .layout { display:grid; grid-template-columns:minmax(0, 1fr); }
+    .v-C .layout:has(#panel:not([hidden])) { grid-template-columns:minmax(0, 1fr) 440px; }
+    .v-C .side { grid-column:1 / -1; } .v-C .main { grid-column:1; min-width:0; } .v-C #panel { grid-column:2; grid-row:2; }
+    .v-C .filters { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding:10px 24px; }
+    .v-C .filters > * { margin:0 !important; } .v-C .views, .v-C .types { flex:none; } .v-C .scroll { padding:0; }
+    .v-C .strip { display:none; }
+    .v-C .bar { padding:12px 24px 0; }
+    .v-C .days { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(160px, 1fr); gap:10px; padding:10px 24px; overflow-x:auto; }
+    .v-C .days section { background:#ece7e0; border-radius:12px; padding:0 8px 8px; min-height:60vh; }
+    .v-C h2.day { padding:10px 2px; font-size:14px; position:sticky; top:0; }
+    .v-C .card { margin:0 0 10px; border-radius:10px; }
+    .v-C .card.open { outline:3px solid var(--party); }
+    .v-C .hero img { height:200px; max-height:none; }
+    .v-C .ov { padding:20px 8px 6px; font-size:12px; } .v-C .ov .ttl { font-size:14px; }
+    .v-C .card .body { display:none; }
+    .v-C #panel:not([hidden]) { display:block; position:sticky; top:0; height:100vh; overflow:auto; background:var(--card); border-left:1px solid var(--line); padding-top:8px; }
+    .v-C #panel .close { float:right; margin:4px 12px; border:0; background:none; font-size:20px; cursor:pointer; }
+    .v-C #panel .filters { display:none; }
+  }
+`;
+
 function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map<string, OnDay[]> }) {
   const { f, today, monday, byDay } = props;
   const t = T[f.lang];
@@ -331,8 +474,14 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
   const next = addDays(monday || thisMonday, 7);
   const any = [...byDay.values()].some((l) => l.length);
   return (
-    <Page f={f}>
-      <FilterBar f={f} />
+    <Page f={f} head={<style>{PROTO_CSS}</style>}>
+      <div class={`v-${f.v || "0"}`}>
+      <div class="layout">
+      <aside class="side">
+        <FilterBar f={f} />
+        <MiniMonth f={f} today={today} byDay={byDay} />
+      </aside>
+      <div class="main">
       <div class="bar">
         <span class="range">
           {short(days[0], f.lang)} – {short(days.at(-1)!, f.lang)}
@@ -353,30 +502,40 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
           );
         })}
       </div>
+      <main class="days">
       {[...byDay].map(([d, list]) =>
-        list.length ? (
+        list.length || f.v === "C" ? (
           <section>
             <h2 class="day" id={`day-${d}`}>
               {d === today ? `${t.today}, ` : ""}
               {longDay(d, f.lang)}
             </h2>
-            {list.map((o) => (
-              <Card f={f} o={o} />
-            ))}
+            <div class="cards">
+              {list.map((o) => (
+                <Card f={f} o={o} day={d} />
+              ))}
+            </div>
           </section>
         ) : null,
       )}
+      </main>
       {!any && <p class="empty">{t.none}</p>}
+      </div>
+      {f.v === "C" && <aside id="panel" hidden />}
+      </div>
+      </div>
+      <Switcher f={f} />
+      <script dangerouslySetInnerHTML={{ __html: PANEL_SCRIPT }} />
     </Page>
   );
 }
 
-function Card(props: { f: Filters; o: OnDay }) {
+function Card(props: { f: Filters; o: OnDay; day?: string }) {
   const { f, o } = props;
   const { e } = o;
   const when = o.dayN ? `${T[f.lang].day} ${o.dayN}/${o.dayOf}` : timeRange(e);
   return (
-    <a class={e.cancelled ? "card cancelled" : "card"} href={href(f, {}, `/events/${e.id}`)}>
+    <a class={e.cancelled ? "card cancelled" : "card"} href={href(f, {}, `/events/${e.id}`)} data-title={e.title} data-day={props.day ? `${weekdayShort(props.day, f.lang)} ${Number(props.day.slice(8))}.${Number(props.day.slice(5, 7))}.` : ""}>
       {e.flyer_key ? (
         <div class="hero">
           <img src={`/${e.flyer_key}`} alt="Flyer" loading="lazy" />

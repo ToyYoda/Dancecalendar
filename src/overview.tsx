@@ -533,9 +533,11 @@ const PROTO_CSS = `
 // The Flyers are the best thing on the site, yet a phone's first screen showed none of them and a desktop
 // showed one in a narrow column. The Bühne gives the whole screen below the filters to the week's Flyers:
 // one big in the spotlight, its neighbours turned away on either side like records in a crate, swiped or
-// scrolled sideways. Each day opens with a title card; the rail below shows the days and follows along.
-// Only the Flyer in the spotlight shows its caption and lights the room. The 3D turn is a scroll-driven
-// CSS animation; without it the Flyers stay flat, and without JavaScript the row still scrolls and snaps.
+// scrolled sideways. A slim marker between the Flyers announces each new day; the rail below shows the days
+// and follows along. Once the Dancer starts to swipe, everything but the Flyers folds away and they grow;
+// a pill at the top brings the filters back. Only the Flyer in the spotlight shows its caption and lights
+// the room. The 3D turn is a scroll-driven CSS animation; without it the Flyers stay flat, and without
+// JavaScript the row still scrolls and snaps.
 function Stage(props: { f: Filters; today: string; days: string[]; byDay: Map<string, OnDay[]>; prev: string | null; next: string }) {
   const { f, today, days, byDay } = props;
   const t = T[f.lang];
@@ -546,21 +548,21 @@ function Stage(props: { f: Filters; today: string; days: string[]; byDay: Map<st
   let n = 0;
   return (
     <section class="stage" aria-label={de ? "Flyer der Woche" : "This week's Flyers"}>
+      <button class="surface" type="button">
+        <b data-surface-day /> <span>{de ? "Filter" : "Filters"} ⌄</span>
+      </button>
       <div class="track" tabindex={0}>
         {shown.map(([d, list]) => {
           if (!list.length) return null;
-          const noon = new Date(`${d}T12:00:00Z`);
           const label = d === today ? t.today : weekdayShort(d, f.lang);
+          const name = new Date(`${d}T12:00:00Z`).toLocaleDateString(f.lang, { weekday: "long", timeZone: "UTC" });
           return (
             <>
-              <div class={d === today ? "slide title today" : "slide title"} id={`day-${d}`} data-day={d}>
-                <div class="turn">
-                <span class="wd">{d === today ? t.today : noon.toLocaleDateString(f.lang, { weekday: "long", timeZone: "UTC" })}</span>
-                <span class="num">{Number(d.slice(8))}</span>
-                <span class="mon">{noon.toLocaleDateString(f.lang, { month: "long", timeZone: "UTC" })}</span>
-                <span class="cnt">{list.length === 1 ? "1 Event" : `${list.length} Events`} →</span>
-                </div>
-              </div>
+              <h2 class={d === today ? "sep today" : "sep"} id={`day-${d}`}>
+                <span>
+                  {d === today ? t.today : name} <b>{`${Number(d.slice(8))}.${Number(d.slice(5, 7))}.`}</b>
+                </span>
+              </h2>
               {list.map((o) => {
                 const { e } = o;
                 const when = o.dayOf
@@ -599,9 +601,8 @@ function Stage(props: { f: Filters; today: string; days: string[]; byDay: Map<st
           );
         })}
         {!any && <p class="slide empty">{t.none}</p>}
-        <a class="slide title more" href={href(f, { w: props.next })}>
+        <a class="slide more" href={href(f, { w: props.next })}>
           <span class="turn">
-            <span class="wd">{de ? "Weiter" : "Next"}</span>
             <span class="num">›</span>
             <span class="mon">{de ? "Nächste Woche" : "Next week"}</span>
           </span>
@@ -628,23 +629,26 @@ function Stage(props: { f: Filters; today: string; days: string[]; byDay: Map<st
   );
 }
 
-// Arrows, keys and the mouse wheel move one Flyer; the rail follows the Flyer in the spotlight.
+// Arrows, keys and the mouse wheel move one Flyer; the rail follows the Flyer in the spotlight. The first
+// swipe folds the page away ("deep"); the pill at the top, Escape or scrolling the page up unfolds it.
 const STAGE_SCRIPT = `(() => {
   const stage = document.currentScript.parentElement, track = stage.querySelector(".track");
+  const root = document.documentElement;
   const slides = [...track.querySelectorAll(".slide")];
   const rail = [...stage.querySelectorAll(".rail .dy")];
   const centre = () => track.scrollLeft + track.clientWidth / 2;
   const at = () => slides.reduce((b, s, i) => Math.abs(s.offsetLeft + s.offsetWidth / 2 - centre()) <
     Math.abs(slides[b].offsetLeft + slides[b].offsetWidth / 2 - centre()) ? i : b, 0);
+  const to = (s, behavior) => track.scrollTo({ left: s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2, behavior });
   // Quick presses add up: each one moves on from where the last was headed.
   let want = null;
   track.addEventListener("scrollend", () => (want = null));
-  const go = (k) => { want = Math.max(0, Math.min(slides.length - 1, (want ?? at()) + k)); const s = slides[want];
-    track.scrollTo({ left: s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2, behavior: "smooth" }); };
+  const go = (k) => { want = Math.max(0, Math.min(slides.length - 1, (want ?? at()) + k)); to(slides[want], "smooth"); };
   stage.querySelectorAll(".nudge").forEach((b) => { b.hidden = false; b.onclick = () => go(b.classList.contains("l") ? -1 : 1); });
   document.addEventListener("keydown", (ev) => {
     if (ev.target.closest?.("input,textarea,select,[contenteditable]") || document.querySelector(".story:not([hidden]), .dc-sheet[open]")) return;
     if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") { ev.preventDefault(); ev.stopImmediatePropagation(); go(ev.key === "ArrowLeft" ? -1 : 1); }
+    if (ev.key === "Escape") dive(false);
   }, true);
   // A vertical wheel turns the crate, until its last Flyer; then the page scrolls on.
   let lock = 0;
@@ -656,36 +660,59 @@ const STAGE_SCRIPT = `(() => {
     if (performance.now() - lock < 260) return;
     lock = performance.now(); go(k);
   }, { passive: false });
-  // The rail lights the day in the spotlight; a day's link slides its title card to the middle.
+  // The rail and the pill name the day in the spotlight; a day's link slides its first Flyer to the middle.
   let day = "";
+  const surface = stage.querySelector("[data-surface-day]");
   const mark = () => {
     const d = slides[at()].dataset.day || "";
     if (d === day) return; day = d;
     rail.forEach((a) => a.classList.toggle("on", a.dataset.day === d));
+    const a = rail.find((x) => x.dataset.day === d);
+    surface.textContent = a ? a.querySelector("span").textContent + " " + a.querySelector("b").textContent + "." : "";
   };
-  track.addEventListener("scroll", () => requestAnimationFrame(mark), { passive: true });
   rail.forEach((a) => a.addEventListener("click", (ev) => {
-    const s = slides.find((x) => x.id === "day-" + a.dataset.day);
+    const s = slides.find((x) => x.dataset.day === a.dataset.day);
     if (!s) return;
-    ev.preventDefault();
-    track.scrollTo({ left: s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2, behavior: "smooth" });
+    ev.preventDefault(); to(s, "smooth");
   }));
-  // Start on the first Flyer, not the day's title card.
-  const first = slides.findIndex((s) => !s.classList.contains("title"));
-  if (first > 0 && !location.hash) track.scrollLeft = slides[first].offsetLeft + slides[first].offsetWidth / 2 - track.clientWidth / 2;
+  // Deep: the size change re-snaps the row, so swipes count again only once the fold has settled.
+  let x0 = 0, ready = false;
+  const settle = () => { ready = false; setTimeout(() => { x0 = track.scrollLeft; ready = true; }, 600); };
+  function dive(on) {
+    if (root.classList.contains("deep") === on) return;
+    const s = slides[at()];
+    root.classList.toggle("deep", on);
+    if (on) scrollTo({ top: 0 });
+    // Keep the Flyer in the spotlight while the stage grows or shrinks.
+    const keep = (n) => { to(s, "instant"); if (n) requestAnimationFrame(() => keep(n - 1)); };
+    keep(30);
+    settle();
+  }
+  track.addEventListener("scroll", () => {
+    requestAnimationFrame(mark);
+    if (ready && Math.abs(track.scrollLeft - x0) > 24) dive(true);
+  }, { passive: true });
+  stage.querySelector(".surface").onclick = () => dive(false);
+  addEventListener("wheel", (ev) => { if (ev.deltaY < -20 && !track.contains(ev.target)) dive(false); }, { passive: true });
+  if (!location.hash) to(slides[0], "instant");
   mark();
+  settle();
 })();`;
 
 const STAGE_CSS = `
-  .stage { --h:max(440px, calc(100svh - 256px)); --w:min(76vw, calc((var(--h) - 168px) * .78)); position:relative; margin-top:4px; }
+  @property --avail { syntax:"<length>"; inherits:true; initial-value:600px; }
+  :root { interpolate-size:allow-keywords; }
+  /* --avail: the height below the filters; --below: the room the caption, the rail and the padding need under a Flyer. */
+  .stage { --avail:max(480px, calc(100svh - 200px)); --below:262px; --wmax:76vw; --top:22px; --ar:1.25;
+    --w:min(var(--wmax), calc((var(--avail) - var(--below)) / var(--ar))); position:relative; margin-top:4px; transition:--avail .45s cubic-bezier(.2,.8,.2,1); }
   .stage .track { display:flex; align-items:flex-start; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none;
-    padding:22px calc(50% - var(--w) / 2) 0; height:calc(var(--h) - 56px); perspective:1400px; overscroll-behavior-x:contain; outline:none; }
+    padding:var(--top) calc(50% - var(--w) / 2) 10px; perspective:1400px; overscroll-behavior-x:contain; outline:none; transition:padding .45s; }
   .stage .track::-webkit-scrollbar { display:none; }
   .stage .slide { flex:none; width:var(--w); scroll-snap-align:center; scroll-snap-stop:always; view-timeline:--slot inline; }
   .stage .turn { display:block; transform-style:preserve-3d; }
   .stage .card { display:block; margin:0; border-radius:16px; }
   .stage .card::before { inset:6% 4% -6%; filter:blur(38px) saturate(1.5); opacity:.9; }
-  .stage .frame { position:relative; display:block; aspect-ratio:4 / 5; border-radius:16px; overflow:hidden; isolation:isolate; background:#000;
+  .stage .frame { position:relative; display:block; aspect-ratio:1 / var(--ar); border-radius:16px; overflow:hidden; isolation:isolate; background:#000;
     box-shadow:0 30px 60px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.08);
     -webkit-box-reflect:below 6px linear-gradient(transparent 82%, rgba(255,255,255,.16)); }
   .stage .frame::before { content:""; position:absolute; inset:-30px; z-index:-1; background:var(--img) center / cover; filter:blur(22px) brightness(.5); }
@@ -694,29 +721,36 @@ const STAGE_CSS = `
     font-size:30px; font-weight:900; font-style:italic; text-transform:uppercase; line-height:1.05; }
   .stage .card.cancelled .frame { filter:grayscale(1) brightness(.5); }
   .stage .card .keep { top:12px; right:12px; }
-  .stage .cap { display:flex; flex-direction:column; align-items:center; gap:3px; margin-top:20px; text-align:center; font-size:13px; color:var(--mute); }
+  .stage .cap { display:flex; flex-direction:column; align-items:center; gap:3px; margin-top:20px; padding:0 4px; text-align:center; font-size:13px; color:var(--mute); }
   .stage .cap .kick { font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--festival); }
-  .stage .cap .ttl { font-size:21px; font-weight:900; line-height:1.15; color:var(--ink); letter-spacing:-.01em; text-wrap:balance; }
+  .stage .cap .ttl { font-size:21px; font-weight:900; line-height:1.2; color:var(--ink); letter-spacing:-.01em; text-wrap:balance;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
   .stage .cap .by { font-size:12px; opacity:.8; }
   .stage .cap .tags { justify-content:center; margin-top:4px; }
-  .stage .slide.title .turn { display:flex; flex-direction:column; justify-content:center; align-items:center; aspect-ratio:4 / 5; border-radius:16px; text-align:center;
-    background:repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 22px), rgba(24,20,30,.55);
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
-  .stage .slide.title .wd { font-size:15px; font-weight:800; letter-spacing:.3em; text-transform:uppercase; color:var(--mute); }
-  .stage .slide.title .num { font-size:min(44vw, 200px); font-weight:900; font-style:italic; line-height:.85; letter-spacing:-.06em; margin:.06em 0;
-    background:var(--neon); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 30px rgba(255,61,139,.35)); }
-  .stage .slide.title .mon { font-size:20px; font-weight:800; }
-  .stage .slide.title .cnt { margin-top:14px; font-size:13px; font-weight:700; color:var(--mute); }
-  .stage .slide.title.today .wd { color:var(--party); }
-  .stage .slide.more .num { font-style:normal; }
+
+  /* a new day: a slim neon post between two Flyers, its name running up it */
+  .stage .sep { flex:none; position:relative; z-index:2; width:34px; height:calc(var(--w) * var(--ar)); margin:0 -4px; display:flex;
+    align-items:center; justify-content:center; font:inherit; }
+  .stage .sep::before { content:""; position:absolute; top:6%; bottom:6%; left:50%; width:2px; transform:translateX(-50%); border-radius:2px;
+    background:linear-gradient(transparent, var(--party) 25%, #b04bff 75%, transparent); box-shadow:0 0 12px rgba(255,61,139,.7); }
+  .stage .sep span { position:relative; writing-mode:vertical-rl; transform:rotate(180deg); padding:12px 5px; border-radius:999px; white-space:nowrap;
+    background:#0c0a10; box-shadow:0 0 0 1px rgba(255,61,139,.55), 0 0 16px rgba(255,61,139,.35);
+    font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); }
+  .stage .sep b { color:var(--festival); } .stage .sep.today span { background:var(--party); color:#fff; } .stage .sep.today b { color:#fff; }
+
+  .stage .slide.more .turn { display:flex; flex-direction:column; justify-content:center; align-items:center; aspect-ratio:1 / var(--ar); border-radius:16px; text-align:center;
+    background:rgba(24,20,30,.55); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); }
+  .stage .slide.more .num { font-size:120px; font-weight:900; line-height:.9; background:var(--neon); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .stage .slide.more .mon { font-size:18px; font-weight:800; }
   .stage .slide.empty { display:flex; align-items:center; justify-content:center; aspect-ratio:4 / 5; color:var(--mute); text-align:center; }
-  .stage .nudge { position:absolute; top:calc((var(--h) - 56px) / 2 - 40px); z-index:5; width:48px; height:48px; border-radius:50%; cursor:pointer;
+  .stage .nudge { position:absolute; top:calc(var(--top) + var(--w) * var(--ar) / 2 - 24px); z-index:5; width:48px; height:48px; border-radius:50%; cursor:pointer;
     border:1px solid rgba(255,255,255,.14); background:rgba(12,10,16,.6); color:var(--ink); font-size:24px; line-height:1;
     -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); transition:transform .15s, background .15s; }
   .stage .nudge:hover { background:var(--party); transform:scale(1.08); }
   .stage .nudge.l { left:max(16px, calc(50% - var(--w) / 2 - 72px)); } .stage .nudge.r { right:max(16px, calc(50% - var(--w) / 2 - 72px)); }
   @media (hover:none) { .stage .nudge { display:none; } }
-  .stage .rail { display:flex; justify-content:safe center; align-items:stretch; gap:2px; height:56px; padding:0 8px; overflow-x:auto; scrollbar-width:none; }
+  .stage .rail { display:flex; justify-content:safe center; align-items:stretch; gap:2px; height:56px; padding:0 8px; overflow:auto hidden; scrollbar-width:none;
+    transition:height .45s, opacity .3s; }
   .stage .rail a, .stage .rail span.wk { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:38px; padding:2px 6px;
     border-radius:12px; color:var(--mute); font-size:11px; line-height:1.15; transition:background .2s, color .2s; }
   .stage .rail .dy b { font-size:17px; color:var(--ink); } .stage .rail .dy i { font-style:normal; font-size:9px; letter-spacing:1px; color:var(--party); height:10px; }
@@ -724,7 +758,7 @@ const STAGE_CSS = `
   @media (max-width:479px) { .stage .rail { gap:0; } .stage .rail .dy { flex:1 1 0; min-width:0; padding:2px 0; } .stage .rail .wk { min-width:22px; padding:2px 0; } }
   .stage .rail .dy.on { background:rgba(255,255,255,.09); color:var(--ink); box-shadow:inset 0 -2px 0 var(--party); }
   @media (min-width:900px) {
-    .stage { --h:max(560px, calc(100svh - 176px)); --w:calc((var(--h) - 168px) * .78); }
+    .stage { --avail:max(600px, calc(100svh - 176px)); --below:250px; --wmax:100vw; }
     .stage .rail { gap:6px; } .stage .rail a { min-width:56px; } .stage .cap .ttl { font-size:26px; }
   }
   body:has(.stage) { max-width:none; }
@@ -732,6 +766,24 @@ const STAGE_CSS = `
   body:has(.stage) .dc-tab { bottom:calc(12px + env(safe-area-inset-bottom)); }
   body:has(.stage) header.top, body:has(.stage) .filters, body:has(.stage) footer { max-width:1100px; margin-left:auto; margin-right:auto; }
   body:has(.stage) .filters { position:relative; background:transparent; border-bottom:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+
+  /* deep: once the Dancer swipes, the page folds away and the Flyers take the screen */
+  body:has(.stage) header.top, body:has(.stage) .filters { height:auto; transition:height .45s cubic-bezier(.2,.8,.2,1), padding .45s, opacity .25s; }
+  html.deep body:has(.stage) header.top, html.deep body:has(.stage) .filters { height:0; padding-top:0; padding-bottom:0; opacity:0; overflow:hidden; pointer-events:none; }
+  html.deep body:has(.stage) footer { display:none; }
+  html.deep .stage { --avail:100svh; --below:228px; --wmax:90vw; --top:58px; margin-top:0; }
+  @media (max-width:899px) { html.deep .stage { --ar:1.4; } }
+  html.deep .stage .rail { height:0; opacity:0; pointer-events:none; }
+  body:has(.stage) .proto-switch, body:has(.stage) .dc-tab { transition:opacity .3s, translate .3s; }
+  html.deep body:has(.stage) .proto-switch, html.deep body:has(.stage) .dc-tab { opacity:0; translate:0 24px; pointer-events:none; }
+  .stage .surface { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; z-index:30; display:flex; gap:10px; align-items:center;
+    padding:7px 16px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(12,10,16,.7); color:var(--mute);
+    font:600 13px system-ui, sans-serif; cursor:pointer; -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    opacity:0; pointer-events:none; translate:-50% -16px; transition:opacity .3s, translate .3s; }
+  .stage .surface b { color:var(--ink); }
+  .stage .surface:hover { color:var(--ink); border-color:var(--party); }
+  html.deep .stage .surface { opacity:1; pointer-events:auto; translate:-50% 0; }
+
   @supports (animation-timeline: view()) {
     .stage .turn { animation:crate linear both; animation-timeline:--slot; }
     .stage .cap { animation:spot linear both; animation-timeline:--slot; }
@@ -744,7 +796,7 @@ const STAGE_CSS = `
     }
     @keyframes spot { 0%, 38% { opacity:0; transform:translateY(8px); } 50% { opacity:1; transform:none; } 62%, 100% { opacity:0; transform:translateY(8px); } }
   }
-  @media (prefers-reduced-motion: reduce) { .stage .turn, .stage .cap { animation:none !important; } .stage .track { scroll-behavior:auto; } }
+  @media (prefers-reduced-motion: reduce) { .stage .turn, .stage .cap { animation:none !important; } .stage, .stage .track { transition:none; } }
 `;
 
 function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map<string, OnDay[]> }) {

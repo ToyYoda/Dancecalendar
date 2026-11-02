@@ -65,6 +65,16 @@ describe("the web confirm page behind [Ändern]", () => {
     expect(inputTag(html, "publish")).toContain("disabled");
   });
 
+  it("asks about the year of a date almost a year away that the Flyer prints no year for", async () => {
+    const api = fakeApis({ extraction: flyer([{ start_date: berlinDate(300) }]) });
+    const link = await openConfirmPage(api);
+
+    const html = await (await get(link)).text();
+
+    expect(inputTag(html, "start_date.0")).toContain('class="unc"');
+    expect(html).toContain("stimmt das Jahr?");
+  });
+
   it("publishes the corrected Events with the same reply and edit links as the chat", async () => {
     const api = fakeApis();
     const link = await openConfirmPage(api);

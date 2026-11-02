@@ -4,7 +4,7 @@ import schema from "./schema.json";
 import type { Place } from "../geocode";
 import type { Rule } from "../series";
 
-// One Sonnet 5.5 call per Flyer at effort medium, v3 prompt (v2 plus: a party without a printed start begins when its intro class ends) and the v2 schema
+// One Sonnet 5.5 call per Flyer at effort medium, v4 prompt (v2 plus: a party without a printed start begins when its intro class ends; year_on_flyer) and the v2 schema plus year_on_flyer
 // (.scratch/dance-calendar-mvp/issues/13-extraction-accuracy.md). eval/extract_eval.py reads the same files.
 
 export type ExtractedEvent = {
@@ -13,6 +13,7 @@ export type ExtractedEvent = {
   styles: string[];
   start_date: string;
   weekday_on_flyer: string;
+  year_on_flyer: string;
   start_time: string;
   intro_class_time: string;
   end_date: string;

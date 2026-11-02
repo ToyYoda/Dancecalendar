@@ -7,11 +7,11 @@ const WEEKDAYS: Record<string, number> = {
   dom: 0, lun: 1, mar: 2, "mié": 3, mie: 3, jue: 4, vie: 5, "sáb": 6, sab: 6,
 };
 
-type Checked = { start_date: string; start_time: string; weekday_on_flyer: string };
+type Checked = { start_date: string; start_time: string; weekday_on_flyer: string; year_on_flyer?: string };
 
 export function codeFlags(event: Checked, receivedOn: string): string[] {
   const flags: string[] = [];
-  if (!event.start_date || !dateLooksRight(event, receivedOn)) flags.push("start_date");
+  if (!event.start_date || !dateLooksRight(event, receivedOn) || lastYearsFlyer(event, receivedOn)) flags.push("start_date");
   if (!event.start_time) flags.push("start_time");
   return flags;
 }
@@ -26,6 +26,16 @@ function dateLooksRight(event: Checked, receivedOn: string): boolean {
   const printed = event.weekday_on_flyer.trim().toLowerCase().replace(/\.$/, "");
   const key = Object.keys(WEEKDAYS).find((k) => printed.startsWith(k));
   return key === undefined || WEEKDAYS[key] === date.getUTCDay();
+}
+
+// A date more than half a year away whose year the Flyer doesn't print: the model picked the next
+// occurrence, which usually means last year's Flyer was forwarded. Held Flyers read before
+// year_on_flyer existed count as not printing it.
+export function lastYearsFlyer(event: { start_date: string; year_on_flyer?: string }, receivedOn: string): boolean {
+  const date = parseDate(event.start_date);
+  const received = parseDate(receivedOn);
+  if (!date || !received || event.year_on_flyer?.trim()) return false;
+  return date.getTime() > received.getTime() + 183 * 86_400_000;
 }
 
 function parseDate(iso: string): Date | null {

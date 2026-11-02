@@ -160,13 +160,22 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Ändern ✏️", "Verwerfen"]);
   });
 
-  it("won't publish a guessed date almost a year away, which suggests last year's Flyer", async () => {
-    const api = fakeApis({ extraction: flyer([{ start_date: berlinDate(300), uncertain_fields: ["start_date"] }]) });
+  it("won't publish a date almost a year away without a printed year, which suggests last year's Flyer", async () => {
+    const api = fakeApis({ extraction: flyer([{ start_date: berlinDate(300) }]) });
 
     await deliver(imageMessage("media1"));
 
     expect(api.sent.at(-1)!.text).toContain("vom letzten Jahr");
     expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toEqual(["Ändern ✏️", "Verwerfen"]);
+  });
+
+  it("publishes a date almost a year away when the Flyer prints its year", async () => {
+    const api = fakeApis({ extraction: flyer([{ start_date: berlinDate(300), year_on_flyer: berlinDate(300).slice(0, 4) }]) });
+
+    await deliver(imageMessage("media1"));
+
+    expect(api.sent.at(-1)!.text).not.toContain("vom letzten Jahr");
+    expect(api.sent.at(-1)!.buttons.map((b) => b.title)).toContain("Veröffentlichen");
   });
 
   it("offers no Veröffentlichen when no Event can be published as is", async () => {

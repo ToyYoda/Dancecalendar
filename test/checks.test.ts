@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { codeFlags } from "../src/extraction/checks";
+import { codeFlags, lastYearsFlyer } from "../src/extraction/checks";
 
 // Worked examples, received on Saturday 2026-10-31.
 const received = "2026-10-31";
@@ -34,5 +34,22 @@ describe("code checks on an extracted Event", () => {
 
   it("flags a date that is not a real calendar date", () => {
     expect(codeFlags(event({ start_date: "2026-11-31" }), received)).toEqual(["start_date"]);
+  });
+});
+
+describe("a likely forwarded Flyer from last year", () => {
+  const dated = (start_date: string, year_on_flyer: string) => ({ start_date, year_on_flyer });
+
+  it("is a date more than half a year away whose year the Flyer doesn't print", () => {
+    expect(lastYearsFlyer(dated("2027-10-16", ""), received)).toBe(true);
+    expect(lastYearsFlyer(dated("2027-05-03", ""), received)).toBe(true);
+  });
+
+  it("is not a date the Flyer prints its year for, however far ahead", () => {
+    expect(lastYearsFlyer(dated("2027-10-16", "2027"), received)).toBe(false);
+  });
+
+  it("is not a date within half a year", () => {
+    expect(lastYearsFlyer(dated("2027-05-02", ""), received)).toBe(false);
   });
 });

@@ -90,6 +90,7 @@ export function flyerEvent() {
     styles: ["salsa", "bachata"],
     start_date: berlinDate(3),
     weekday_on_flyer: "",
+    year_on_flyer: "",
     start_time: "21:00",
     intro_class_time: "20:00",
     end_date: "",

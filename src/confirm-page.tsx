@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { duplicatesOfExtracted } from "./duplicates";
+import { lastYearsFlyer } from "./extraction/checks";
 import { Card, CARD_CSS, fromForm, missing, RuleSelect } from "./event-card";
 import type { ExtractedEvent, Extraction } from "./extraction/extract";
 import { Layout } from "./layout";
@@ -131,16 +132,10 @@ function uncertain(e: ExtractedEvent, receivedOn: string): Map<string, string> {
   const out = new Map<string, string>();
   for (const f of uncertainFields(e, receivedOn)) out.set(f, "bitte prüfen");
   // Same hint as the chat's "Flyer vom letzten Jahr?", but here the Organizer can fix the date.
-  if (e.uncertain_fields.includes("start_date") && e.start_date > addDays(receivedOn, 183)) {
+  if (lastYearsFlyer(e, receivedOn)) {
     out.set("start_date", "fast ein Jahr entfernt – stimmt das Jahr?");
   }
   return out;
-}
-
-function addDays(iso: string, days: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 const publishLabel = (n: number, verb: string) => (n === 1 ? `1 Event ${verb}` : `${n} Events ${verb}`);

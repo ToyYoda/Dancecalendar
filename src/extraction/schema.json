@@ -51,6 +51,9 @@
           "weekday_on_flyer": {
             "type": "string"
           },
+          "year_on_flyer": {
+            "type": "string"
+          },
           "start_time": {
             "type": "string"
           },
@@ -135,6 +138,7 @@
           "styles",
           "start_date",
           "weekday_on_flyer",
+          "year_on_flyer",
           "start_time",
           "intro_class_time",
           "end_date",

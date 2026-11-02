@@ -136,6 +136,7 @@ function toCard(e: Row): ExtractedEvent {
     styles: JSON.parse(e.styles),
     start_date: date,
     weekday_on_flyer: "",
+    year_on_flyer: date.slice(0, 4), // a published date is settled
     start_time: time,
     intro_class_time: e.intro_class_at?.slice(11) ?? "",
     end_date,

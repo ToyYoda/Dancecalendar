@@ -22,7 +22,7 @@ FLYERS = HERE.parent / "assets" / "flyers"
 RESULTS = HERE / "results"
 GT = json.loads((HERE / "ground_truth.json").read_text(encoding="utf-8"))["flyers"]
 MODELS = ["claude-haiku-5-5", "claude-sonnet-5-5"]
-PROMPT_VERSION = "v3"  # v1: first run (no save-the-date rule, year inference flagged); v3: party starts when its intro class ends
+PROMPT_VERSION = "v4"  # v1: first run (no save-the-date rule, year inference flagged); v3: party starts when its intro class ends; v4: year_on_flyer
 PRICES = {"claude-haiku-5-5": (0.10, 0.50), "claude-sonnet-5-5": (2.0, 10.0)}  # $/MTok in, out
 
 KEY_FIELDS = {"start_date", "start_time", "venue_name"}
@@ -46,7 +46,7 @@ def api_key():
     sys.exit("No ANTHROPIC_API_KEY in the environment or in .dev.vars")
 
 
-def run(models, effort, only, label=PROMPT_VERSION):
+def run(models, effort, only, label=PROMPT_VERSION, received=None):
     import anthropic
 
     client = anthropic.Anthropic(api_key=api_key())
@@ -69,7 +69,7 @@ def run(models, effort, only, label=PROMPT_VERSION):
                     output_config={"effort": effort, "format": {"type": "json_schema", "schema": SCHEMA}},
                     messages=[{"role": "user", "content": [
                         {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}},
-                        {"type": "text", "text": f"Flyer received on {flyer['received']}."},
+                        {"type": "text", "text": f"Flyer received on {received or flyer['received']}."},
                     ]}],
                 )
             except anthropic.APIStatusError as e:
@@ -114,6 +114,9 @@ def code_flags(ev, received):
                 if wd.startswith(key) and d.weekday() != num:
                     flags.add("start_date")
                     break
+            # Inferred year more than half a year ahead: likely last year's Flyer (checks.ts `lastYearsFlyer`).
+            if not ev.get("year_on_flyer", "").strip() and d > dt.date.fromisoformat(received) + dt.timedelta(days=183):
+                flags.add("start_date")
         except ValueError:
             flags.add("start_date")
     return flags
@@ -212,7 +215,7 @@ def summarize(name, scored, records):
 def score():
     lines = ["# Extraction eval results", "",
              f"Scored {dt.date.today().isoformat()} against `ground_truth.json`. Fields checked per matched Event: start_time, venue, type (and the undated Series' date on F02). "
-             "*Caught* = the wrong field was in `uncertain_fields` or tripped a code check (empty time, weekday mismatch, date in the past or > 1 year ahead). "
+             "*Caught* = the wrong field was in `uncertain_fields` or tripped a code check (empty time, weekday mismatch, date in the past or > 1 year ahead, inferred year > 183 days ahead). "
              "*Silent* = wrong and not highlighted: what an Organizer would miss.", "",
              "| Model | Flyers | Event count right | GT Events found | Spurious Events | Fields right | Wrong ones caught | Silent errors | Fully clean Flyers | Cost | Latency p50 / max |",
              "|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -271,8 +274,9 @@ if __name__ == "__main__":
     ap.add_argument("--effort", default="medium")
     ap.add_argument("--only", default="")
     ap.add_argument("--label", default=PROMPT_VERSION, help="results folder suffix, e.g. v2-src for a fresh re-run")
+    ap.add_argument("--received", default=None, help="pretend every Flyer arrived on this date (run only), e.g. to test a late forward")
     a = ap.parse_args()
     if a.cmd == "run":
-        run(a.models.split(","), a.effort, set(filter(None, a.only.split(","))), a.label)
+        run(a.models.split(","), a.effort, set(filter(None, a.only.split(","))), a.label, a.received)
     else:
         score()

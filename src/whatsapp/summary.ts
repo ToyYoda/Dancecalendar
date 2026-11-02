@@ -1,4 +1,4 @@
-import { codeFlags } from "../extraction/checks";
+import { codeFlags, lastYearsFlyer } from "../extraction/checks";
 import type { ExtractedEvent } from "../extraction/extract";
 import { firstDates, heldRule, ruleWords, seriesLeads } from "../series";
 
@@ -35,8 +35,7 @@ export function blocker(e: ExtractedEvent, receivedOn: string): string | null {
   if (!e.start_date) return "ohne Datum – wird nicht eingetragen";
   if (!e.start_time) return "ohne Uhrzeit – wird nicht eingetragen";
   if (e.start_date < receivedOn) return "liegt in der Vergangenheit – wird nicht eingetragen";
-  // A guessed date this far ahead usually means last year's Flyer was forwarded.
-  if (e.uncertain_fields.includes("start_date") && e.start_date > addDays(receivedOn, 183)) {
+  if (lastYearsFlyer(e, receivedOn)) {
     return "fast ein Jahr entfernt – ist der Flyer vom letzten Jahr? Wird nicht eingetragen";
   }
   return null;
@@ -105,10 +104,4 @@ export function formatDate(iso: string, reference: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   const year = String(y) === reference.slice(0, 4) ? "" : String(y);
   return `${WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.${year}`;
-}
-
-function addDays(iso: string, days: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
 }

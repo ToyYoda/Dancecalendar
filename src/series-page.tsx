@@ -112,6 +112,7 @@ function toCard(s: Row, dates: Occurrence[], today: string): ExtractedEvent {
     styles: JSON.parse(t.styles),
     start_date: next,
     weekday_on_flyer: "",
+    year_on_flyer: next.slice(0, 4), // a published date is settled
     start_time: t.start_time,
     intro_class_time: t.intro_class_time,
     end_date: "",

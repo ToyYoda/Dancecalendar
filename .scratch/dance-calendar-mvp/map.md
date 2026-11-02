@@ -54,6 +54,7 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
 - [Immediate reply when a Flyer arrives](issues/31-immediate-flyer-reply.md): live; Organizers, remembered Tip numbers and a „Nein, ist ein Tipp“ tap hear „Ich lese deinen Flyer …“ before the AI read, once per message even when the queue retries.
 - [Distances from the Dancer's own position, or a place picked on a map](issues/33-distance-from-my-position.md): live; distances from the browser's position (asked on a bare visit) or a place tapped on the `/karte` map (MapLibre self-served, OpenFreeMap tiles only there); without either every Event shows without km; the Kassel/Göttingen chips are gone. Overrides the Kassel + Göttingen default of [Region boundary](issues/10-region-boundary.md).
 - [Wrong year on an old Flyer without a year](issues/28-wrong-year-old-flyer.md): live; the model returns `year_on_flyer`, and a date more than 183 days ahead with no printed year isn't published from the chat ("vom letzten Jahr?") and shows yellow on the confirm page (yellow, not red, so a real far-off date can still be confirmed); eval v4 unchanged, no Flyer that prints its year newly flagged.
+- [Instagram API for reading Organizers' posts](issues/34-instagram-api-feasibility.md): only Business Discovery with the Admin's own token, polled by cron (no webhook), is open to a private person; Organizers need a public Business/Creator account and an opt-in, no Meta login; no App Review; every Organizer-login route needs business verification (dead end); stories unreadable; €0. Live test pending.
 
 ## Not yet specified
 
@@ -73,4 +74,5 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
 - Editing Events via WhatsApp chat — the edit link covers it.
 - Invite links — redundant since Organizer applications are auto-approved ([Organizer confirmation flow](issues/08-organizer-confirmation-flow.md)).
 - Proactive bot messages ("still running?" reminders, approval notices) — would need paid templates; the bot only replies.
+- Instagram Stories and personal/private Instagram accounts — unreachable without App Review plus business verification, which a private person can't get ([Instagram API for reading Organizers' posts](issues/34-instagram-api-feasibility.md)); those Organizers use WhatsApp.
 - Organizers taking over Tip Events themselves — Admin reassigns by hand.

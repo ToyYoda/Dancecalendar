@@ -583,7 +583,6 @@ function Stage(props: { f: Filters; today: string; days: string[]; byDay: Map<st
                     <div class="cap">
                       <span class="kick">
                         {label} · <span class="time">{when}</span>
-                        {e.cancelled ? ` · ${t.cancelled}` : ""}
                       </span>
                       <a class="ttl" href={href(f, {}, `/events/${e.id}`)}>{e.title}</a>
                       <span class="meta">
@@ -591,7 +590,7 @@ function Stage(props: { f: Filters; today: string; days: string[]; byDay: Map<st
                         {km(e)}
                       </span>
                       {e.posted_by && e.posted_by !== e.title && <span class="by">{e.posted_by}</span>}
-                      <Tags f={f} e={e} />
+                      <Badges f={f} e={e} />
                     </div>
                     </div>
                   </div>
@@ -726,7 +725,10 @@ const STAGE_CSS = `
   .stage .cap .ttl { font-size:21px; font-weight:900; line-height:1.2; color:var(--ink); letter-spacing:-.01em; text-wrap:balance;
     display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
   .stage .cap .by { font-size:12px; opacity:.8; }
-  .stage .cap .tags { justify-content:center; margin-top:4px; }
+  /* only what a Dancer must know shows under the title, as words, not pills */
+  .stage .cap .badges:empty { display:none; }
+  .stage .cap .badge { margin:2px 5px 0; padding:0; background:none; font-size:12px; font-weight:700; }
+  .stage .cap .b-cancel { color:#ff6b6b; } .stage .cap .b-reg { color:var(--course); } .stage .cap .b-tip { color:var(--mute); font-weight:600; font-style:italic; }
 
   /* a new day: a slim neon post between two Flyers, its name running up it */
   .stage .sep { flex:none; position:relative; z-index:2; width:34px; height:calc(var(--w) * var(--ar)); margin:0 -4px; display:flex;
@@ -763,7 +765,10 @@ const STAGE_CSS = `
   }
   body:has(.stage) { max-width:none; }
   body:has(.stage) .proto-switch { left:16px; transform:none; }
-  body:has(.stage) .dc-tab { bottom:calc(12px + env(safe-area-inset-bottom)); }
+  /* the Tanzkarte sits at the end of the rail instead of floating over it */
+  .stage .rail .dc-tab { position:static; flex:none; align-self:center; margin-left:8px; padding:8px 10px; transform:rotate(-4deg); z-index:auto; }
+  .stage .rail .dc-tab .tassel { display:none; }
+  @media (max-width:599px) { .stage .rail .dc-tab { margin-left:4px; padding:7px 8px; gap:5px; } .stage .rail .dc-tab i { font-size:15px; } }
   body:has(.stage) header.top, body:has(.stage) .filters, body:has(.stage) footer { max-width:1100px; margin-left:auto; margin-right:auto; }
   body:has(.stage) .filters { position:relative; background:transparent; border-bottom:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
 
@@ -774,8 +779,8 @@ const STAGE_CSS = `
   html.deep .stage { --avail:100svh; --below:228px; --wmax:90vw; --top:58px; margin-top:0; }
   @media (max-width:899px) { html.deep .stage { --ar:1.4; } }
   html.deep .stage .rail { height:0; opacity:0; pointer-events:none; }
-  body:has(.stage) .proto-switch, body:has(.stage) .dc-tab { transition:opacity .3s, translate .3s; }
-  html.deep body:has(.stage) .proto-switch, html.deep body:has(.stage) .dc-tab { opacity:0; translate:0 24px; pointer-events:none; }
+  body:has(.stage) .proto-switch { transition:opacity .3s, translate .3s; }
+  html.deep body:has(.stage) .proto-switch { opacity:0; translate:0 24px; pointer-events:none; }
   .stage .surface { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; z-index:30; display:flex; gap:10px; align-items:center;
     padding:7px 16px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(12,10,16,.7); color:var(--mute);
     font:600 13px system-ui, sans-serif; cursor:pointer; -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
@@ -816,6 +821,7 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
         <Switcher f={f} />
         <script type="application/json" id="stories" dangerouslySetInnerHTML={{ __html: storyData(f, today, byDay) }} />
         <script dangerouslySetInnerHTML={{ __html: DANCECARD_SCRIPT(f.lang) }} />
+        <script dangerouslySetInnerHTML={{ __html: 'document.querySelector(".stage .rail")?.append(...document.querySelectorAll(".dc-tab"));' }} />
       </Page>
     );
   return (

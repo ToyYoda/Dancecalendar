@@ -30,3 +30,7 @@ Done 2026-11-01 (commit 1bff5f0), deployed.
 - Tests: the reply comes before the summary; a failing read is still acknowledged, once across two attempts; the Tip paths show the reply before the thanks.
 
 Not checked with a real phone yet: forward a Flyer and the reply should arrive within about a second.
+
+## Comments
+
+- 2026-11-02, from the Admin: the reply still came late, after a noticeable gap. Cause: it was the first thing the queue job did, so the queue's own delivery delay came before it. Moved to the webhook (commit 5ec2448): `replyReading` in `src/whatsapp/webhook.ts` sends it right after the duplicate check and before the Flyer is queued, to the same senders (an Organizer, a remembered Tip number, a „Nein, ist ein Tipp“ tap; not blocked, not after STOP). Meta's duplicate deliveries are already filtered there, so the queue-attempt guard is gone. A failed reply is logged and the Flyer is still queued. What remains is Meta's delivery to the webhook plus one Graph API call.

@@ -431,7 +431,7 @@ const PROTO_CSS = `
     .v-A .bar .range { grid-column:1; grid-row:1; font-size:15px; }
     .v-A .bar .nav { grid-column:3; grid-row:1; }
     .v-A .strip { grid-column:2; grid-row:1; padding:0 !important; justify-content:flex-start; gap:6px; }
-    .v-A .pill { width:44px; transition:background .15s; } .v-A .pill:hover { background:#fbe3ec; }
+    .v-A .ring:hover .disc { transform:scale(1.06); }
     .v-A .main > .days, .v-A .main > .empty { grid-column:1 / -1; }
     .v-A .days { grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)) !important; gap:22px !important; padding:20px 0 40px !important; }
     .v-A .card.wall { grid-column:span 2; }
@@ -519,7 +519,7 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
   const next = addDays(monday || thisMonday, 7);
   const any = [...byDay.values()].some((l) => l.length);
   return (
-    <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS }} />}>
+    <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS + STORY_CSS }} />}>
       <div class={`v-${f.v || "0"}`}>
       <div class="layout">
       <aside class="side">
@@ -537,12 +537,16 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
       </div>
       <div class="strip">
         {days.map((d) => {
-          const n = byDay.get(d)!.length;
+          const list = byDay.get(d)!;
+          const cover = list.find((o) => o.e.flyer_key)?.e.flyer_key;
           return (
-            <a class={n ? "pill" : "pill none"} href={`#day-${d}`}>
-              {weekdayShort(d, f.lang)}
-              <b>{Number(d.slice(8))}</b>
-              {n ? <span class="cnt">{n}</span> : <span>&nbsp;</span>}
+            <a class={list.length ? "ring" : "ring none"} href={`#day-${d}`} data-story={list.length ? d : undefined}
+               data-ids={list.map((o) => o.e.id).join(",")}>
+              <span class="disc" style={cover ? `--img:url('/${cover}')` : undefined}>
+                {list.length ? <span class="cnt">{list.length}</span> : null}
+              </span>
+              <span class="lbl">{d === today ? t.today : weekdayShort(d, f.lang)}</span>
+              <b>{Number(d.slice(8))}.</b>
             </a>
           );
         })}
@@ -582,10 +586,212 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
       </div>
       </div>
       <Switcher f={f} />
+      <script type="application/json" id="stories" dangerouslySetInnerHTML={{ __html: storyData(f, today, byDay) }} />
+      <script dangerouslySetInnerHTML={{ __html: STORY_SCRIPT }} />
       <script dangerouslySetInnerHTML={{ __html: PANEL_SCRIPT }} />
     </Page>
   );
 }
+
+// ---- PROTOTYPE: Stories (issues/29-design-review-and-desktop.md) ----
+// The week's Flyers as WhatsApp-style Stories: each day in the strip is a ring with its first Flyer, and a
+// tap plays that day's Flyers full screen, then the next day's. Without JavaScript a ring still jumps to
+// its day. The player reads the days from this JSON, so the cards below stay as they are.
+function storyData(f: Filters, today: string, byDay: Map<string, OnDay[]>): string {
+  const t = T[f.lang];
+  const days = [...byDay]
+    .filter(([, list]) => list.length)
+    .map(([d, list]) => ({
+      d,
+      label: d === today ? `${t.today} · ${short(d, f.lang)}` : longDay(d, f.lang),
+      items: list.map(({ e, dayN, dayOf }) => {
+        const styles = (JSON.parse(e.styles) as string[]).map((s) => STYLES.find(([k]) => k === s)?.[1] ?? s);
+        return {
+          id: e.id,
+          href: href(f, {}, `/events/${e.id}`),
+          img: e.flyer_key ? `/${e.flyer_key}` : "",
+          title: e.title,
+          kind: kind(e),
+          type: t[kind(e)],
+          when: dayN ? `${t.day} ${dayN}/${dayOf}` : timeRange(e),
+          place: e.venue + km(e),
+          tags: [
+            ...styles,
+            e.intro_class_at ? `🎓 ${t.intro} ${e.intro_class_at.slice(11)}` : "",
+            e.rule ? `↻ ${ruleWords(JSON.parse(e.rule) as Rule, f.lang)}` : "",
+          ].filter(Boolean),
+          cancelled: !!e.cancelled,
+        };
+      }),
+    }));
+  const labels = { details: "Details", close: f.lang === "de" ? "Schließen" : "Close", cancelled: t.cancelled };
+  // "<" escaped so a title can't close the script tag.
+  return JSON.stringify({ days, labels }).replace(/</g, "\\u003c");
+}
+
+const STORY_SCRIPT = `(() => {
+  const data = JSON.parse(document.getElementById("stories").textContent);
+  if (!data.days.length) return;
+  const L = data.labels;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  let seen = new Set();
+  try { seen = new Set(JSON.parse(localStorage.getItem("dc-seen") || "[]")); } catch {}
+  const markRings = () => document.querySelectorAll(".ring[data-story]").forEach((r) =>
+    r.classList.toggle("seen", r.dataset.ids.split(",").every((id) => seen.has(Number(id)))));
+  markRings();
+
+  const el = document.createElement("div");
+  el.className = "story"; el.hidden = true;
+  el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true");
+  el.innerHTML = '<div class="bg"></div><button class="side l" aria-label="‹">‹</button><div class="stage"></div><button class="side r" aria-label="›">›</button>';
+  document.body.append(el);
+  const stage = el.querySelector(".stage"), bg = el.querySelector(".bg");
+  let di = 0, ii = 0, paused = false, downAt = 0, x0 = 0, y0 = 0;
+
+  function render() {
+    const day = data.days[di], it = day.items[ii];
+    seen.add(it.id);
+    try { localStorage.setItem("dc-seen", JSON.stringify([...seen].slice(-300))); } catch {}
+    bg.style.backgroundImage = it.img ? "url('" + it.img + "')" : "";
+    stage.innerHTML =
+      '<div class="bars">' + day.items.map((_, i) => '<i class="' + (i < ii ? "done" : i === ii ? "now" : "") + '"><b></b></i>').join("") + "</div>" +
+      '<div class="head"><span>' + esc(day.label) + "</span><small>" + (ii + 1) + "/" + day.items.length + '</small><button class="x" aria-label="' + L.close + '">✕</button></div>' +
+      (it.img ? '<img class="pic" src="' + it.img + '" alt="Flyer: ' + esc(it.title) + '">' : '<div class="pic text">' + esc(it.title) + "</div>") +
+      '<div class="info' + (it.cancelled ? " cancelled" : "") + '"><span class="kind k-' + it.kind + '">' + esc(it.type) + "</span>" +
+      (it.cancelled ? ' <span class="kind k-cancel">' + esc(L.cancelled) + "</span>" : "") +
+      '<h3 class="ttl">' + esc(it.title) + "</h3><p><b>" + esc(it.when) + "</b> · " + esc(it.place) + "</p>" +
+      (it.tags.length ? '<p class="tags">' + it.tags.map((x) => '<span class="tag">' + esc(x) + "</span>").join("") + "</p>" : "") +
+      '<a class="go" href="' + esc(it.href) + '">' + L.details + " ›</a></div>";
+    stage.querySelector(".now b").addEventListener("animationend", next);
+    el.classList.toggle("paused", paused);
+    const after = data.days[di].items[ii + 1] || (data.days[di + 1] || {}).items?.[0];
+    if (after && after.img) new Image().src = after.img;
+  }
+  function open(d, i = 0) {
+    di = d; ii = i; paused = false;
+    if (el.hidden) { el.hidden = false; document.documentElement.classList.add("story-open"); history.pushState({ story: 1 }, ""); }
+    render();
+  }
+  function close(fromHistory) {
+    if (el.hidden) return;
+    el.hidden = true; document.documentElement.classList.remove("story-open"); markRings();
+    if (!fromHistory && history.state && history.state.story) history.back();
+  }
+  function next() {
+    if (ii + 1 < data.days[di].items.length) ii++;
+    else if (di + 1 < data.days.length) { di++; ii = 0; }
+    else return close();
+    render();
+  }
+  function prev() {
+    if (ii > 0) ii--;
+    else if (di > 0) { di--; ii = data.days[di].items.length - 1; }
+    render();
+  }
+  const day = (n) => { if (data.days[di + n]) { di += n; ii = 0; render(); } };
+  const pause = (p) => { paused = p; el.classList.toggle("paused", p); };
+
+  document.addEventListener("click", (ev) => {
+    const r = ev.target.closest(".ring[data-story]");
+    if (!r) return;
+    ev.preventDefault();
+    open(data.days.findIndex((d) => d.d === r.dataset.story));
+  });
+  el.addEventListener("click", (ev) => {
+    if (ev.target.closest(".x")) return close();
+    if (ev.target.closest(".side.l")) return day(-1);
+    if (ev.target.closest(".side.r")) return day(1);
+    if (ev.target === el || ev.target === bg) close();
+  });
+  // A short tap steps (left third back, the rest forward), holding pauses, a swipe changes day or closes.
+  stage.addEventListener("pointerdown", (ev) => {
+    if (ev.target.closest("a, button")) return;
+    downAt = Date.now(); x0 = ev.clientX; y0 = ev.clientY; pause(true);
+  });
+  stage.addEventListener("pointerup", (ev) => {
+    if (!downAt) return;
+    const dx = ev.clientX - x0, dy = ev.clientY - y0, held = Date.now() - downAt;
+    downAt = 0; pause(false);
+    if (dy > 80 && Math.abs(dy) > Math.abs(dx)) return close();
+    if (Math.abs(dx) > 60) return day(dx < 0 ? 1 : -1);
+    if (held > 250) return;
+    const box = stage.getBoundingClientRect();
+    ev.clientX - box.left < box.width / 3 ? prev() : next();
+  });
+  stage.addEventListener("pointercancel", () => { downAt = 0; pause(false); });
+  window.addEventListener("keydown", (ev) => {
+    if (el.hidden) return;
+    const k = { ArrowRight: next, ArrowLeft: prev, ArrowDown: () => day(1), ArrowUp: () => day(-1), Escape: () => close(), " ": () => pause(!paused) }[ev.key];
+    if (!k) return;
+    ev.preventDefault(); ev.stopImmediatePropagation(); k();
+  }, true);
+  window.addEventListener("popstate", () => close(true));
+})();`;
+
+const STORY_CSS = `
+  /* the strip of day rings */
+  .strip { gap:2px; padding:10px 12px 4px; }
+  .ring { flex:none; width:60px; display:flex; flex-direction:column; align-items:center; font-size:11px; line-height:1.15; color:var(--ink); }
+  .ring .disc { position:relative; width:52px; height:52px; border-radius:50%; padding:2.5px; margin-bottom:4px; transition:transform .15s;
+    background:conic-gradient(from 210deg, var(--festival), var(--party), #7b1fa2, var(--workshop), var(--festival)); }
+  .ring .disc::before { content:""; position:absolute; inset:2.5px; border-radius:50%; border:2.5px solid var(--bg);
+    background:var(--img, linear-gradient(135deg,#3949ab,#8e24aa)) center top / cover, #222; }
+  .ring.seen .disc { background:#cfc8bf; }
+  .ring.none .disc { background:none; border:2px dashed var(--line); padding:0; }
+  .ring.none .disc::before { display:none; }
+  .ring.none { opacity:.45; }
+  .ring .cnt { position:absolute; right:-3px; bottom:-2px; z-index:1; min-width:18px; height:18px; line-height:15px; text-align:center; border-radius:9px;
+    background:var(--party); color:#fff; font-size:10px; font-weight:700; border:2px solid var(--bg); }
+  .ring.seen .cnt { background:var(--mute); }
+  .ring .lbl { color:var(--mute); } .ring b { font-size:14px; }
+  .ring:active .disc { transform:scale(.94); }
+
+  /* the player */
+  html.story-open { overflow:hidden; }
+  .story { position:fixed; inset:0; z-index:100; background:#000; display:flex; align-items:center; justify-content:center; gap:24px;
+    animation:story-in .22s ease-out; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .story[hidden] { display:none; }
+  @keyframes story-in { from { opacity:0; transform:scale(.96); } }
+  .story .bg { position:absolute; inset:-60px; background:#111 center / cover; filter:blur(40px) brightness(.4) saturate(1.3); }
+  .story .stage { position:relative; width:100%; height:100%; display:flex; flex-direction:column; color:#fff; overflow:hidden; background:#000; }
+  .story .stage::before { content:""; position:absolute; top:0; left:0; right:0; height:90px; z-index:1; pointer-events:none;
+    background:linear-gradient(rgba(0,0,0,.6), transparent); }
+  .story .bars { position:absolute; top:10px; left:10px; right:10px; z-index:2; display:flex; gap:4px; }
+  .story .bars i { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.35); overflow:hidden; }
+  .story .bars b { display:block; height:100%; width:0; background:#fff; }
+  .story .bars .done b { width:100%; }
+  .story .bars .now b { animation:story-fill 6s linear forwards; }
+  .story.paused .bars .now b { animation-play-state:paused; }
+  @keyframes story-fill { to { width:100%; } }
+  .story .head { position:absolute; top:20px; left:12px; right:6px; z-index:2; display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px;
+    text-shadow:0 1px 3px rgba(0,0,0,.6); }
+  .story .head small { opacity:.75; font-weight:500; margin-right:auto; }
+  .story .x { border:0; background:none; color:#fff; font-size:22px; padding:6px 10px; cursor:pointer; }
+  .story .pic { flex:1; min-height:0; width:100%; object-fit:contain; pointer-events:none; }
+  .story .pic.text { display:flex; align-items:center; justify-content:center; text-align:center; padding:40px; font-size:30px; font-weight:800;
+    background:linear-gradient(135deg,#3949ab,#8e24aa); }
+  .story .info { position:absolute; left:0; right:0; bottom:0; padding:60px 16px calc(18px + env(safe-area-inset-bottom));
+    background:linear-gradient(transparent, rgba(0,0,0,.55) 30%, rgba(0,0,0,.9)); font-size:14px; }
+  .story .info p { margin:4px 0 0; }
+  .story .info .ttl { margin:6px 0 0; font-size:22px; line-height:1.15; }
+  .story .kind { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; color:#fff; }
+  .story .k-party { background:var(--party); } .story .k-workshop { background:var(--workshop); } .story .k-festival { background:var(--festival); }
+  .story .k-course { background:var(--course); } .story .k-cancel { background:#a30000; }
+  .story .tag { background:rgba(255,255,255,.18); color:#fff; }
+  .story .go { position:absolute; right:16px; bottom:calc(18px + env(safe-area-inset-bottom)); background:#fff; color:#111; font-weight:700;
+    border-radius:999px; padding:8px 16px; font-size:14px; }
+  .story .info:has(.go) { padding-right:120px; }
+  .story .side { display:none; }
+  .story.paused .info { opacity:.25; transition:opacity .3s .2s; }
+  @media (min-width: 600px) {
+    .story .stage { width:auto; height:calc(100vh - 48px); aspect-ratio:9 / 16; max-width:calc(100vw - 140px); border-radius:18px;
+      box-shadow:0 30px 80px rgba(0,0,0,.6); }
+    .story .side { display:block; position:relative; z-index:1; width:44px; height:44px; border-radius:50%; border:0; cursor:pointer;
+      background:rgba(255,255,255,.18); color:#fff; font-size:26px; line-height:1; }
+    .story .side:hover { background:rgba(255,255,255,.32); }
+  }
+  @media (prefers-reduced-motion: reduce) { .story { animation:none; } }
+`;
 
 function Card(props: { f: Filters; o: OnDay; day?: string; wall?: boolean }) {
   const { f, o } = props;

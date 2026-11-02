@@ -4,7 +4,7 @@ Labels: wayfinder:map
 
 ## Destination
 
-A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live at a public URL: at least 2 Organizers post via WhatsApp, the next 4 weeks of their Events are in the calendar, and the launch is announced in the community WhatsApp groups.
+A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live at a public URL: at least 2 Organizers post via WhatsApp (or have their Instagram posts picked up automatically), the next 4 weeks of their Events are in the calendar, and the launch is announced in the community WhatsApp groups.
 
 ## Notes
 
@@ -16,6 +16,7 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
   - Feed-in: Flyer forwarded to a WhatsApp bot (web upload as second path); an AI vision model extracts one or more Events per Flyer; the Organizer confirms and Events go live immediately; a private edit link per Event handles changes and cancellations (cancelled Events stay visible, marked).
   - Organizers are individuals with a Display name (to be replaced by the Organizer's own name plus Organizer groups, see "Organizer name instead of a Display name, and Organizer groups"); join by applying, auto-approved (amended by "Organizer confirmation flow"; the Admin can remove them afterwards); identified by WhatsApp number.
   - Unregistered sender: bot asks "Is this your event?" (a "Tip" answer is remembered per number; amended by "Organizer application form"). Yes → apply link. No → Tip → Admin review queue; Tip Events shown under the Flyer's name, marked "added by the community".
+  - Instagram (added 2026-11-02): new posts on an Organizer's own Instagram account are picked up automatically, before launch; official API only, no scraping. Route and flow open, see "Instagram API for reading Organizers' posts" and "Instagram ingest flow".
   - Likely duplicates (same Venue, overlapping time) are warned about, not blocked.
   - Dancer side: mobile-first web overview only; no Dancer accounts; filters (style, center + radius km, type Party/Workshop/Course/Festival) encoded in the URL.
 
@@ -57,6 +58,7 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
 ## Not yet specified
 
 - **Deploy**: domain, Cloudflare account (Workers, D1/R2 in `eu`, Queues, Access, Email; accept the Customer DPA). For the Admin's daily email: Email Routing on the domain, the Admin's address verified as a destination, a `send_email` binding `EMAIL` plus `ADMIN_EMAIL`/`EMAIL_FROM` vars (see [Admin tools and the daily email](issues/25-admin-tools-and-email.md)), then trigger it from `/admin`. GitHub Actions secrets, Impressum/privacy pages live. Meta/WhatsApp: replace the interim website in the business profile and move the webhook to the custom domain (the first webhook and secrets happened in [slice 17](issues/17-whatsapp-happy-path.md)); the Meta app is Live since 2026-11-01 (icon, privacy, Terms and data-deletion URLs set, see [Legal pages](issues/27-legal-pages.md)); the Admin still reviews the legal text. Work the legal pre-launch checklist, including Organizer data deleted ≤ 3 months after leaving (no leave flow yet; a removed Organizer's number stays for blocking, see [Retention and backups](issues/26-retention-and-backups.md)); re-check the CJEU appeal on the EU-US Data Privacy Framework (C-703/25 P).
+- **Instagram build**: the build slice(s) for the Instagram ingest, once "Instagram ingest flow" has decided it; may also need a Meta App Review step before launch.
 - **Launch**: onboarding the first Organizers in both cities and the announcement in the community groups.
 
 ## Out of scope

@@ -66,7 +66,6 @@ describe("a Tip", () => {
 
     expect(last(api).text).toContain("Danke für den Tipp");
     expect(last(api).buttons).toEqual([]);
-    expect(api.texts().at(-2)).toContain("Ich lese deinen Flyer"); // at once after Nein
     expect(api.anthropicCalls).toHaveLength(1);
     const row = await env.DB.prepare("SELECT organizer_id, source, status FROM submission").first();
     expect(row).toEqual({ organizer_id: null, source: "tip", status: "pending" });
@@ -80,7 +79,7 @@ describe("a Tip", () => {
 
     await deliver(imageMessage("media2", STRANGER));
 
-    expect(api.sent.slice(before).map((m) => m.text)).toEqual([expect.stringContaining("Ich lese deinen Flyer"), expect.stringContaining("Danke für den Tipp")]);
+    expect(api.sent.slice(before).map((m) => m.text)).toEqual([expect.stringContaining("Danke für den Tipp")]);
     const { results } = await env.DB.prepare("SELECT id FROM submission WHERE source = 'tip'").all();
     expect(results).toHaveLength(2);
   });

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { sendText } from "./graph";
 import type { InboundMessage } from "./types";
 
 // Meta's webhook: https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks
@@ -24,10 +25,35 @@ webhook.post("/", async (c) => {
   for (const message of inboundMessages(JSON.parse(body))) {
     // Meta may deliver the same message more than once.
     const { meta } = await c.env.DB.prepare("INSERT OR IGNORE INTO inbound_message (message_id) VALUES (?)").bind(message.id).run();
-    if (meta.changes === 1) await c.env.JOBS.send(message);
+    if (meta.changes !== 1) continue;
+    await replyReading(c.env, message);
+    await c.env.JOBS.send(message);
   }
   return c.text("OK");
 });
+
+// Reading a Flyer takes a few seconds, and the queue adds its own delay before the bot sees the message,
+// so the sender hears here, at once, that the Flyer arrived: an Organizer's or a remembered Tip number's
+// Flyer, or a tap on "Nein, ist ein Tipp". An unknown sender's Flyer gets "Ist das deine Veranstaltung?"
+// from the queue instead. A failed reply only loses the reply, never the Flyer.
+async function replyReading(env: Env, message: InboundMessage) {
+  const flyer = message.type === "image";
+  const tipTap = message.interactive?.button_reply?.id.startsWith("tip:") ?? false;
+  if (!flyer && !tipTap) return;
+  const who = await env.DB.prepare(
+    `SELECT o.id AS organizer, o.blocked_at, c.tip_at, c.opted_out_at
+     FROM (SELECT ? AS n) LEFT JOIN organizer o ON o.whatsapp_number = n LEFT JOIN contact c ON c.whatsapp_number = n`,
+  )
+    .bind(message.from)
+    .first<{ organizer: number | null; blocked_at: string | null; tip_at: string | null; opted_out_at: string | null }>();
+  if (!who || who.opted_out_at || who.blocked_at) return;
+  if (flyer && !who.organizer && !who.tip_at) return;
+  try {
+    await sendText(env, message.from, "Danke! Ich lese deinen Flyer – in ein paar Sekunden melde ich mich.");
+  } catch (err) {
+    console.error("reading reply failed", err);
+  }
+}
 
 function inboundMessages(payload: any): InboundMessage[] {
   const out: InboundMessage[] = [];

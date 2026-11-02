@@ -59,7 +59,7 @@ export default {
           await uploadFailed(env, job as FlyerUpload, err);
         }
       } else {
-        await handleMessage(env, job as InboundMessage, message.attempts);
+        await handleMessage(env, job as InboundMessage);
       }
       message.ack();
     }

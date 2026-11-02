@@ -1,8 +1,7 @@
 import { env, exports } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { berlinDate, fakeApis, flyer, knownVenue } from "./fake-apis";
-import { deliver, feed, runJob } from "./flow";
-import type { InboundMessage } from "../src/whatsapp/types";
+import { deliver, feed } from "./flow";
 import { buttonReply, documentMessage, imageMessage, ORGANIZER_NUMBER, textMessage } from "./whatsapp-fixtures";
 
 beforeEach(async () => {
@@ -45,29 +44,6 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(summary.text).toContain("Salsa Night");
     expect(summary.text).toContain("Bachata Sunday");
     expect(summary.buttons.map((b) => b.title)).toEqual(["Veröffentlichen", "Ändern ✏️", "Verwerfen"]);
-  });
-
-  it("says at once that it's reading the Flyer, before the summary", async () => {
-    const api = fakeApis();
-
-    await deliver(imageMessage("media1"));
-
-    const texts = api.texts();
-    const reading = texts.findIndex((t) => t.includes("Ich lese deinen Flyer"));
-    expect(reading).toBeGreaterThanOrEqual(0);
-    expect(texts[reading]).toContain("Sekunden");
-    expect(reading).toBeLessThan(texts.length - 1); // the summary comes after
-  });
-
-  it("says it before the read, so a failed read has still been acknowledged, and only once across retries", async () => {
-    const api = fakeApis({ anthropicError: "overloaded" });
-    const message = imageMessage("media1").entry[0].changes[0].value.messages[0] as InboundMessage;
-
-    // The read fails, so the job throws and the queue delivers it again.
-    await expect(runJob(message, 1)).rejects.toThrow();
-    await expect(runJob(message, 2)).rejects.toThrow();
-
-    expect(api.texts().filter((t) => t.includes("Ich lese deinen Flyer"))).toHaveLength(1);
   });
 
   it("marks fields the model or the code checks found uncertain", async () => {

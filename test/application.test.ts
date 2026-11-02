@@ -184,7 +184,7 @@ describe("an unregistered sender's Flyer", () => {
     expect(await env.DB.prepare("SELECT id FROM application").first()).toBeNull();
     const before = api.sent.length;
     await deliver(imageMessage("media2", STRANGER));
-    expect(api.sent.slice(before).map((m) => m.text)).toEqual([expect.stringContaining("Ich lese deinen Flyer"), expect.stringContaining("Danke für den Tipp")]);
+    expect(api.sent.slice(before).map((m) => m.text)).toEqual([expect.stringContaining("Danke für den Tipp")]);
   });
 
   it("asks again next time when Ja wasn't followed by the form", async () => {

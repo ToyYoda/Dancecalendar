@@ -260,73 +260,81 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
   );
 }
 
-// Two rows: what (the types as tabs, the Flyer/Kalender switch at the end) and where/which (the place,
-// whose options and hint open as a menu, then the styles). The menu closes on a tap elsewhere.
+// Two rows that fit a phone: the types as tabs across the width, then the place, the styles and the
+// Flyer/Kalender switch. The place's options and, on a phone, the styles open as menus below the
+// filters; from 640px the styles show as chips and the switch moves up to the tabs. A tap elsewhere
+// closes a menu.
 function FilterBar(props: { f: Filters }) {
   const { f } = props;
   const t = T[f.lang];
   const r = f.r || DEFAULT_RADIUS;
   const toggleStyle = (s: string) => (f.styles.includes(s) ? f.styles.filter((x) => x !== s) : [...f.styles, s]);
+  const chips = STYLES.map(([k, name]) => (
+    <a class={`chip ${f.styles.includes(k) ? "on" : ""}`} href={href(f, { styles: toggleStyle(k) })}>
+      {name}
+    </a>
+  ));
+  const picked = STYLES.filter(([k]) => f.styles.includes(k)).map(([, name]) => name);
   return (
     <nav class="filters">
-      <div class="tier">
-        <div class="types">
-          <a class={f.type ? "" : "on"} href={href(f, { type: "" })}>
-            {t.all}
-          </a>
-          {TYPES.map((k) => (
-            <a class={f.type === k ? "on" : ""} href={href(f, { type: k })}>
-              {t[PLURAL[k]]}
-            </a>
-          ))}
-        </div>
-        <div class="views">
-          <a class={f.view ? "" : "on"} href={href(f, { view: "", d: "" })} title={t.feed} aria-label={t.feed}>
-            🖼<span>{t.feed}</span>
-          </a>
-          <a class={f.view ? "on" : ""} href={href(f, { view: "cal", w: "" })} title={t.calendar} aria-label={t.calendar}>
-            📅<span>{t.calendar}</span>
-          </a>
-        </div>
-      </div>
-      <div class="scroll">
-        <details class="place" {...(f.c ? {} : { "data-autogeo": "" })}>
-          <summary class={f.c ? "chip pl set" : "chip pl"}>
-            📍 {!f.c ? t.noPlace : r === "all" ? `${t.here} · ${t.anywhere}` : `${t.here} · ${r} km`}
-            <i>▾</i>
-          </summary>
-          <div class="menu">
-            {!f.c && <p class="hint">{t.hint}</p>}
-            <div class="row">
-              <a class="chip" href={href(f, { c: "" })} data-geo data-fail={t.noGeo}>
-                📍 {t.me}
-              </a>
-              <a class="chip" href={href(f, {}, "/karte")}>
-                🗺 {t.map}
-              </a>
-            </div>
-            {f.c && (
-              <div class="row">
-                <span class="label">{t.radius}</span>
-                {RADII.map((x) => (
-                  <a class={`chip ${r === x ? "on" : ""}`} href={href(f, { r: x })}>
-                    {x === "all" ? t.anywhere : `${x} km`}
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-        </details>
-        <span class="sep" />
-        {STYLES.map(([k, name]) => (
-          <a class={`chip ${f.styles.includes(k) ? "on" : ""}`} href={href(f, { styles: toggleStyle(k) })}>
-            {name}
+      <div class="types">
+        <a class={f.type ? "" : "on"} href={href(f, { type: "" })}>
+          {t.all}
+        </a>
+        {TYPES.map((k) => (
+          <a class={f.type === k ? "on" : ""} href={href(f, { type: k })}>
+            {t[PLURAL[k]]}
           </a>
         ))}
       </div>
+      <details class="place pick" {...(f.c ? {} : { "data-autogeo": "" })}>
+        <summary class={f.c ? "chip pl set" : "chip pl"}>
+          📍 {!f.c ? t.noPlace : r === "all" ? `${t.here} · ${t.anywhere}` : `${t.here} · ${r} km`}
+          <i>▾</i>
+        </summary>
+        <div class="menu">
+          {!f.c && <p class="hint">{t.hint}</p>}
+          <div class="row">
+            <a class="chip" href={href(f, { c: "" })} data-geo data-fail={t.noGeo}>
+              📍 {t.me}
+            </a>
+            <a class="chip" href={href(f, {}, "/karte")}>
+              🗺 {t.map}
+            </a>
+          </div>
+          {f.c && (
+            <div class="row">
+              <span class="label">{t.radius}</span>
+              {RADII.map((x) => (
+                <a class={`chip ${r === x ? "on" : ""}`} href={href(f, { r: x })}>
+                  {x === "all" ? t.anywhere : `${x} km`}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </details>
+      <details class="styles pick">
+        <summary class={picked.length ? "chip pl set" : "chip pl"}>
+          💃 {!picked.length ? t.styles : picked.length === 1 ? picked[0] : `${picked[0]} +${picked.length - 1}`}
+          <i>▾</i>
+        </summary>
+        <div class="menu">
+          <div class="row">{chips}</div>
+        </div>
+      </details>
+      <div class="chips">{chips}</div>
+      <div class="views">
+        <a class={f.view ? "" : "on"} href={href(f, { view: "", d: "" })} title={t.feed} aria-label={t.feed}>
+          🖼<span>{t.feed}</span>
+        </a>
+        <a class={f.view ? "on" : ""} href={href(f, { view: "cal", w: "" })} title={t.calendar} aria-label={t.calendar}>
+          📅<span>{t.calendar}</span>
+        </a>
+      </div>
       <script
         dangerouslySetInnerHTML={{
-          __html: `document.addEventListener("click",(e)=>{const d=document.querySelector(".filters .place[open]");if(d&&!d.contains(e.target))d.open=false;});`,
+          __html: `document.addEventListener("click",(e)=>document.querySelectorAll(".filters .pick[open]").forEach((d)=>{if(!d.contains(e.target))d.open=false;}));`,
         }}
       />
     </nav>
@@ -1656,7 +1664,7 @@ function DetailPage(props: { f: Filters; e: Shown }) {
           </>
         )}
       </dl>
-      {e.description && <p class="muted desc">{e.description}</p>}
+      {e.description && <p class="desc">{e.description}</p>}
     </Page>
   );
 }
@@ -1764,43 +1772,49 @@ const CSS = `
   .chip.on { background:var(--neon); color:#fff; border-color:transparent; font-weight:700; box-shadow:0 0 18px rgba(255,61,139,.35); }
   .hint { margin:0 16px 6px; font-size:12px; color:var(--mute); }
 
-  /* the filters: two quiet rows of frosted glass */
-  .filters { position:sticky; top:0; z-index:4; padding:4px 0 10px; border-bottom:1px solid rgba(255,255,255,.06);
+  /* the filters: two quiet rows of frosted glass that fit the narrowest phone */
+  .filters { position:sticky; top:0; z-index:4; display:grid; grid-template-columns:auto auto 1fr auto;
+    grid-template-areas:"types types types types" "place styles . views"; align-items:center; gap:6px 8px; padding:2px 16px 10px;
+    border-bottom:1px solid rgba(255,255,255,.06);
     background:rgba(12,10,16,.66); -webkit-backdrop-filter:blur(18px) saturate(1.6); backdrop-filter:blur(18px) saturate(1.6); }
-  .filters .tier { display:flex; align-items:center; gap:10px; padding:0 16px; }
-  .filters .types { flex:1; min-width:0; display:flex; gap:18px; overflow-x:auto; scrollbar-width:none;
-    -webkit-mask-image:linear-gradient(90deg, #000 88%, transparent); mask-image:linear-gradient(90deg, #000 88%, transparent); }
-  .filters .types a { position:relative; flex:none; padding:10px 0 9px; font-size:14px; font-weight:600; color:var(--mute); transition:color .15s; }
+  .filters .types { grid-area:types; display:flex; justify-content:space-between; gap:8px; min-width:0; }
+  .filters .types a { position:relative; padding:10px 0 9px; font-size:clamp(12.5px, 3.7vw, 14px); font-weight:600; white-space:nowrap; color:var(--mute); transition:color .15s; }
   .filters .types a:hover { color:var(--ink); }
   .filters .types a.on { color:var(--ink); font-weight:800; }
-  @media (max-width: 420px) { .filters .types { gap:11px; } .filters .types a { font-size:13.5px; } .filters .views a { padding:5px 7px; } }
   .filters .types a.on::after { content:""; position:absolute; left:0; right:0; bottom:3px; height:3px; border-radius:3px; background:var(--neon);
     box-shadow:0 0 12px rgba(255,61,139,.7); }
-  .filters .views { flex:none; display:flex; padding:2px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); }
-  .filters .views a { display:flex; align-items:center; gap:6px; padding:5px 9px; border-radius:8px; font-size:13px; line-height:1; color:var(--mute);
+  .filters .place { grid-area:place; min-width:0; } .filters .styles { grid-area:styles; min-width:0; }
+  .filters .views { grid-area:views; display:flex; padding:2px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); }
+  .filters .views a { display:flex; align-items:center; gap:6px; padding:5px 8px; border-radius:8px; font-size:13px; line-height:1; color:var(--mute);
     filter:grayscale(1) opacity(.7); transition:background .15s, filter .15s; }
   .filters .views a.on { background:rgba(255,255,255,.12); color:var(--ink); font-weight:700; filter:none; }
   .filters .views span { display:none; }
-  @media (min-width: 520px) { .filters .views span { display:inline; } }
-  .filters .scroll { display:flex; align-items:center; gap:6px; overflow-x:auto; padding:2px 16px; scrollbar-width:none; }
-  .filters .scroll > .chip { padding:5px 12px; font-size:12.5px; background:transparent; border-color:rgba(255,255,255,.14); color:#d9d0e4; }
-  .filters .scroll > .chip:hover { border-color:rgba(255,255,255,.3); color:var(--ink); }
-  .filters .scroll > .chip.on { background:var(--neon); border-color:transparent; color:#fff; }
-  .filters .sep { flex:none; width:1px; height:18px; margin:0 4px; background:rgba(255,255,255,.14); }
-  /* the place: a chip whose options open as a menu below the filters (not clipped by the scrolling row) */
-  .place { flex:none; }
-  .place summary { list-style:none; cursor:pointer; }
-  .place summary::-webkit-details-marker { display:none; }
-  .place .pl { font-size:12.5px; font-weight:600; background:rgba(255,255,255,.08); border-color:transparent; }
-  .place .pl.set { color:var(--ink); box-shadow:inset 0 0 0 1px rgba(255,61,139,.55); }
-  .place .pl i { font-style:normal; display:inline-block; margin-left:4px; font-size:10px; opacity:.6; transition:transform .2s; }
-  .place[open] .pl i { transform:rotate(180deg); }
-  .place .menu { position:absolute; left:16px; right:16px; top:calc(100% - 2px); max-width:420px; padding:12px; border-radius:16px;
+  .filters .chips { display:none; }
+  .filters .chip { font-size:12.5px; }
+  .filters .chips .chip, .filters .menu .row .chip:not(.on) { background:transparent; border-color:rgba(255,255,255,.16); color:#e2dae9; }
+  .filters .chips .chip:hover { border-color:rgba(255,255,255,.3); color:var(--ink); }
+  .filters .chips .chip.on { background:var(--neon); border-color:transparent; color:#fff; }
+  @media (min-width: 640px) {
+    .filters { grid-template-columns:auto 1fr auto; grid-template-areas:"types types views" "place chips chips"; column-gap:12px; }
+    .filters .types { justify-content:flex-start; gap:20px; }
+    .filters .styles { display:none; }
+    .filters .chips { grid-area:chips; display:flex; flex-wrap:wrap; gap:5px; padding-left:12px; border-left:1px solid rgba(255,255,255,.14); }
+    .filters .chips .chip { padding:5px 10px; }
+    .filters .views span { display:inline; }
+  }
+  /* a chip whose options open as a menu below the filters */
+  .pick summary { list-style:none; cursor:pointer; }
+  .pick summary::-webkit-details-marker { display:none; }
+  .pick .pl { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; font-weight:600; background:rgba(255,255,255,.08); border-color:transparent; }
+  .pick .pl.set { color:var(--ink); box-shadow:inset 0 0 0 1px rgba(255,61,139,.55); }
+  .pick .pl i { font-style:normal; display:inline-block; margin-left:4px; font-size:10px; opacity:.6; transition:transform .2s; }
+  .pick[open] .pl i { transform:rotate(180deg); }
+  .pick .menu { position:absolute; left:16px; right:16px; top:calc(100% - 2px); max-width:420px; padding:12px; border-radius:16px;
     background:#1a1620; border:1px solid rgba(255,255,255,.1); box-shadow:0 18px 40px rgba(0,0,0,.55); }
-  .place .menu p { margin:0 0 10px; font-size:12px; line-height:1.45; color:var(--mute); }
-  .place .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-  .place .row + .row { margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.07); }
-  .place .label { font-size:12px; color:var(--mute); margin-right:2px; }
+  .pick .menu p { margin:0 0 10px; font-size:12px; line-height:1.45; color:var(--mute); }
+  .pick .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .pick .row + .row { margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.07); }
+  .pick .label { font-size:12px; color:var(--mute); margin-right:2px; }
   #map { height:65vh; margin:0 16px; border-radius:16px; overflow:hidden; border:1px solid var(--line); }
   .maprow { display:flex; justify-content:space-between; gap:8px; margin:10px 16px; }
   .maprow button { font:inherit; cursor:pointer; } .maprow button:disabled { opacity:.4; cursor:default; }
@@ -1873,7 +1887,8 @@ const CSS = `
   .flyer { display:block; width:100%; border-radius:14px; }
   .facts { display:grid; grid-template-columns:auto 1fr; gap:8px 14px; margin:10px 16px; padding:14px 16px; font-size:14px; background:var(--card); border-radius:16px; border:1px solid var(--line); }
   .facts dt { color:var(--mute); } .facts dd { margin:0; }
-  .desc { margin:14px 16px; white-space:pre-line; }
+  .desc { margin:14px 16px; padding:14px 16px; white-space:pre-line; font-size:15px; line-height:1.55; color:#ece6f2;
+    background:var(--card); border-radius:16px; border:1px solid var(--line); }
   body > p { margin:10px 16px; }
   body > p > a { color:var(--mute); }
   @media (prefers-reduced-motion: reduce) { h2.day .now { animation:none; } .card::before { transition:none; } }

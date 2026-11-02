@@ -345,7 +345,8 @@ function FilterBar(props: { f: Filters }) {
 // Three desktop layouts of the Flyer feed on this route, switched with ?variant= and the bar at the bottom.
 // Below 900px every variant is today's phone layout. Throwaway: lives on the prototype/design-review branch.
 const VARIANTS: [string, string][] = [
-  ["", "Heute (Spalte)"],
+  ["", "Bühne"],
+  ["S", "Spalte"],
   ["A", "Pinnwand"],
   ["B", "Seitenleiste + Agenda"],
   ["C", "Wochenbrett + Panel"],
@@ -528,6 +529,224 @@ const PROTO_CSS = `
   }
 `;
 
+// ---- PROTOTYPE: the Bühne (issues/29-design-review-and-desktop.md) ----
+// The Flyers are the best thing on the site, yet a phone's first screen showed none of them and a desktop
+// showed one in a narrow column. The Bühne gives the whole screen below the filters to the week's Flyers:
+// one big in the spotlight, its neighbours turned away on either side like records in a crate, swiped or
+// scrolled sideways. Each day opens with a title card; the rail below shows the days and follows along.
+// Only the Flyer in the spotlight shows its caption and lights the room. The 3D turn is a scroll-driven
+// CSS animation; without it the Flyers stay flat, and without JavaScript the row still scrolls and snaps.
+function Stage(props: { f: Filters; today: string; days: string[]; byDay: Map<string, OnDay[]>; prev: string | null; next: string }) {
+  const { f, today, days, byDay } = props;
+  const t = T[f.lang];
+  const de = f.lang === "de";
+  // A Festival shows once, on its first day in view.
+  const shown = days.map((d) => [d, byDay.get(d)!.filter((o) => !o.dayN || o.dayN === 1 || d === days[0])] as const);
+  const any = shown.some(([, l]) => l.length);
+  let n = 0;
+  return (
+    <section class="stage" aria-label={de ? "Flyer der Woche" : "This week's Flyers"}>
+      <div class="track" tabindex={0}>
+        {shown.map(([d, list]) => {
+          if (!list.length) return null;
+          const noon = new Date(`${d}T12:00:00Z`);
+          const label = d === today ? t.today : weekdayShort(d, f.lang);
+          return (
+            <>
+              <div class={d === today ? "slide title today" : "slide title"} id={`day-${d}`} data-day={d}>
+                <div class="turn">
+                <span class="wd">{d === today ? t.today : noon.toLocaleDateString(f.lang, { weekday: "long", timeZone: "UTC" })}</span>
+                <span class="num">{Number(d.slice(8))}</span>
+                <span class="mon">{noon.toLocaleDateString(f.lang, { month: "long", timeZone: "UTC" })}</span>
+                <span class="cnt">{list.length === 1 ? "1 Event" : `${list.length} Events`} →</span>
+                </div>
+              </div>
+              {list.map((o) => {
+                const { e } = o;
+                const when = o.dayOf
+                  ? `${weekdayShort(e.starts_at.slice(0, 10), f.lang)} – ${weekdayShort(e.ends_at!.slice(0, 10), f.lang)}`
+                  : timeRange(e);
+                return (
+                  <div class="slide" data-day={d}>
+                    <div class="turn">
+                    <a class={e.cancelled ? "card cancelled" : "card"} href={href(f, {}, `/events/${e.id}`)} style={glow(e)}>
+                      {e.flyer_key ? (
+                        <span class="frame">
+                          <img src={`/${e.flyer_key}`} alt={`Flyer: ${e.title}`} loading={n++ < 4 ? "eager" : "lazy"} />
+                        </span>
+                      ) : (
+                        <span class="frame text">{e.title}</span>
+                      )}
+                    </a>
+                    <div class="cap">
+                      <span class="kick">
+                        {label} · <span class="time">{when}</span>
+                        {e.cancelled ? ` · ${t.cancelled}` : ""}
+                      </span>
+                      <a class="ttl" href={href(f, {}, `/events/${e.id}`)}>{e.title}</a>
+                      <span class="meta">
+                        <TypeLabel f={f} e={e} /> · {e.venue}
+                        {km(e)}
+                      </span>
+                      {e.posted_by && e.posted_by !== e.title && <span class="by">{e.posted_by}</span>}
+                      <Tags f={f} e={e} />
+                    </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          );
+        })}
+        {!any && <p class="slide empty">{t.none}</p>}
+        <a class="slide title more" href={href(f, { w: props.next })}>
+          <span class="turn">
+            <span class="wd">{de ? "Weiter" : "Next"}</span>
+            <span class="num">›</span>
+            <span class="mon">{de ? "Nächste Woche" : "Next week"}</span>
+          </span>
+        </a>
+      </div>
+      <button class="nudge l" type="button" aria-label="‹" hidden>‹</button>
+      <button class="nudge r" type="button" aria-label="›" hidden>›</button>
+      <nav class="rail">
+        {props.prev !== null ? <a class="wk" href={href(f, { w: props.prev })}>‹</a> : <span class="wk off">‹</span>}
+        {days.map((d) => {
+          const c = byDay.get(d)!.length;
+          return (
+            <a class={c ? "dy" : "dy none"} href={c ? `#day-${d}` : undefined} data-day={d}>
+              <span>{d === today ? t.today : weekdayShort(d, f.lang)}</span>
+              <b>{Number(d.slice(8))}</b>
+              <i>{"•".repeat(Math.min(c, 5))}</i>
+            </a>
+          );
+        })}
+        <a class="wk" href={href(f, { w: props.next })}>›</a>
+      </nav>
+      <script dangerouslySetInnerHTML={{ __html: STAGE_SCRIPT }} />
+    </section>
+  );
+}
+
+// Arrows, keys and the mouse wheel move one Flyer; the rail follows the Flyer in the spotlight.
+const STAGE_SCRIPT = `(() => {
+  const stage = document.currentScript.parentElement, track = stage.querySelector(".track");
+  const slides = [...track.querySelectorAll(".slide")];
+  const rail = [...stage.querySelectorAll(".rail .dy")];
+  const centre = () => track.scrollLeft + track.clientWidth / 2;
+  const at = () => slides.reduce((b, s, i) => Math.abs(s.offsetLeft + s.offsetWidth / 2 - centre()) <
+    Math.abs(slides[b].offsetLeft + slides[b].offsetWidth / 2 - centre()) ? i : b, 0);
+  // Quick presses add up: each one moves on from where the last was headed.
+  let want = null;
+  track.addEventListener("scrollend", () => (want = null));
+  const go = (k) => { want = Math.max(0, Math.min(slides.length - 1, (want ?? at()) + k)); const s = slides[want];
+    track.scrollTo({ left: s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2, behavior: "smooth" }); };
+  stage.querySelectorAll(".nudge").forEach((b) => { b.hidden = false; b.onclick = () => go(b.classList.contains("l") ? -1 : 1); });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.target.closest?.("input,textarea,select,[contenteditable]") || document.querySelector(".story:not([hidden]), .dc-sheet[open]")) return;
+    if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") { ev.preventDefault(); ev.stopImmediatePropagation(); go(ev.key === "ArrowLeft" ? -1 : 1); }
+  }, true);
+  // A vertical wheel turns the crate, until its last Flyer; then the page scrolls on.
+  let lock = 0;
+  track.addEventListener("wheel", (ev) => {
+    if (Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) return;
+    const k = Math.sign(ev.deltaY), i = at();
+    if ((k < 0 && i === 0) || (k > 0 && i === slides.length - 1)) return;
+    ev.preventDefault();
+    if (performance.now() - lock < 260) return;
+    lock = performance.now(); go(k);
+  }, { passive: false });
+  // The rail lights the day in the spotlight; a day's link slides its title card to the middle.
+  let day = "";
+  const mark = () => {
+    const d = slides[at()].dataset.day || "";
+    if (d === day) return; day = d;
+    rail.forEach((a) => a.classList.toggle("on", a.dataset.day === d));
+  };
+  track.addEventListener("scroll", () => requestAnimationFrame(mark), { passive: true });
+  rail.forEach((a) => a.addEventListener("click", (ev) => {
+    const s = slides.find((x) => x.id === "day-" + a.dataset.day);
+    if (!s) return;
+    ev.preventDefault();
+    track.scrollTo({ left: s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2, behavior: "smooth" });
+  }));
+  // Start on the first Flyer, not the day's title card.
+  const first = slides.findIndex((s) => !s.classList.contains("title"));
+  if (first > 0 && !location.hash) track.scrollLeft = slides[first].offsetLeft + slides[first].offsetWidth / 2 - track.clientWidth / 2;
+  mark();
+})();`;
+
+const STAGE_CSS = `
+  .stage { --h:max(440px, calc(100svh - 256px)); --w:min(76vw, calc((var(--h) - 168px) * .78)); position:relative; margin-top:4px; }
+  .stage .track { display:flex; align-items:flex-start; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scrollbar-width:none;
+    padding:22px calc(50% - var(--w) / 2) 0; height:calc(var(--h) - 56px); perspective:1400px; overscroll-behavior-x:contain; outline:none; }
+  .stage .track::-webkit-scrollbar { display:none; }
+  .stage .slide { flex:none; width:var(--w); scroll-snap-align:center; scroll-snap-stop:always; view-timeline:--slot inline; }
+  .stage .turn { display:block; transform-style:preserve-3d; }
+  .stage .card { display:block; margin:0; border-radius:16px; }
+  .stage .card::before { inset:6% 4% -6%; filter:blur(38px) saturate(1.5); opacity:.9; }
+  .stage .frame { position:relative; display:block; aspect-ratio:4 / 5; border-radius:16px; overflow:hidden; isolation:isolate; background:#000;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.08);
+    -webkit-box-reflect:below 6px linear-gradient(transparent 82%, rgba(255,255,255,.16)); }
+  .stage .frame::before { content:""; position:absolute; inset:-30px; z-index:-1; background:var(--img) center / cover; filter:blur(22px) brightness(.5); }
+  .stage .frame img { display:block; width:100%; height:100%; object-fit:contain; }
+  .stage .frame.text { display:flex; align-items:center; justify-content:center; padding:24px; text-align:center; background:linear-gradient(135deg,#3949ab,#8e24aa);
+    font-size:30px; font-weight:900; font-style:italic; text-transform:uppercase; line-height:1.05; }
+  .stage .card.cancelled .frame { filter:grayscale(1) brightness(.5); }
+  .stage .card .keep { top:12px; right:12px; }
+  .stage .cap { display:flex; flex-direction:column; align-items:center; gap:3px; margin-top:20px; text-align:center; font-size:13px; color:var(--mute); }
+  .stage .cap .kick { font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--festival); }
+  .stage .cap .ttl { font-size:21px; font-weight:900; line-height:1.15; color:var(--ink); letter-spacing:-.01em; text-wrap:balance; }
+  .stage .cap .by { font-size:12px; opacity:.8; }
+  .stage .cap .tags { justify-content:center; margin-top:4px; }
+  .stage .slide.title .turn { display:flex; flex-direction:column; justify-content:center; align-items:center; aspect-ratio:4 / 5; border-radius:16px; text-align:center;
+    background:repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 22px), rgba(24,20,30,.55);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+  .stage .slide.title .wd { font-size:15px; font-weight:800; letter-spacing:.3em; text-transform:uppercase; color:var(--mute); }
+  .stage .slide.title .num { font-size:min(44vw, 200px); font-weight:900; font-style:italic; line-height:.85; letter-spacing:-.06em; margin:.06em 0;
+    background:var(--neon); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 30px rgba(255,61,139,.35)); }
+  .stage .slide.title .mon { font-size:20px; font-weight:800; }
+  .stage .slide.title .cnt { margin-top:14px; font-size:13px; font-weight:700; color:var(--mute); }
+  .stage .slide.title.today .wd { color:var(--party); }
+  .stage .slide.more .num { font-style:normal; }
+  .stage .slide.empty { display:flex; align-items:center; justify-content:center; aspect-ratio:4 / 5; color:var(--mute); text-align:center; }
+  .stage .nudge { position:absolute; top:calc((var(--h) - 56px) / 2 - 40px); z-index:5; width:48px; height:48px; border-radius:50%; cursor:pointer;
+    border:1px solid rgba(255,255,255,.14); background:rgba(12,10,16,.6); color:var(--ink); font-size:24px; line-height:1;
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); transition:transform .15s, background .15s; }
+  .stage .nudge:hover { background:var(--party); transform:scale(1.08); }
+  .stage .nudge.l { left:max(16px, calc(50% - var(--w) / 2 - 72px)); } .stage .nudge.r { right:max(16px, calc(50% - var(--w) / 2 - 72px)); }
+  @media (hover:none) { .stage .nudge { display:none; } }
+  .stage .rail { display:flex; justify-content:safe center; align-items:stretch; gap:2px; height:56px; padding:0 8px; overflow-x:auto; scrollbar-width:none; }
+  .stage .rail a, .stage .rail span.wk { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:38px; padding:2px 6px;
+    border-radius:12px; color:var(--mute); font-size:11px; line-height:1.15; transition:background .2s, color .2s; }
+  .stage .rail .dy b { font-size:17px; color:var(--ink); } .stage .rail .dy i { font-style:normal; font-size:9px; letter-spacing:1px; color:var(--party); height:10px; }
+  .stage .rail .dy.none { opacity:.35; } .stage .rail .wk { font-size:22px; } .stage .rail .wk.off { opacity:.25; }
+  @media (max-width:479px) { .stage .rail { gap:0; } .stage .rail .dy { flex:1 1 0; min-width:0; padding:2px 0; } .stage .rail .wk { min-width:22px; padding:2px 0; } }
+  .stage .rail .dy.on { background:rgba(255,255,255,.09); color:var(--ink); box-shadow:inset 0 -2px 0 var(--party); }
+  @media (min-width:900px) {
+    .stage { --h:max(560px, calc(100svh - 176px)); --w:calc((var(--h) - 168px) * .78); }
+    .stage .rail { gap:6px; } .stage .rail a { min-width:56px; } .stage .cap .ttl { font-size:26px; }
+  }
+  body:has(.stage) { max-width:none; }
+  body:has(.stage) .proto-switch { left:16px; transform:none; }
+  body:has(.stage) .dc-tab { bottom:calc(12px + env(safe-area-inset-bottom)); }
+  body:has(.stage) header.top, body:has(.stage) .filters, body:has(.stage) footer { max-width:1100px; margin-left:auto; margin-right:auto; }
+  body:has(.stage) .filters { position:relative; background:transparent; border-bottom:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  @supports (animation-timeline: view()) {
+    .stage .turn { animation:crate linear both; animation-timeline:--slot; }
+    .stage .cap { animation:spot linear both; animation-timeline:--slot; }
+    @keyframes crate {
+      0%   { transform:translateX(-18%) rotateY(-62deg) scale(.82); filter:brightness(.35) saturate(.6); }
+      40%  { filter:brightness(.8); }
+      50%  { transform:none; filter:none; }
+      60%  { filter:brightness(.8); }
+      100% { transform:translateX(18%) rotateY(62deg) scale(.82); filter:brightness(.35) saturate(.6); }
+    }
+    @keyframes spot { 0%, 38% { opacity:0; transform:translateY(8px); } 50% { opacity:1; transform:none; } 62%, 100% { opacity:0; transform:translateY(8px); } }
+  }
+  @media (prefers-reduced-motion: reduce) { .stage .turn, .stage .cap { animation:none !important; } .stage .track { scroll-behavior:auto; } }
+`;
+
 function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map<string, OnDay[]> }) {
   const { f, today, monday, byDay } = props;
   const t = T[f.lang];
@@ -537,6 +756,16 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
   const prev = monday && monday > thisMonday ? (addDays(monday, -7) > thisMonday ? addDays(monday, -7) : "") : null;
   const next = addDays(monday || thisMonday, 7);
   const any = [...byDay.values()].some((l) => l.length);
+  if (!f.v)
+    return (
+      <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS + DANCECARD_CSS + STAGE_CSS }} />}>
+        <FilterBar f={f} />
+        <Stage f={f} today={today} days={days} byDay={byDay} prev={prev} next={next} />
+        <Switcher f={f} />
+        <script type="application/json" id="stories" dangerouslySetInnerHTML={{ __html: storyData(f, today, byDay) }} />
+        <script dangerouslySetInnerHTML={{ __html: DANCECARD_SCRIPT(f.lang) }} />
+      </Page>
+    );
   return (
     <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS + STORY_CSS + BOARD_CSS + DANCECARD_CSS }} />}>
       {!monday && <Board f={f} days={days} today={today} byDay={byDay} />}
@@ -709,11 +938,14 @@ const LIGHTS_SCRIPT = `(() => {
   // The Flyer crossing the middle band of the screen sets the colours.
   const io = new IntersectionObserver((list) => list.forEach((x) => x.isIntersecting && light(x.target)),
     { rootMargin: "-40% 0px -40% 0px" });
+  // On the Bühne the Flyers pass sideways: the one in the spotlight, the middle of the width, lights it.
+  const across = new IntersectionObserver((list) => list.forEach((x) => x.isIntersecting && light(x.target)),
+    { rootMargin: "0px -45% 0px -45%" });
   const watch = () => document.querySelectorAll('img[src^="/flyers/"]').forEach((img) => {
     if (img.dataset.lit) return;
     img.dataset.lit = "1";
     if (img.closest(".story")) return;
-    io.observe(img);
+    (img.closest(".stage") ? across : io).observe(img);
   });
   watch();
   new MutationObserver(watch).observe(document.body, { childList: true, subtree: true });

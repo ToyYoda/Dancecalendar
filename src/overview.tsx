@@ -40,7 +40,6 @@ const T = {
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
     series: "Serie", link: "Link", styles: "Tanzstil", day: "Tag", feed: "Flyer", calendar: "Kalender", back: "Zurück",
     today: "Heute", sub: "Partnertanz in Kassel, Göttingen und drumherum",
-    lineup: "Line-up", kick: "Die Woche als", quiet: "ruhiger Abend", now: "Jetzt",
   },
   en: {
     all: "All", party: "Party", workshop: "Workshop", course: "Course", festival: "Festival",
@@ -52,7 +51,6 @@ const T = {
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
     series: "Series", link: "Link", styles: "Style", day: "Day", feed: "Flyers", calendar: "Calendar", back: "Back",
     today: "Today", sub: "Partner dance in and around Kassel and Göttingen",
-    lineup: "Line-up", kick: "The week as a", quiet: "a quiet night", now: "Now",
   },
 } as const;
 const PLURAL = { party: "parties", workshop: "workshops", course: "courses", festival: "festivals" } as const;
@@ -101,7 +99,6 @@ overview.get("/", async (c) => {
   const monday = isDate(f.w) ? addDays(f.w, -((weekday(f.w) + 6) % 7)) : "";
   const days = monday ? range(monday, 7) : range(today, 8);
   const byDay = await eventsByDay(c.env.DB, f, days);
-  if (f.view === "lineup") return c.html(<LineupPage f={f} today={today} monday={monday} byDay={byDay} />);
   return c.html(<FeedPage f={f} today={today} monday={monday} byDay={byDay} />);
 });
 
@@ -143,7 +140,7 @@ function filters(p: URLSearchParams): Filters {
     r: RADII.includes(r) ? r : "",
     styles: list("styles").filter((s) => STYLES.some(([k]) => k === s)),
     type: (TYPES as readonly string[]).includes(p.get("type") ?? "") ? p.get("type")! : "",
-    view: ["cal", "lineup"].includes(p.get("view") ?? "") ? p.get("view")! : "",
+    view: p.get("view") === "cal" ? "cal" : "",
     w: p.get("w") ?? "",
     d: p.get("d") ?? "",
     lang: p.get("lang") === "en" ? "en" : "de",
@@ -160,8 +157,8 @@ function href(f: Filters, changes: Partial<Filters> = {}, path = "/"): string {
   if (g.r && g.r !== DEFAULT_RADIUS) p.set("r", g.r);
   if (g.styles.length) p.set("styles", g.styles.join(","));
   if (g.type) p.set("type", g.type);
-  if (g.view === "cal" && g.d) p.set("d", g.d);
-  if (g.view !== "cal" && g.w) p.set("w", g.w);
+  if (g.view && g.d) p.set("d", g.d);
+  if (!g.view && g.w) p.set("w", g.w);
   if (g.lang === "en") p.set("lang", "en");
   if (g.v) p.set("variant", g.v);
   const q = p.toString().replace(/%2C/g, ",");
@@ -273,10 +270,7 @@ function FilterBar(props: { f: Filters }) {
         <a class={f.view ? "" : "on"} href={href(f, { view: "", d: "" })}>
           🖼 {t.feed}
         </a>
-        <a class={f.view === "lineup" ? "on" : ""} href={href(f, { view: "lineup", d: "" })}>
-          🎛 {t.lineup}
-        </a>
-        <a class={f.view === "cal" ? "on" : ""} href={href(f, { view: "cal", w: "" })}>
+        <a class={f.view ? "on" : ""} href={href(f, { view: "cal", w: "" })}>
           📅 {t.calendar}
         </a>
       </div>
@@ -601,276 +595,6 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
     </Page>
   );
 }
-
-// ---- PROTOTYPE: the Line-up (issues/29-design-review-and-desktop.md) ----
-// The week as a festival timetable (?view=lineup): a festival-poster head with every Event's title, the
-// headliners (Festivals and Parties) largest, then one row per night on a shared hour axis, each Event a
-// bar filled with its own Flyer and as long as it lasts, so a whole week fits one screen and two Events of
-// the same night can be seen side by side or one after the other. Overlapping Events stack in lanes. A
-// "Jetzt" playhead runs across tonight's row. A Festival is a ribbon across its days. On a phone the axis
-// scrolls sideways, opened at the current hour. Kept Events (Tanzkarte) wear a heart.
-const LU_FROM = 18 * 60; // the axis covers at least 18:00 to 02:00, widened to fit the week's Events
-const LU_TO = 26 * 60;
-const LU_MAX = 32 * 60;
-const minutesFrom = (day: string, iso: string) =>
-  daysBetween(day, iso.slice(0, 10)) * 1440 + Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
-
-type Slot = { o: OnDay; from: number; to: number; lane: number };
-
-function nights(byDay: Map<string, OnDay[]>) {
-  const rows = [...byDay].map(([d, list]) => {
-    const fest = list.filter((o) => o.e.type === "festival");
-    const slots: Slot[] = list
-      .filter((o) => o.e.type !== "festival")
-      .map((o) => {
-        const from = minutesFrom(d, o.e.starts_at);
-        const end = o.e.ends_at ? minutesFrom(d, o.e.ends_at) : from + HOURS_WITHOUT_END * 60;
-        return { o, from, to: Math.min(Math.max(end, from + 60), LU_MAX), lane: 0 };
-      })
-      .sort((a, b) => a.from - b.from);
-    const ends: number[] = [];
-    for (const s of slots) {
-      const free = ends.findIndex((t) => t <= s.from);
-      s.lane = free < 0 ? ends.length : free;
-      ends[s.lane] = s.to;
-    }
-    return { d, fest, slots, lanes: Math.max(ends.length, 1) };
-  });
-  const all = rows.flatMap((r) => r.slots);
-  const lo = Math.min(LU_FROM, ...all.map((s) => Math.floor(s.from / 60) * 60));
-  const hi = Math.min(LU_MAX, Math.max(LU_TO, ...all.map((s) => Math.ceil(s.to / 60) * 60)));
-  return { rows, lo, hi };
-}
-
-function LineupPage(props: { f: Filters; today: string; monday: string; byDay: Map<string, OnDay[]> }) {
-  const { f, today, monday, byDay } = props;
-  const t = T[f.lang];
-  const days = [...byDay.keys()];
-  const thisMonday = addDays(today, -((weekday(today) + 6) % 7));
-  const prev = monday && monday > thisMonday ? (addDays(monday, -7) > thisMonday ? addDays(monday, -7) : "") : null;
-  const next = addDays(monday || thisMonday, 7);
-  const { rows, lo, hi } = nights(byDay);
-  const hours = (hi - lo) / 60;
-  const pct = (m: number) => `${(((m - lo) / (hi - lo)) * 100).toFixed(3)}%`;
-  const now = berlinNow();
-  // A phone opens the axis at the first night's first Event still to come or running (19:00 without one).
-  const ahead = rows.map((r) => r.slots.filter((s) => endOf(s.o.e) > now)).find((l) => l.length);
-  const open = ahead ? Math.min(...ahead.map((s) => s.from)) : 19 * 60;
-  // The poster: each title once, headliners first.
-  const seen = new Set<string>();
-  const billed = [...byDay.values()].flat().filter(({ e }) => !e.cancelled && !seen.has(e.title) && !!seen.add(e.title));
-  const tier = (e: Row) => (e.type === "festival" ? 0 : e.type === "party" && !isCourse(e) ? 1 : e.type === "workshop" ? 2 : 3);
-  const tiers = [0, 1, 2, 3].map((n) => billed.filter((o) => tier(o.e) === n)).filter((l) => l.length);
-  return (
-    <Page f={f} title={t.lineup} head={<style dangerouslySetInnerHTML={{ __html: LINEUP_CSS + DANCECARD_CSS }} />}>
-      <FilterBar f={f} />
-      <div class="lineup">
-        <header class="poster">
-          <span class="kick">{t.kick}</span>
-          <h1 class="lu">{t.lineup}</h1>
-          <div class="when">
-            {prev !== null ? <a href={href(f, { w: prev })} aria-label="‹">‹</a> : <span class="off">‹</span>}
-            <span>
-              {short(days[0], f.lang)} – {short(days.at(-1)!, f.lang)}
-            </span>
-            <a href={href(f, { w: next })} aria-label="›">›</a>
-          </div>
-          {tiers.map((list, i) => (
-            <p class={`bill b${i}`}>
-              {list.map((o, j) => (
-                <>
-                  {j > 0 && <i>✦</i>}
-                  <a href={href(f, {}, `/events/${o.e.id}`)}>{o.e.title}</a>
-                </>
-              ))}
-            </p>
-          ))}
-        </header>
-        <div class="legend">
-          {(["party", "workshop", "course", "festival"] as const).map((k) => (
-            <span class={`k-${k}`}>{t[k]}</span>
-          ))}
-        </div>
-        <div class="tt" id="tt" style={`--h:${hours}`} data-lo={lo} data-hi={hi} data-open={open}>
-          <div class="inner">
-            <div class="hrs">
-              <span class="lab" />
-              <div class="track">
-                {Array.from({ length: hours }, (_, i) => (
-                  <span style={`left:${pct(lo + i * 60)}`}>{String((lo / 60 + i) % 24).padStart(2, "0")}</span>
-                ))}
-              </div>
-            </div>
-            {rows.map(({ d, fest, slots, lanes }) => (
-              <section class={`night${d === today ? " today" : ""}${!fest.length && !slots.length ? " quiet" : ""}`}>
-                <h2 class="lab">
-                  <span class="wd">{d === today ? t.today : weekdayShort(d, f.lang).replace(".", "")}</span>
-                  <b>{Number(d.slice(8))}</b>
-                  <small>{asDate(d).toLocaleDateString(locale(f.lang), { month: "short", timeZone: "UTC" })}</small>
-                </h2>
-                <div class="track" style={`--lanes:${slots.length ? lanes : 0};--fests:${fest.length}`}>
-                  <i class="midnight" style={`left:${pct(1440)}`} />
-                  {fest.map((o, i) => (
-                    <a class="ribbon" style={`top:${i * 30}px`} href={href(f, {}, `/events/${o.e.id}`)}>
-                      ✦ {o.e.title}
-                      <small>
-                        {o.dayN ? `${t.day} ${o.dayN}/${o.dayOf}` : timeRange(o.e)} · {o.e.venue}
-                      </small>
-                    </a>
-                  ))}
-                  {slots.map((s) => {
-                    const { e } = s.o;
-                    const state = e.cancelled ? "cancelled" : endOf(e) <= now ? "past" : e.starts_at <= now ? "live" : "";
-                    const img = e.flyer_key ? `;--img:url('/${e.flyer_key}')` : "";
-                    return (
-                      <a class={`slot k-${kind(e)} ${state}`} href={href(f, {}, `/events/${e.id}`)}
-                         style={`left:${pct(s.from)};width:${pct(lo + s.to - s.from)};--lane:${s.lane}${img}`}>
-                        <span class="at">{timeRange(e)}</span>
-                        <b>{e.title}</b>
-                        <span class="where">
-                          {e.cancelled ? `${t.cancelled} · ` : ""}
-                          {e.venue}
-                          {km(e)}
-                        </span>
-                        <span class="keep" data-keep={e.id} role="button" tabindex={0} />
-                      </a>
-                    );
-                  })}
-                  {!fest.length && !slots.length && <span class="none">{t.quiet}</span>}
-                  {d === today && (
-                    <i class="now" hidden>
-                      <span>{t.now}</span>
-                    </i>
-                  )}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
-      </div>
-      <script type="application/json" id="stories" dangerouslySetInnerHTML={{ __html: storyData(f, today, byDay) }} />
-      <script dangerouslySetInnerHTML={{ __html: DANCECARD_SCRIPT(f.lang) }} />
-      <script dangerouslySetInnerHTML={{ __html: LINEUP_SCRIPT }} />
-    </Page>
-  );
-}
-
-// Moves the playhead every half minute; on a phone, scrolls the axis to the hour the server picked.
-const LINEUP_SCRIPT = `(() => {
-  const tt = document.getElementById("tt");
-  if (!tt) return;
-  const lo = Number(tt.dataset.lo), hi = Number(tt.dataset.hi), now = tt.querySelector(".now");
-  const minutes = () => {
-    const s = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Berlin" });
-    const m = Number(s.slice(11, 13)) * 60 + Number(s.slice(14, 16));
-    return m < lo && m + 1440 <= hi ? m + 1440 : m;
-  };
-  const place = () => {
-    if (!now) return;
-    const m = minutes();
-    now.hidden = m < lo || m > hi;
-    now.style.left = ((m - lo) / (hi - lo)) * 100 + "%";
-  };
-  place();
-  setInterval(place, 30000);
-  const track = tt.querySelector(".night .track");
-  if (track && tt.scrollWidth > tt.clientWidth) {
-    tt.scrollLeft = Math.max(0, ((Number(tt.dataset.open) - lo) / (hi - lo)) * track.offsetWidth - 6);
-  }
-})();`;
-
-const LINEUP_CSS = `
-  body:has(.lineup) { max-width:none; }
-  @media (min-width: 720px) {
-    body:has(.lineup) .filters > * { max-width:688px; margin-left:auto !important; margin-right:auto !important; box-sizing:border-box; }
-    body:has(.lineup) .filters > .scroll { padding:0; }
-  }
-  body:has(.lineup) header.top, body:has(.lineup) footer { max-width:1400px; margin-left:auto; margin-right:auto; box-sizing:border-box; }
-  .lineup { max-width:1400px; margin:0 auto; --lab:64px; --lh:62px; --gap:6px; --fh:30px; }
-  .lineup .k-party { --k:var(--party); } .lineup .k-workshop { --k:var(--workshop); } .lineup .k-festival { --k:var(--festival); } .lineup .k-course { --k:var(--course); }
-
-  /* the poster */
-  .poster { text-align:center; padding:34px 16px 10px; }
-  .poster .kick { display:block; font-size:12px; font-weight:800; letter-spacing:.42em; text-transform:uppercase; color:var(--mute); padding-left:.42em; }
-  .poster h1.lu { margin:4px 0 0; font-size:clamp(64px, 17vw, 168px); font-weight:900; font-style:italic; line-height:.9; letter-spacing:-.055em;
-    text-transform:uppercase; padding:0 .08em; background:var(--neon); -webkit-background-clip:text; background-clip:text; color:transparent;
-    filter:drop-shadow(0 0 28px rgba(255,61,139,.45)); }
-  .poster .when { display:inline-flex; align-items:center; gap:14px; margin:14px 0 20px; font-weight:800; font-size:14px; letter-spacing:.08em; text-transform:uppercase; }
-  .poster .when a, .poster .when .off { display:inline-block; width:32px; height:32px; line-height:30px; border-radius:50%; border:1px solid var(--line); background:var(--seg); }
-  .poster .when .off { opacity:.35; }
-  .bill { margin:0 auto 10px; max-width:980px; line-height:1.15; text-transform:uppercase; font-weight:900; letter-spacing:-.01em; text-wrap:balance; }
-  .bill a { color:var(--ink); transition:color .15s, text-shadow .15s; } .bill a:hover { color:var(--party); text-shadow:0 0 18px currentColor; }
-  .bill i { font-style:normal; margin:0 .45em; font-size:.55em; vertical-align:.2em; color:var(--party); opacity:.8; }
-  .bill.b0 { font-size:clamp(22px, 4.6vw, 44px); }
-  .bill.b1 { font-size:clamp(15px, 3.2vw, 32px); }
-  .bill.b2 { font-size:clamp(13px, 2.2vw, 22px); } .bill.b2 a { color:#d9d0e4; }
-  .bill.b3 { font-size:clamp(12px, 1.6vw, 16px); font-weight:700; } .bill.b3 a { color:var(--mute); }
-  .legend { display:flex; justify-content:center; flex-wrap:wrap; gap:6px 16px; margin:22px 16px 4px; font-size:12px; color:var(--mute); }
-  .legend span::before { content:""; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px;
-    background:var(--k); box-shadow:0 0 10px var(--k); }
-
-  /* the timetable */
-  .tt { position:relative; z-index:0; overflow-x:auto; padding:22px 16px 40px; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
-  .tt .inner { width:max(100%, calc(var(--lab) + var(--h) * 76px)); }
-  .hrs, .night { display:grid; grid-template-columns:var(--lab) 1fr; }
-  .lab { position:sticky; left:-16px; z-index:5; margin:0; background:linear-gradient(90deg, var(--bg) 80%, transparent); }
-  .hrs .track { position:relative; height:24px; }
-  .hrs .track span { position:absolute; transform:translateX(-50%); font-size:12px; font-weight:800; color:var(--mute); font-variant-numeric:tabular-nums; }
-  .hrs .track span::after { content:":00"; opacity:.45; font-weight:600; }
-  .hrs .track span:first-child { transform:none; }
-  .night { border-top:1px solid var(--line); }
-  .night .lab { display:flex; flex-direction:column; justify-content:center; padding:10px 0 10px 2px; line-height:1; }
-  .night .lab .wd { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--mute); }
-  .night .lab b { font-size:30px; font-weight:900; letter-spacing:-.04em; margin:3px 0 1px; }
-  .night .lab small { font-size:11px; color:var(--mute); }
-  .night.today .lab .wd { color:var(--party); text-shadow:0 0 12px rgba(255,61,139,.6); }
-  .night.today .lab b { background:var(--neon); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .night .track { position:relative; min-height:calc(var(--fests) * var(--fh) + var(--lanes) * (var(--lh) + var(--gap)) + 14px);
-    background:repeating-linear-gradient(90deg, rgba(255,255,255,.055) 0 1px, transparent 1px calc(100% / var(--h))); }
-  .night.today .track { background-color:rgba(255,61,139,.05); }
-  .night.quiet .track { min-height:44px; }
-  .midnight { position:absolute; top:0; bottom:0; width:0; border-left:1px dashed rgba(255,176,46,.35); }
-  .none { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:13px; font-style:italic; color:var(--mute); opacity:.6; }
-
-  .ribbon { position:absolute; left:0; right:0; margin-top:7px; height:24px; display:flex; align-items:center; gap:10px; padding:0 12px; overflow:hidden; white-space:nowrap;
-    border-radius:6px; font-size:12px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:#1a1206;
-    background:repeating-linear-gradient(115deg, var(--festival) 0 22px, #ffc35c 22px 44px); box-shadow:0 0 22px rgba(255,176,46,.35); }
-  .ribbon small { font-weight:700; letter-spacing:.02em; text-transform:none; opacity:.75; }
-
-  .slot { position:absolute; top:calc(7px + var(--fests) * var(--fh) + var(--lane) * (var(--lh) + var(--gap))); height:var(--lh); box-sizing:border-box;
-    display:flex; flex-direction:column; justify-content:center; gap:1px; padding:6px 10px 6px 13px; overflow:hidden; isolation:isolate; border-radius:12px;
-    color:#fff; white-space:nowrap; transition:transform .18s, box-shadow .18s, filter .18s;
-    background:linear-gradient(90deg, rgba(12,10,16,.9), rgba(12,10,16,.6) 55%, rgba(12,10,16,.2)), var(--img, linear-gradient(135deg,#3949ab,#8e24aa)) center 30% / cover;
-    box-shadow:inset 4px 0 0 var(--k), inset 0 0 0 1px rgba(255,255,255,.1), 0 8px 26px -10px var(--k); }
-  .slot::after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg, var(--k), transparent 70%); opacity:.22; }
-  .slot:hover, .slot:focus-visible { z-index:4; transform:translateY(-2px) scale(1.025); filter:saturate(1.3) brightness(1.12);
-    box-shadow:inset 4px 0 0 var(--k), inset 0 0 0 1px rgba(255,255,255,.25), 0 0 34px -4px var(--k); }
-  .slot .at { font-size:11px; font-weight:800; color:var(--k); font-variant-numeric:tabular-nums; text-shadow:0 0 10px rgba(0,0,0,.8); }
-  .slot b { font-size:14px; font-weight:800; line-height:1.15; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 8px rgba(0,0,0,.7); }
-  .slot .where { font-size:11px; color:#d9d0e4; overflow:hidden; text-overflow:ellipsis; }
-  .slot.past { filter:grayscale(.85) brightness(.55); }
-  .slot.past:hover { filter:grayscale(.3); }
-  .slot.cancelled { filter:grayscale(1) brightness(.5); } .slot.cancelled b { text-decoration:line-through; }
-  .slot.live { animation:live 2.2s ease-in-out infinite; }
-  @keyframes live { 50% { box-shadow:inset 4px 0 0 var(--k), inset 0 0 0 2px var(--k), 0 0 30px -2px var(--k); } }
-
-  /* the Tanzkarte heart in a bar's corner */
-  .slot .keep { position:absolute; top:6px; right:6px; width:24px; height:24px; display:grid; place-items:center; border-radius:50%; font-size:0; cursor:pointer;
-    background:rgba(12,10,16,.55); border:1px solid rgba(255,255,255,.2); opacity:0; transition:opacity .15s, transform .15s; }
-  .slot .keep i { font-style:normal; font-size:14px; line-height:1; color:#fff; }
-  .slot:hover .keep, .slot:focus-within .keep, .slot .keep.on { opacity:1; } .slot .keep:hover { transform:scale(1.15); }
-  .slot .keep.on { background:var(--neon); border-color:transparent; box-shadow:0 0 14px rgba(255,61,139,.7); }
-  .slot:has(.keep.on) { box-shadow:inset 4px 0 0 var(--k), inset 0 0 0 2px #ffd6e6, 0 0 26px -6px var(--party); }
-  @media (hover: none) { .slot .keep { opacity:.85; } }
-
-  .now { position:absolute; top:-4px; bottom:-4px; z-index:3; width:2px; margin-left:-1px; background:#fff; border-radius:2px; pointer-events:none;
-    box-shadow:0 0 8px #fff, 0 0 20px var(--party), 0 0 40px var(--party); }
-  .now span { position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase;
-    color:#fff; background:var(--party); padding:2px 6px; border-radius:999px; box-shadow:0 0 12px rgba(255,61,139,.8); }
-
-  @media (min-width: 900px) { .lineup { --lab:84px; --lh:68px; } .tt { padding:22px 32px 48px; } .night .lab b { font-size:38px; } .lab { left:-32px; } }
-  @media (prefers-reduced-motion: reduce) { .slot.live { animation:none; } .slot, .slot .keep { transition:none; } }
-`;
 
 // ---- PROTOTYPE: the departure board (issues/29-design-review-and-desktop.md) ----
 // "Where do I dance tonight?" answered before any filter: tonight's Events as a split-flap board like a

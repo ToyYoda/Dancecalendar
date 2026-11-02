@@ -27,8 +27,11 @@ for fid, gt in GT.items():
     if name not in organizers:
         organizers[name] = len(organizers) + 1
         sql.append(f"INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES ({organizers[name]}, '49000{organizers[name]:04d}', {q(name)}, 'Proto');")
-    day0 = random.randint(0, 12)
-    for i, e in enumerate(out["events"][:4]):
+    day0 = random.randint(0, 6)
+    repeats = [0, 7, 14] if random.random() < 0.7 else [0, 9]  # most look like weekly Series
+    for i, e in [(i + r, e) for r in repeats for i, e in enumerate(out["events"][:3])]:
+        if e.get("type") == "festival" and i > 2:
+            continue
         vname = e.get("venue_name") or "Ort unbekannt"
         if vname not in venues:
             lat, lng = CITY.get((e.get("city") or "").lower(), (None, None))
@@ -36,7 +39,7 @@ for fid, gt in GT.items():
             venues[vname] = len(venues) + 1
             sql.append(f"INSERT INTO venue (id, name, address, lat, lng) VALUES ({venues[vname]}, {q(vname)}, {q(e.get('venue_address'))}, "
                        f"{jitter(lat) if lat else 'NULL'}, {jitter(lng) if lng else 'NULL'});")
-        d = today + datetime.timedelta(days=day0 + i * 2)
+        d = today + datetime.timedelta(days=day0 + i)
         start = e.get("start_time") or "21:00"
         intro = f"'{d}T{e['intro_class_time']}'" if e.get("intro_class_time") else "NULL"
         ends = "NULL"

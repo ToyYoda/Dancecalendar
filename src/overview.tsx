@@ -401,26 +401,71 @@ const PROTO_CSS = `
   .proto-switch a { color:#ffeb3b; font-size:16px; }
   .side .mini { display:none; }
   #panel { display:none; }
+  /* phone: the Pinnwand day tile reads as a heading line, "Mo 2. Nov · 3 Events" */
+  h2.tile { display:flex; align-items:baseline; gap:6px; }
+  h2.tile .cnt { margin-left:auto; font-size:13px; font-weight:600; color:var(--mute); }
+  h2.tile.today .wd { color:var(--party); } @media (max-width: 899px) { h2.tile .num::after { content:"."; } }
+  .card.wall .hero { position:relative; overflow:hidden; isolation:isolate; aspect-ratio:4 / 5; }
+  .card.wall .hero::before { content:""; position:absolute; inset:-20px; z-index:-1; background:var(--img) center / cover; filter:blur(18px) brightness(.55); }
+  .card.wall .hero img { width:100%; height:100%; max-height:none; object-fit:contain; }
+  .card.wall .body { padding:10px 14px 12px; } .card.wall .ttl { font-weight:800; font-size:16px; }
+  /* tablet: two Flyers side by side, the day heading across both */
+  @media (min-width: 600px) and (max-width: 899px) {
+    body:has(.v-A) { max-width:none; }
+    .v-A .days { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:0 16px 40px; }
+    .v-A .days section, .v-A .days .cards { display:contents; }
+    .v-A h2.tile { grid-column:1 / -1; margin:12px 0 -4px; padding:0; }
+    .v-A .card.wall { margin:0; }
+  }
   @media (min-width: 900px) {
     body:has(.v-A), body:has(.v-B), body:has(.v-C) { max-width:none; }
     body:has(.v-A) footer, body:has(.v-B) footer, body:has(.v-C) footer { padding:0 32px 70px; }
 
-    /* A: Pinnwand – one top bar, each day a row of Flyer cards */
+    /* A: Pinnwand – one sticky bar, then a wall of whole Flyers, each day opened by a tile */
+    .v-A .layout { max-width:1640px; margin:0 auto; }
+    body:has(.v-A) header.top { padding:12px max(32px, calc((100vw - 1640px) / 2 + 32px)); }
+    .v-A .filters { box-shadow:0 1px 0 var(--line); }
+    .v-A .hint { flex:1 1 260px; font-size:12px; }
+    .v-A .main { display:grid; grid-template-columns:auto 1fr auto; align-items:center; column-gap:20px; padding:14px 32px 0; }
+    .v-A .main > .bar { display:contents; }
+    .v-A .bar .range { grid-column:1; grid-row:1; font-size:15px; }
+    .v-A .bar .nav { grid-column:3; grid-row:1; }
+    .v-A .strip { grid-column:2; grid-row:1; padding:0 !important; justify-content:flex-start; gap:6px; }
+    .v-A .pill { width:44px; transition:background .15s; } .v-A .pill:hover { background:#fbe3ec; }
+    .v-A .main > .days, .v-A .main > .empty { grid-column:1 / -1; }
+    .v-A .days { grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)) !important; gap:22px !important; padding:20px 0 40px !important; }
+    .v-A .card.wall { grid-column:span 2; }
+    .v-A h2.tile { display:flex !important; flex-direction:column; justify-content:space-between; margin:0; padding:16px !important; border:0 !important;
+      background:var(--card); border-radius:16px; box-shadow:inset 0 0 0 1px var(--line); scroll-margin-top:120px; min-height:180px; }
+    .v-A h2.tile .wd { font-size:15px; font-weight:700; color:var(--mute); text-transform:uppercase; letter-spacing:.06em; }
+    .v-A h2.tile .num { font-size:64px; font-weight:800; line-height:.9; margin-top:auto; }
+    .v-A h2.tile .mon { font-size:16px; font-weight:700; margin-bottom:auto; }
+    .v-A h2.tile .wd { font-size:12px !important; }
+    .v-A h2.tile .cnt { font-size:13px; font-weight:600; color:var(--mute); }
+    .v-A h2.tile.today { background:var(--party); box-shadow:none; color:#fff; } .v-A h2.tile.today .wd, .v-A h2.tile.today .cnt { color:#ffe0ec; }
+    .v-A .card.wall { display:flex; flex-direction:column; transition:transform .15s, box-shadow .15s; }
+    .v-A .card.wall:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,.16); }
+    .v-A .card.wall:focus-visible { outline:3px solid var(--party); outline-offset:3px; }
+    .v-A .card.wall .hero { aspect-ratio:4 / 5; overflow:hidden; isolation:isolate; }
+    .v-A .card.wall .hero::before { content:""; position:absolute; inset:-20px; z-index:-1; background:var(--img) center / cover; filter:blur(18px) brightness(.55); }
+    .v-A .card.wall .hero img { width:100%; height:100%; max-height:none; object-fit:contain; transition:transform .3s; }
+    .v-A .card.wall:hover .hero img { transform:scale(1.03); }
+    .v-A .card.wall .body { padding:12px 14px 14px; display:flex; flex-direction:column; gap:3px; }
+    .v-A .card.wall .ttl { font-size:16px; font-weight:800; line-height:1.2; }
+    .v-A .card.wall .meta { font-size:13px; } .v-A .card.wall .venue { color:var(--mute); }
+    .v-A .card.wall .by { font-size:12px; }
     .v-A .filters { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding:10px 32px; }
     .v-A .filters > * { margin:0 !important; }
     .v-A .views, .v-A .types { flex:none; }
     .v-A .scroll { padding:0; flex-wrap:wrap; }
-    .v-A .bar, .v-A .strip { padding-left:32px; padding-right:32px; } .v-A .strip { justify-content:flex-start; gap:8px; }
-    .v-A h2.day { padding:24px 32px 6px; }
+
     .v-A .views a, .v-A .types a, .v-C .views a, .v-C .types a { padding:6px 14px; white-space:nowrap; }
     .v-A .days { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:18px; padding:0 32px; align-items:start; }
     .v-A .days section, .v-A .days .cards { display:contents; }
-    .v-A .days h2.day { display:none; }
-    .v-A .days { padding-top:16px; }
-    .v-A .card { position:relative; }
-    .v-A .card::before { content:attr(data-day); position:absolute; top:10px; left:10px; z-index:2; background:#fff; color:var(--ink); padding:3px 9px; border-radius:8px; font-weight:800; font-size:13px; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+
+
     .v-A .card { margin:0; }
-    .v-A .hero img { height:340px; max-height:none; }
+
 
     /* B: Seitenleiste – filters and a month on the left, an agenda of rows on the right */
     .v-B .layout { display:grid; grid-template-columns:300px 1fr; gap:28px; max-width:1180px; margin:0 auto; padding:0 24px; }
@@ -474,7 +519,7 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
   const next = addDays(monday || thisMonday, 7);
   const any = [...byDay.values()].some((l) => l.length);
   return (
-    <Page f={f} head={<style>{PROTO_CSS}</style>}>
+    <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS }} />}>
       <div class={`v-${f.v || "0"}`}>
       <div class="layout">
       <aside class="side">
@@ -503,21 +548,33 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
         })}
       </div>
       <main class="days">
-      {[...byDay].map(([d, list]) =>
-        list.length || f.v === "C" ? (
+      {[...byDay].map(([d, all]) => {
+        const list = f.v === "A" ? all.filter((o) => !o.dayN || o.dayN === 1 || d === days[0]) : all;
+        if (!list.length && f.v !== "C") return null;
+        const [wd, date] = longDay(d, f.lang).split(", ");
+        return (
           <section>
-            <h2 class="day" id={`day-${d}`}>
-              {d === today ? `${t.today}, ` : ""}
-              {longDay(d, f.lang)}
-            </h2>
+            {f.v === "A" ? (
+              <h2 class={d === today ? "day tile today" : "day tile"} id={`day-${d}`}>
+                <span class="wd">{d === today ? t.today : wd}</span>
+                <span class="num">{Number(d.slice(8))}</span>
+                <span class="mon">{date.replace(/^\d+\.\s*/, "")}</span>
+                <span class="cnt">{list.length === 1 ? "1 Event" : `${list.length} Events`}</span>
+              </h2>
+            ) : (
+              <h2 class="day" id={`day-${d}`}>
+                {d === today ? `${t.today}, ` : ""}
+                {longDay(d, f.lang)}
+              </h2>
+            )}
             <div class="cards">
               {list.map((o) => (
-                <Card f={f} o={o} day={d} />
+                <Card f={f} o={o} day={d} wall={f.v === "A"} />
               ))}
             </div>
           </section>
-        ) : null,
-      )}
+        );
+      })}
       </main>
       {!any && <p class="empty">{t.none}</p>}
       </div>
@@ -530,10 +587,40 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
   );
 }
 
-function Card(props: { f: Filters; o: OnDay; day?: string }) {
+function Card(props: { f: Filters; o: OnDay; day?: string; wall?: boolean }) {
   const { f, o } = props;
   const { e } = o;
   const when = o.dayN ? `${T[f.lang].day} ${o.dayN}/${o.dayOf}` : timeRange(e);
+  if (props.wall) {
+    const span = o.dayOf
+      ? `${weekdayShort(e.starts_at.slice(0, 10), f.lang)} – ${weekdayShort(e.ends_at!.slice(0, 10), f.lang)}`
+      : timeRange(e);
+    return (
+      <a class={e.cancelled ? "card wall cancelled" : "card wall"} href={href(f, {}, `/events/${e.id}`)}>
+        {e.flyer_key ? (
+          <div class="hero" style={`--img:url('/${e.flyer_key}')`}>
+            <img src={`/${e.flyer_key}`} alt={`Flyer: ${e.title}`} loading="lazy" />
+          </div>
+        ) : (
+          <div class="hero text">
+            <span class="ttl">{e.title}</span>
+          </div>
+        )}
+        <div class="body">
+          <div class="ttl">{e.title}</div>
+          <div class="meta">
+            <b>{span}</b> · <TypeLabel f={f} e={e} />
+          </div>
+          <div class="meta venue">
+            📍 {e.venue}
+            {km(e)}
+          </div>
+          <Tags f={f} e={e} />
+          {e.posted_by && e.posted_by !== e.title && <div class="by">{e.posted_by}</div>}
+        </div>
+      </a>
+    );
+  }
   return (
     <a class={e.cancelled ? "card cancelled" : "card"} href={href(f, {}, `/events/${e.id}`)} data-title={e.title} data-day={props.day ? `${weekdayShort(props.day, f.lang)} ${Number(props.day.slice(8))}.${Number(props.day.slice(5, 7))}.` : ""}>
       {e.flyer_key ? (

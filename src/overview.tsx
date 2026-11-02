@@ -674,23 +674,28 @@ const STAGE_SCRIPT = `(() => {
     if (!s) return;
     ev.preventDefault(); to(s, "smooth");
   }));
-  // Deep: the size change re-snaps the row, so swipes count again only once the fold has settled.
-  let x0 = 0, ready = false;
+  // Deep: the page folds only once a swipe has come to rest and no finger is down, so the fold never fights
+  // the finger. The Flyer the swipe landed on stays in the spotlight while the stage grows or shrinks, with
+  // snapping off until it has. Swipes count again only once the fold has settled.
+  let x0 = 0, ready = false, touching = false, rest = 0;
   const settle = () => { ready = false; setTimeout(() => { x0 = track.scrollLeft; ready = true; }, 600); };
   function dive(on) {
     if (root.classList.contains("deep") === on) return;
     const s = slides[at()];
+    track.style.scrollSnapType = "none";
     root.classList.toggle("deep", on);
     if (on) scrollTo({ top: 0 });
-    // Keep the Flyer in the spotlight while the stage grows or shrinks.
-    const keep = (n) => { to(s, "instant"); if (n) requestAnimationFrame(() => keep(n - 1)); };
+    const keep = (n) => { to(s, "instant"); if (n) requestAnimationFrame(() => keep(n - 1)); else track.style.scrollSnapType = ""; };
     keep(30);
     settle();
   }
-  track.addEventListener("scroll", () => {
-    requestAnimationFrame(mark);
-    if (ready && Math.abs(track.scrollLeft - x0) > 24) dive(true);
-  }, { passive: true });
+  const later = () => {
+    clearTimeout(rest);
+    rest = setTimeout(() => { if (!touching && ready && Math.abs(track.scrollLeft - x0) > 24) dive(true); }, 160);
+  };
+  track.addEventListener("touchstart", () => (touching = true), { passive: true });
+  ["touchend", "touchcancel"].forEach((t) => addEventListener(t, () => { touching = false; later(); }, { passive: true }));
+  track.addEventListener("scroll", () => { requestAnimationFrame(mark); later(); }, { passive: true });
   stage.querySelector(".surface").onclick = () => dive(false);
   addEventListener("wheel", (ev) => { if (ev.deltaY < -20 && !track.contains(ev.target)) dive(false); }, { passive: true });
   if (!location.hash) to(slides[0], "instant");

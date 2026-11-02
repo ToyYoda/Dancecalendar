@@ -520,7 +520,8 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
   const next = addDays(monday || thisMonday, 7);
   const any = [...byDay.values()].some((l) => l.length);
   return (
-    <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS + STORY_CSS }} />}>
+    <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS + STORY_CSS + BOARD_CSS }} />}>
+      {!monday && <Board f={f} days={days} today={today} byDay={byDay} />}
       <div class={`v-${f.v || "0"}`}>
       <div class="layout">
       <aside class="side">
@@ -593,6 +594,195 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
     </Page>
   );
 }
+
+// ---- PROTOTYPE: the departure board (issues/29-design-review-and-desktop.md) ----
+// "Where do I dance tonight?" answered before any filter: tonight's Events as a split-flap board like a
+// station's, with a ticking clock, each row's start time on flap tiles and a live status (in 45 Min,
+// LÄUFT, VORBEI). Once every Event of today is over it shows the next day that has one. The status and
+// the flapping need JavaScript; without it the board is a plain list of times, titles and Venues.
+const BOARD_ROWS = 6;
+const HOURS_WITHOUT_END = 3;
+const berlinNow = () => new Date().toLocaleString("sv-SE", { timeZone: "Europe/Berlin" }).slice(0, 16).replace(" ", "T");
+const endOf = (e: Row) => e.ends_at ?? new Date(Date.parse(`${e.starts_at}Z`) + HOURS_WITHOUT_END * 3_600_000).toISOString().slice(0, 16);
+
+function Board(props: { f: Filters; days: string[]; today: string; byDay: Map<string, OnDay[]> }) {
+  const { f, days, today, byDay } = props;
+  const de = f.lang === "de";
+  const now = berlinNow();
+  const ahead = (o: OnDay) => !!o.dayN || endOf(o.e) > now;
+  const day = days.find((d) => (d === today ? byDay.get(d)!.some(ahead) : byDay.get(d)!.length));
+  if (!day) return null;
+  const list = byDay.get(day)!;
+  const shown = list.slice(0, BOARD_ROWS);
+  const label =
+    day === today
+      ? de ? "Heute Abend" : "Tonight"
+      : `${de ? "Als Nächstes" : "Up next"} · ${weekdayShort(day, f.lang)} ${Number(day.slice(8))}.${Number(day.slice(5, 7))}.`;
+  return (
+    <section class="board" aria-label={label}>
+      <div class="bhead">
+        <span class="blabel">
+          <i class="bulb" /> {label}
+        </span>
+        <span class="clock" aria-hidden="true" data-clock>
+          {now.slice(11).split("").map((ch) => (ch === ":" ? <span class="colon">:</span> : <span class="flap">{ch}</span>))}
+        </span>
+      </div>
+      <div class="bcols" aria-hidden="true">
+        <span>{de ? "Zeit" : "Time"}</span>
+        <span>{de ? "Event · Ort" : "Event · Venue"}</span>
+        <span>Status</span>
+      </div>
+      <ol>
+        {shown.map((o) => {
+          const { e } = o;
+          return (
+            <li>
+              <a class={`brow k-${kind(e)}${e.cancelled ? " gone" : ""}`} href={href(f, {}, `/events/${e.id}`)}
+                 data-start={o.dayN ? undefined : e.starts_at} data-end={o.dayN ? undefined : endOf(e)}>
+                <span class="btime">
+                  {o.dayN ? (
+                    <span class="bday">{`${T[f.lang].day} ${o.dayN}/${o.dayOf}`}</span>
+                  ) : (
+                    e.starts_at.slice(11).split("").map((ch) => (ch === ":" ? <span class="colon">:</span> : <span class="flap">{ch}</span>))
+                  )}
+                </span>
+                <span class="bwhat">
+                  <span class="btitle" data-scramble>{e.title}</span>
+                  <span class="bwhere">
+                    <TypeLabel f={f} e={e} /> · {e.venue}
+                    {km(e)}
+                  </span>
+                </span>
+                <span class="bstat">{e.cancelled ? (de ? "Abgesagt" : "Cancelled") : o.dayN ? "Festival" : ""}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ol>
+      {list.length > shown.length && (
+        <a class="bmore" href={`#day-${day}`}>
+          + {list.length - shown.length} {de ? "weitere" : "more"} ↓
+        </a>
+      )}
+      <script dangerouslySetInnerHTML={{ __html: BOARD_SCRIPT(f.lang) }} />
+    </section>
+  );
+}
+
+const BOARD_SCRIPT = (lang: Lang) => `(() => {
+  const de = ${JSON.stringify(lang === "de")};
+  const board = document.currentScript.parentElement;
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const now = () => new Date().toLocaleString("sv-SE", { timeZone: "Europe/Berlin" }).slice(0, 16).replace(" ", "T");
+  const mins = (a, b) => Math.round((Date.parse(b + "Z") - Date.parse(a + "Z")) / 60000);
+  const DIGITS = "0123456789", LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  // One tile turns over to a new character, rattling through a few on the way like a real flap.
+  const flip = (tile, to, delay) => {
+    if (tile.textContent === to && delay === undefined) return;
+    if (still) { tile.textContent = to; return; }
+    let n = 4 + Math.floor(Math.random() * 6);
+    setTimeout(function step() {
+      tile.classList.remove("turn"); void tile.offsetWidth; tile.classList.add("turn");
+      tile.textContent = n-- > 0 ? DIGITS[Math.floor(Math.random() * 10)] : to;
+      if (n >= 0) setTimeout(step, 55);
+    }, delay || 0);
+  };
+  const setTiles = (el, text, stagger) => {
+    const tiles = el.querySelectorAll(".flap");
+    text.replace(":", "").split("").forEach((ch, i) => flip(tiles[i], ch, stagger ? i * 90 + stagger : undefined));
+  };
+
+  // Titles settle letter by letter from the left, as the destination does on a station board.
+  const scramble = (el, delay) => {
+    const final = el.textContent; if (still) return;
+    let k = 0;
+    setTimeout(function step() {
+      el.textContent = final.split("").map((ch, i) => i < k || ch === " " ? ch : LETTERS[Math.floor(Math.random() * LETTERS.length)]).join("");
+      if (k++ <= final.length) setTimeout(step, 28);
+    }, delay);
+  };
+
+  const status = (row, t) => {
+    const s = row.querySelector(".bstat");
+    if (!row.dataset.start || row.classList.contains("gone")) return;
+    const until = mins(t, row.dataset.start), left = mins(t, row.dataset.end);
+    let text, cls;
+    if (left <= 0) { text = de ? "Vorbei" : "Over"; cls = "past"; }
+    else if (until <= 0) { text = de ? "Läuft" : "On now"; cls = "live"; }
+    else if (until < 60) { text = "in " + until + " Min"; cls = until <= 30 ? "soon" : ""; }
+    else if (until < 24 * 60) { const h = Math.floor(until / 60), m = until % 60; text = "in " + (until < 180 && m ? h + ":" + String(m).padStart(2, "0") : Math.round(until / 60)) + (de ? " Std" : " h"); cls = ""; }
+    else { text = "in " + Math.round(until / 1440) + (de ? " T" : " d"); cls = ""; }
+    if (s.textContent !== text) { s.textContent = text; if (!still) { s.classList.remove("blink"); void s.offsetWidth; s.classList.add("blink"); } }
+    row.classList.toggle("live", cls === "live"); row.classList.toggle("soon", cls === "soon"); row.classList.toggle("past", cls === "past");
+  };
+
+  const rows = [...board.querySelectorAll(".brow")];
+  const clock = board.querySelector("[data-clock]");
+  let shown = "";
+  const tick = (first) => {
+    const t = now();
+    if (t !== shown) { setTiles(clock, t.slice(11), first ? 1 : undefined); shown = t; rows.forEach((r) => status(r, t)); }
+  };
+  rows.forEach((r, i) => {
+    const time = r.querySelector(".btime");
+    if (time.querySelector(".flap")) setTiles(time, [...time.querySelectorAll(".flap")].map((x) => x.textContent).join(""), 150 + i * 140);
+    scramble(r.querySelector("[data-scramble]"), 200 + i * 140);
+  });
+  tick(true);
+  setInterval(tick, 5000);
+})();`;
+
+const BOARD_CSS = `
+  .board { position:relative; margin:4px 16px 14px; padding:12px 12px 6px; border-radius:16px; color:#fff;
+    background:linear-gradient(180deg,#141118,#08070a); border:1px solid #2a2431;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 18px 40px -18px rgba(0,0,0,.9), 0 0 0 4px rgba(0,0,0,.35); }
+  .board::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 3px); }
+  .bhead { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .blabel { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:#ffc53d;
+    text-shadow:0 0 12px rgba(255,197,61,.45); }
+  .bulb { width:8px; height:8px; border-radius:50%; background:#ffc53d; box-shadow:0 0 10px #ffc53d; animation:bulb 1.6s steps(2) infinite; }
+  @keyframes bulb { 50% { opacity:.25; } }
+  .flap { position:relative; display:inline-block; width:.72em; text-align:center; margin-right:2px; border-radius:4px;
+    font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace; font-weight:800; color:#fff; font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#2c2832 0 49%,#0b0a0d 49% 51%,#221f27 51%); box-shadow:0 2px 0 #000, inset 0 1px 0 rgba(255,255,255,.08);
+    transform-origin:50% 50%; }
+  .flap.turn { animation:turn .11s ease-in; }
+  @keyframes turn { 0% { transform:scaleY(1); } 50% { transform:scaleY(.15); filter:brightness(1.8); } 100% { transform:scaleY(1); } }
+  .colon { display:inline-block; width:.3em; text-align:center; font-weight:800; color:#8a8094; }
+  .clock { font-size:17px; line-height:1.45; white-space:nowrap; }
+  .clock .colon { animation:bulb 2s steps(2) infinite; }
+  .bcols { display:grid; grid-template-columns:76px 1fr auto; gap:10px; padding:0 4px 4px; font-size:10px; font-weight:800; letter-spacing:.16em;
+    text-transform:uppercase; color:#6f667a; border-bottom:1px solid #26212c; }
+  .board ol { list-style:none; margin:0; padding:0; } .board li { padding:0; border:0; }
+  .brow { position:relative; display:grid; grid-template-columns:76px 1fr auto; gap:10px; align-items:center; padding:10px 4px; border-bottom:1px solid #1d1a22;
+    transition:background .15s; }
+  .board li:last-child .brow { border-bottom:0; }
+  .brow::before { content:""; position:absolute; left:-12px; top:10px; bottom:10px; width:3px; border-radius:0 3px 3px 0; background:var(--k); }
+  .brow:hover, .brow:focus-visible { background:rgba(255,255,255,.04); }
+  .k-party { --k:var(--party); } .k-workshop { --k:var(--workshop); } .k-festival { --k:var(--festival); } .k-course { --k:var(--course); }
+  .btime { font-size:20px; line-height:1.4; white-space:nowrap; }
+  .bday { font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--festival); }
+  .bwhat { min-width:0; display:flex; flex-direction:column; }
+  .btitle { font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace; font-weight:800; font-size:14px; letter-spacing:.04em; text-transform:uppercase;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.25; color:#fff; }
+  .bwhere { font-size:12px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+  .bstat { justify-self:end; font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace; font-size:12px; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; color:#ffc53d; text-shadow:0 0 10px rgba(255,197,61,.4); white-space:nowrap; }
+  .bstat.blink { animation:arrive .5s steps(2) 2; }
+  @keyframes arrive { 50% { opacity:0; } }
+  .brow.soon .bstat { color:#ff9a3d; text-shadow:0 0 12px rgba(255,154,61,.6); }
+  .brow.live .bstat { color:#fff; background:var(--party); padding:3px 8px; border-radius:999px; text-shadow:none;
+    box-shadow:0 0 16px rgba(255,61,139,.7); animation:pulse 2.4s ease-in-out infinite; }
+  .brow.live .btitle { color:#ffd0e2; }
+  .brow.past { opacity:.38; } .brow.past .bstat { color:var(--mute); text-shadow:none; }
+  .brow.gone .btitle { text-decoration:line-through; } .brow.gone .bstat { color:#ff6b6b; text-shadow:0 0 10px rgba(255,80,80,.4); }
+  .bmore { display:block; text-align:center; padding:8px 0 4px; font-size:12px; font-weight:700; letter-spacing:.06em; color:#ffc53d; }
+  @media (min-width:900px) { .board { max-width:760px; margin:8px auto 18px; } .btime { font-size:22px; } .btitle { font-size:15px; } }
+  @media (prefers-reduced-motion: reduce) { .bulb, .clock .colon, .brow.live .bstat { animation:none; } }
+`;
 
 // ---- PROTOTYPE: Stories (issues/29-design-review-and-desktop.md) ----
 // The week's Flyers as WhatsApp-style Stories: each day in the strip is a ring with its first Flyer, and a

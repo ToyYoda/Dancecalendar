@@ -520,7 +520,7 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
   const next = addDays(monday || thisMonday, 7);
   const any = [...byDay.values()].some((l) => l.length);
   return (
-    <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS + STORY_CSS + BOARD_CSS }} />}>
+    <Page f={f} head={<style dangerouslySetInnerHTML={{ __html: PROTO_CSS + STORY_CSS + BOARD_CSS + DANCECARD_CSS }} />}>
       {!monday && <Board f={f} days={days} today={today} byDay={byDay} />}
       <div class={`v-${f.v || "0"}`}>
       <div class="layout">
@@ -590,6 +590,7 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
       <Switcher f={f} />
       <script type="application/json" id="stories" dangerouslySetInnerHTML={{ __html: storyData(f, today, byDay) }} />
       <script dangerouslySetInnerHTML={{ __html: STORY_SCRIPT }} />
+      <script dangerouslySetInnerHTML={{ __html: DANCECARD_SCRIPT(f.lang) }} />
       <script dangerouslySetInnerHTML={{ __html: PANEL_SCRIPT }} />
     </Page>
   );
@@ -806,6 +807,9 @@ function storyData(f: Filters, today: string, byDay: Map<string, OnDay[]>): stri
           type: t[kind(e)],
           when: dayN ? `${t.day} ${dayN}/${dayOf}` : timeRange(e),
           place: e.venue + km(e),
+          on: dayLabel(e.starts_at.slice(0, 10), f.lang),
+          start: e.starts_at,
+          end: endOf(e),
           tags: [
             ...styles,
             e.intro_class_at ? `🎓 ${t.intro} ${e.intro_class_at.slice(11)}` : "",
@@ -852,7 +856,8 @@ const STORY_SCRIPT = `(() => {
       (it.cancelled ? ' <span class="kind k-cancel">' + esc(L.cancelled) + "</span>" : "") +
       '<h3 class="ttl">' + esc(it.title) + "</h3><p><b>" + esc(it.when) + "</b> · " + esc(it.place) + "</p>" +
       (it.tags.length ? '<p class="tags">' + it.tags.map((x) => '<span class="tag">' + esc(x) + "</span>").join("") + "</p>" : "") +
-      '<a class="go" href="' + esc(it.href) + '">' + L.details + " ›</a></div>";
+      '<a class="go" href="' + esc(it.href) + '">' + L.details + " ›</a></div>" +
+      '<button class="keep" type="button" data-keep="' + it.id + '"></button>';
     stage.querySelector(".now b").addEventListener("animationend", next);
     el.classList.toggle("paused", paused);
     const after = data.days[di].items[ii + 1] || (data.days[di + 1] || {}).items?.[0];
@@ -982,6 +987,263 @@ const STORY_CSS = `
     .story .side:hover { background:rgba(255,255,255,.32); }
   }
   @media (prefers-reduced-motion: reduce) { .story { animation:none; } }
+`;
+
+// ---- PROTOTYPE: the Tanzkarte (issues/29-design-review-and-desktop.md) ----
+// A carnet de bal, the card a ballgoer once wrote their dances on. A tap on "+ Tanzkarte" at a Flyer (or in
+// a Story) writes the Event onto a paper card that stays in this browser only (localStorage, no account),
+// across weeks. The card lists the kept Events by day, marks two that overlap in red ink, strikes the ones
+// already danced, and hands them on as an .ics file or a message to share. Without JavaScript nothing shows.
+const DANCECARD_SCRIPT = (lang: Lang) => `(() => {
+  const de = ${JSON.stringify(lang === "de")};
+  const L = de
+    ? { add: "Tanzkarte", kept: "Notiert", title: "Tanzkarte", sub: (n) => n === 1 ? "1 Abend notiert" : n + " Abende notiert",
+        empty: "Noch leer. Tippe bei einem Flyer auf <b>+ Tanzkarte</b>, und der Abend steht hier.", ics: "In den Kalender", share: "Teilen",
+        clear: "Leeren", sure: "Tanzkarte leeren?", clash: (n) => "überschneidet sich mit Nr. " + n, done: "getanzt", cancelled: "abgesagt",
+        remove: "Streichen", close: "Schließen", mine: "Meine Tanzkarte" }
+    : { add: "Dance card", kept: "Noted", title: "Dance card", sub: (n) => n === 1 ? "1 evening noted" : n + " evenings noted",
+        empty: "Still empty. Tap <b>+ Dance card</b> on a Flyer and the evening shows up here.", ics: "Add to calendar", share: "Share",
+        clear: "Clear", sure: "Clear the dance card?", clash: (n) => "overlaps with no. " + n, done: "danced", cancelled: "cancelled",
+        remove: "Strike", close: "Close", mine: "My dance card" };
+  const KEY = "dc-card", WEEK = 7 * 86400000;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const now = () => new Date().toLocaleString("sv-SE", { timeZone: "Europe/Berlin" }).slice(0, 16).replace(" ", "T");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // This page's Events, by id, from the Stories' JSON.
+  const pool = new Map();
+  try { JSON.parse(document.getElementById("stories").textContent).days.forEach((d) => d.items.forEach((it) => pool.has(it.id) || pool.set(it.id, it))); } catch {}
+
+  // Kept Events are copied whole, so the card still shows them on another week's page. A week after an
+  // Event ended it falls off the card.
+  let card = [];
+  try { card = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch {}
+  card = card.filter((it) => Date.parse(it.end + "Z") > Date.parse(now() + "Z") - WEEK);
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(card)); } catch {} };
+  const has = (id) => card.some((it) => it.id === id);
+  window.dcKept = has;
+
+  // ---- the stamp on every Flyer ----
+  const idOf = (a) => Number((/\\/events\\/(\\d+)/.exec(a.getAttribute("href")) || [])[1]);
+  document.querySelectorAll(".card").forEach((a) => {
+    const id = idOf(a);
+    if (!pool.has(id)) return;
+    const b = document.createElement("span");
+    b.className = "keep"; b.dataset.keep = id; b.setAttribute("role", "button"); b.tabIndex = 0;
+    a.append(b);
+  });
+  const paint = () => {
+    document.querySelectorAll("[data-keep]").forEach((b) => {
+      const on = has(Number(b.dataset.keep)), html = on ? "<i>♥</i> " + L.kept : "<i>+</i> " + L.add;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on);
+      if (b.innerHTML !== html) b.innerHTML = html;
+    });
+    document.querySelectorAll(".card").forEach((a) => a.classList.toggle("kept", has(idOf(a))));
+    if (tab.querySelector("b").textContent !== String(card.length)) tab.querySelector("b").textContent = card.length;
+    tab.classList.toggle("empty", !card.length);
+  };
+
+  // ---- the folded card at the corner, and the open card ----
+  const tab = document.createElement("button");
+  tab.className = "dc-tab"; tab.type = "button";
+  tab.innerHTML = '<span class="tassel" aria-hidden="true"></span><i aria-hidden="true">❦</i><span class="lbl">' + L.mine + '</span><b>0</b>';
+  tab.setAttribute("aria-label", L.mine);
+  const dlg = document.createElement("dialog");
+  dlg.className = "dc-sheet";
+  document.body.append(tab, dlg);
+
+  const sorted = () => [...card].sort((a, b) => a.start.localeCompare(b.start));
+  const clashes = (list) => {
+    const live = list.filter((it) => !it.cancelled);
+    return new Map(list.map((it) => [it.id, live.filter((o) => o !== it && !it.cancelled && o.start < it.end && it.start < o.end)]));
+  };
+
+  function render() {
+    const list = sorted(), over = clashes(list), t = now();
+    const no = new Map(list.map((it, i) => [it.id, i + 1]));
+    let day = "", rows = "";
+    list.forEach((it) => {
+      if (it.on !== day) { day = it.on; rows += '<li class="dc-day">' + esc(day) + "</li>"; }
+      const past = it.end <= t, clash = over.get(it.id);
+      rows += '<li class="dc-row k-' + it.kind + (past ? " past" : "") + (it.cancelled ? " gone" : "") + '">' +
+        '<span class="no">' + no.get(it.id) + '.</span>' +
+        '<a class="what" href="' + esc(it.href) + '"><span class="line"><span class="ttl">' + esc(it.title) + '</span><span class="dots"></span>' +
+        '<span class="at">' + esc(it.when) + "</span></span>" +
+        '<small>' + esc(it.place) + (past ? ' · <em>' + L.done + ' ✓</em>' : "") + (it.cancelled ? ' · <em class="red">' + L.cancelled + "</em>" : "") +
+        (clash.length ? '<em class="red">⚡ ' + L.clash(clash.map((o) => no.get(o.id)).join(", ")) + "</em>" : "") + "</small></a>" +
+        '<button class="rm" type="button" data-rm="' + it.id + '" aria-label="' + L.remove + '">✕</button></li>';
+    });
+    dlg.innerHTML =
+      '<div class="paper"><button class="x" type="button" aria-label="' + L.close + '">✕</button>' +
+      '<span class="orn tl">❦</span><span class="orn tr">❦</span>' +
+      '<p class="eyebrow">Carnet de bal</p><h2>' + L.title + "</h2>" +
+      '<p class="count">' + L.sub(list.length) + "</p><hr>" +
+      (list.length ? "<ol>" + rows + "</ol>" : '<p class="none">' + L.empty + "</p>") +
+      (list.length ? '<div class="acts"><button type="button" data-ics>📅 ' + L.ics + '</button><button type="button" data-share>💬 ' + L.share +
+        '</button><button type="button" class="clr" data-clear>' + L.clear + "</button></div>" : "") +
+      '<span class="orn bl">❦</span><span class="orn br">❦</span></div>';
+  }
+
+  function toggle(id, from) {
+    if (has(id)) card = card.filter((it) => it.id !== id);
+    else {
+      const it = pool.get(id);
+      if (!it) return;
+      card.push({ id, title: it.title, kind: it.kind, when: it.when, on: it.on, start: it.start, end: it.end, place: it.place, href: it.href, cancelled: it.cancelled });
+      fly(from);
+    }
+    save(); paint();
+    if (dlg.open) render();
+  }
+
+  // A small heart leaves the Flyer and drops into the card at the corner.
+  function fly(from) {
+    if (still || !from) return;
+    const a = from.getBoundingClientRect(), b = tab.getBoundingClientRect();
+    const h = document.createElement("span");
+    h.className = "dc-fly"; h.textContent = "♥";
+    h.style.left = a.left + a.width / 2 - 14 + "px"; h.style.top = a.top + a.height / 2 - 14 + "px";
+    document.body.append(h);
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    h.animate([
+      { transform: "translate(0,0) scale(1)", opacity: 1 },
+      { transform: "translate(" + dx * .5 + "px," + (dy * .5 - 120) + "px) scale(1.6)", opacity: 1, offset: .45 },
+      { transform: "translate(" + dx + "px," + dy + "px) scale(.5)", opacity: .6 },
+    ], { duration: 700, easing: "cubic-bezier(.5,0,.4,1)" }).onfinish = () => {
+      h.remove();
+      tab.animate([{ transform: "rotate(-6deg) scale(1)" }, { transform: "rotate(4deg) scale(1.15)" }, { transform: "rotate(-6deg) scale(1)" }], { duration: 380 });
+    };
+  }
+
+  // An .ics with one VEVENT per kept Event, in Berlin time.
+  function ics() {
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+    const loc = (s) => s.replace(/-/g, "").replace(":", "") + "00";
+    const txt = (s) => String(s).replace(/[\\\\,;]/g, (c) => "\\\\" + c);
+    const ev = sorted().filter((it) => !it.cancelled).map((it) => [
+      "BEGIN:VEVENT", "UID:dancecalendar-" + it.id + "@" + location.hostname, "DTSTAMP:" + stamp,
+      "DTSTART;TZID=Europe/Berlin:" + loc(it.start), "DTEND;TZID=Europe/Berlin:" + loc(it.end),
+      "SUMMARY:" + txt(it.title), "LOCATION:" + txt(it.place.replace(/ · [\\d.]+ km$/, "")), "URL:" + location.origin + it.href, "END:VEVENT",
+    ].join("\\r\\n"));
+    const body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//DanceCalendar//Tanzkarte//DE", ...ev, "END:VCALENDAR"].join("\\r\\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([body], { type: "text/calendar" }));
+    a.download = (de ? "tanzkarte" : "dance-card") + ".ics";
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // The card as a message: the system share sheet where there is one, else WhatsApp, where Flyers live.
+  function share() {
+    const text = L.mine + " 💃\\n\\n" + sorted().filter((it) => !it.cancelled)
+      .map((it) => it.on + " " + it.when + "  " + it.title + "\\n" + it.place.replace(/ · [\\d.]+ km$/, "") + "\\n" + location.origin + it.href).join("\\n\\n");
+    if (navigator.share) navigator.share({ text }).catch(() => {});
+    else open("https://wa.me/?text=" + encodeURIComponent(text), "_blank", "noopener");
+  }
+
+  // Capture on window, so a tap on the stamp doesn't also open the Flyer, its Story or a panel.
+  const onKeep = (ev) => {
+    const b = ev.target.closest("[data-keep]");
+    if (!b) return;
+    ev.preventDefault(); ev.stopPropagation();
+    if (ev.type === "click") toggle(Number(b.dataset.keep), b);
+  };
+  window.addEventListener("click", onKeep, true);
+  window.addEventListener("pointerdown", onKeep, true);
+  window.addEventListener("keydown", (ev) => {
+    const b = ev.target.closest && ev.target.closest(".keep");
+    if (b && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); ev.stopPropagation(); toggle(Number(b.dataset.keep), b); }
+  }, true);
+  tab.addEventListener("click", () => { render(); dlg.showModal(); });
+  dlg.addEventListener("click", (ev) => {
+    if (ev.target === dlg || ev.target.closest(".x")) return dlg.close();
+    const rm = ev.target.closest("[data-rm]");
+    if (rm) return toggle(Number(rm.dataset.rm));
+    if (ev.target.closest("[data-ics]")) return ics();
+    if (ev.target.closest("[data-share]")) return share();
+    if (ev.target.closest("[data-clear]") && confirm(L.sure)) { card = []; save(); paint(); render(); }
+  });
+  // The Story player draws its own stamp; paint it whenever a Story changes.
+  const story = document.querySelector(".story .stage");
+  if (story) new MutationObserver(paint).observe(story, { childList: true });
+  paint();
+})();`;
+
+const DANCECARD_CSS = `
+  /* the stamp on a Flyer's corner */
+  .card .keep { position:absolute; top:10px; right:10px; z-index:3; display:inline-flex; align-items:center; gap:5px; padding:6px 11px 6px 9px;
+    border-radius:999px; font-size:12px; font-weight:800; letter-spacing:.02em; color:#fff; cursor:pointer; user-select:none;
+    background:rgba(12,10,16,.62); border:1px solid rgba(255,255,255,.22); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    box-shadow:0 4px 14px rgba(0,0,0,.35); transition:transform .15s, background .2s; }
+  .card .keep i { font-style:normal; font-size:15px; line-height:1; }
+  .card .keep:hover { transform:scale(1.05); background:rgba(12,10,16,.8); }
+  .card .keep:active { transform:scale(.94); }
+  .card .keep.on { background:var(--neon); border-color:transparent; box-shadow:0 0 18px rgba(255,61,139,.55); }
+  .card.kept .body { box-shadow:inset 3px 0 0 var(--party); }
+  .story .keep { position:absolute; right:16px; bottom:calc(62px + env(safe-area-inset-bottom)); z-index:3; display:inline-flex; gap:5px; align-items:center;
+    padding:7px 14px; border-radius:999px; font-size:13px; font-weight:800; color:#fff; cursor:pointer; background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.3); }
+  .story .keep i { font-style:normal; } .story .keep.on { background:var(--neon); border-color:transparent; }
+
+  /* the folded card at the corner, with its tassel */
+  .dc-tab { position:fixed; right:16px; bottom:calc(72px + env(safe-area-inset-bottom)); z-index:60; display:flex; align-items:center; gap:8px;
+    padding:10px 14px 10px 12px; border:0; border-radius:6px 14px 14px 6px; cursor:pointer; font:italic 700 15px/1 Georgia,"Iowan Old Style","Palatino Linotype",serif;
+    color:#3a1f3d; background:linear-gradient(135deg,#fbf5e8,#efe3c8); transform:rotate(-6deg);
+    box-shadow:0 10px 26px rgba(0,0,0,.55), inset 0 0 0 1px rgba(160,120,60,.35), inset 4px 0 0 #c2185b; transition:transform .2s; }
+  .dc-tab:hover { transform:rotate(-2deg) translateY(-2px); }
+  .dc-tab b { font:800 12px/1 system-ui,sans-serif; font-style:normal; min-width:20px; height:20px; line-height:20px; text-align:center; border-radius:10px;
+    background:#c2185b; color:#fff; }
+  .dc-tab.empty b { background:#b8a98a; }
+  .dc-tab i { font-style:normal; font-size:18px; color:#c2185b; }
+  .dc-tab .tassel { position:absolute; left:-4px; top:-2px; width:2px; height:26px; background:#c2185b; transform:rotate(18deg); transform-origin:top; }
+  .dc-tab .tassel::after { content:""; position:absolute; left:-4px; bottom:-10px; width:10px; height:12px; border-radius:2px 2px 5px 5px;
+    background:repeating-linear-gradient(90deg,#c2185b 0 1px,#e0457f 1px 2px); }
+  @media (max-width: 599px) { .dc-tab .lbl { display:none; } .dc-tab { padding:12px; } }
+  .dc-fly { position:fixed; z-index:200; width:28px; height:28px; line-height:28px; text-align:center; font-size:22px; color:#ff3d8b; pointer-events:none;
+    text-shadow:0 0 12px rgba(255,61,139,.8); }
+
+  /* the open card: cream paper, ink and a gilt double frame on the dark floor */
+  .dc-sheet { border:0; padding:0; background:none; width:min(440px, calc(100vw - 24px)); max-height:calc(100vh - 32px); overflow:visible; color:#3a1f3d; }
+  .dc-sheet::backdrop { background:rgba(6,4,10,.72); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+  .dc-sheet[open] { animation:dc-in .35s cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes dc-in { from { opacity:0; transform:translateY(40px) rotate(4deg) scale(.92); } }
+  .dc-sheet .paper { position:relative; max-height:calc(100vh - 32px); overflow:auto; padding:30px 26px 22px; border-radius:6px; transform:rotate(-.6deg);
+    font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;
+    background:radial-gradient(120% 80% at 20% 0%, #fffaf0, transparent 60%), radial-gradient(90% 70% at 100% 100%, #eadcbc, transparent 70%), #f6eedc;
+    box-shadow:0 30px 80px rgba(0,0,0,.7), inset 0 0 0 8px #f6eedc, inset 0 0 0 9px #b8975a, inset 0 0 0 12px #f6eedc, inset 0 0 0 13px #b8975a,
+      inset 0 0 60px rgba(140,100,40,.18); }
+  .dc-sheet .orn { position:absolute; font-size:18px; color:#b8975a; line-height:1; }
+  .dc-sheet .tl { top:18px; left:20px; } .dc-sheet .tr { top:18px; right:20px; transform:scaleX(-1); }
+  .dc-sheet .bl { bottom:16px; left:20px; transform:scaleY(-1); } .dc-sheet .br { bottom:16px; right:20px; transform:scale(-1); }
+  .dc-sheet .x { position:absolute; top:22px; right:44px; border:0; background:none; font-size:16px; color:#8a6d4a; cursor:pointer; }
+  .dc-sheet .eyebrow { margin:6px 0 0; text-align:center; font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:#a0784a; }
+  .dc-sheet h2 { margin:2px 0 0; text-align:center; font-size:40px; font-style:italic; font-weight:400; letter-spacing:-.01em; color:#c2185b; }
+  .dc-sheet .count { margin:2px 0 0; text-align:center; font-size:13px; font-style:italic; color:#7a6150; }
+  .dc-sheet hr { border:0; height:10px; margin:12px 30px 6px; background:radial-gradient(circle, #b8975a 2px, transparent 2.5px) center / 14px 10px repeat-x; opacity:.7; }
+  .dc-sheet ol { list-style:none; margin:0; padding:0 6px; }
+  .dc-sheet .dc-day { margin:14px 0 4px; font-size:12px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:#a0784a; }
+  .dc-sheet .dc-row { position:relative; display:flex; gap:8px; align-items:flex-start; padding:6px 0; border-bottom:1px solid rgba(160,120,60,.25); }
+  .dc-sheet .no { flex:none; width:22px; font-style:italic; color:#a0784a; }
+  .dc-sheet .what { flex:1; min-width:0; display:block; }
+  .dc-sheet .what .line { display:flex; align-items:flex-end; }
+  .dc-sheet .what .ttl { flex:0 1 auto; min-width:0; font-size:16px; font-weight:700; line-height:1.25; }
+  .dc-sheet .what .dots { flex:1 0 14px; margin:0 6px 5px; border-bottom:2px dotted rgba(122,97,80,.45); }
+  .dc-sheet .what .at { flex:none; font-size:15px; font-style:italic; line-height:1.25; font-variant-numeric:tabular-nums; }
+  .dc-sheet .what small { display:block; font-size:12px; color:#7a6150; margin-top:1px; }
+  .dc-sheet .what em { font-style:italic; } .dc-sheet .red { display:block; color:#c62828; font-weight:700; }
+  .dc-sheet .k-party .ttl { color:#3a1f3d; } .dc-sheet .dc-row::before { content:""; position:absolute; left:-10px; top:11px; width:4px; height:4px; border-radius:50%; background:var(--k); }
+  .dc-sheet .past .ttl, .dc-sheet .gone .ttl { text-decoration:line-through; text-decoration-color:#c2185b; text-decoration-thickness:2px; opacity:.6; }
+  .dc-sheet .rm { flex:none; border:0; background:none; color:#b8a98a; cursor:pointer; font-size:13px; padding:2px 4px; }
+  .dc-sheet .rm:hover { color:#c62828; }
+  .dc-sheet .none { margin:18px 10px 10px; text-align:center; font-style:italic; color:#7a6150; line-height:1.5; }
+  .dc-sheet .acts { display:flex; flex-wrap:wrap; gap:8px; margin:18px 4px 8px; }
+  .dc-sheet .acts button { flex:1; border:1px solid #3a1f3d; background:#3a1f3d; color:#f6eedc; border-radius:999px; padding:9px 12px; cursor:pointer;
+    font:700 13px system-ui,sans-serif; white-space:nowrap; }
+  .dc-sheet .acts .clr { flex:none; background:none; color:#7a6150; border-color:rgba(122,97,80,.4); }
+  @media (max-width: 599px) {
+    .dc-sheet { margin:auto 12px 12px; } .dc-sheet h2 { font-size:34px; } .dc-sheet .paper { padding:28px 20px 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .dc-sheet[open] { animation:none; } .dc-tab, .card .keep { transition:none; } }
 `;
 
 function Card(props: { f: Filters; o: OnDay; day?: string; wall?: boolean }) {
@@ -1298,6 +1560,7 @@ const asDate = (iso: string) => new Date(`${iso}T12:00:00Z`);
 const longDay = (iso: string, lang: Lang) =>
   asDate(iso).toLocaleDateString(locale(lang), { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const short = (iso: string, lang: Lang) => asDate(iso).toLocaleDateString(locale(lang), { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+const dayLabel = (iso: string, lang: Lang) => `${weekdayShort(iso, lang)} ${Number(iso.slice(8))}.${Number(iso.slice(5, 7))}.`;
 const weekdayShort = (iso: string, lang: Lang) => asDate(iso).toLocaleDateString(locale(lang), { weekday: "short", timeZone: "UTC" });
 const monthName = (iso: string, lang: Lang) => asDate(iso).toLocaleDateString(locale(lang), { month: "long", year: "numeric", timeZone: "UTC" });
 const weekday = (iso: string) => asDate(iso).getUTCDay();

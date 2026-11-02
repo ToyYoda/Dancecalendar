@@ -255,6 +255,7 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
       </header>
       {props.children}
       <script dangerouslySetInnerHTML={{ __html: GEO_SCRIPT }} />
+      <script dangerouslySetInnerHTML={{ __html: LIGHTS_SCRIPT }} />
     </Layout>
   );
 }
@@ -595,6 +596,144 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
     </Page>
   );
 }
+
+// ---- PROTOTYPE: the room lights (issues/29-design-review-and-desktop.md) ----
+// Behind every Dancer page a live light show drawn by a WebGL shader: three moving-head beams sweeping
+// down through haze, a glow on the floor, film grain. The beams take their colours from the Flyer in the
+// middle of the screen (sampled from the image itself, so no colours are stored), and fade to the next
+// Flyer's as the Dancer scrolls, so the room is lit like the party being looked at. Without WebGL or
+// JavaScript the fixed spotlights of the CSS stay; reduced motion freezes the beams but still recolours
+// them. Drawn at half resolution, at most 30 frames a second, and not at all while the tab is hidden.
+const LIGHTS_SCRIPT = `(() => {
+  const cv = document.createElement("canvas");
+  const gl = cv.getContext("webgl", { alpha: false, antialias: false, depth: false, powerPreference: "low-power" });
+  if (!gl) return;
+  const VS = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+  const FS = [
+    "precision mediump float;",
+    "uniform vec2 r;uniform float t,s;uniform vec3 a,b,c;",
+    "float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}",
+    "float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);",
+    "  return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}",
+    "float fbm(vec2 p){return .55*n(p)+.3*n(p*2.03+7.1)+.15*n(p*4.01+3.7);}",
+    // a beam hung at o, swinging around straight down by ang, w wide
+    "float beam(vec2 uv,vec2 o,float ang,float w){vec2 d=uv-o;float k=atan(d.x,-d.y)-ang;",
+    "  return exp(-k*k/(w*w))*smoothstep(-.05,.25,-d.y)*mix(1.,.25,clamp(length(d)/1.8,0.,1.));}",
+    "void main(){",
+    "  vec2 uv=gl_FragCoord.xy/r.y;float W=r.x/r.y;",
+    "  float haze=fbm(uv*vec2(2.2,3.)+vec2(t*.04,-t*.025+s*.0004));",
+    "  float hz=.35+1.1*haze;",
+    "  vec3 col=vec3(.047,.039,.063);",
+    "  col+=a*beam(uv,vec2(W*.12,1.08),sin(t*.31)*.55-.25,.11)*hz*.55;",
+    "  col+=b*beam(uv,vec2(W*.88,1.08),sin(t*.27+2.)*.55+.25,.11)*hz*.55;",
+    "  col+=c*beam(uv,vec2(W*.5,1.1),sin(t*.19+4.)*.7,.08)*hz*.45;",
+    "  vec2 f1=vec2(W*(.5+.35*sin(t*.11)),.02),f2=vec2(W*(.5+.4*sin(t*.13+3.)),.0);",
+    "  col+=a*exp(-dot(uv-f1,uv-f1)*5.)*.16+b*exp(-dot(uv-f2,uv-f2)*4.)*.13;",
+    "  col+=(a+b+c)*haze*haze*.025;",
+    "  vec2 q=gl_FragCoord.xy/r-.5;col*=1.-dot(q,q)*.9;",
+    "  col+=(h(gl_FragCoord.xy+fract(t)*91.)-.5)*.028;",
+    "  gl_FragColor=vec4(col,1.);}",
+  ].join("\\n");
+  const sh = (type, src) => { const x = gl.createShader(type); gl.shaderSource(x, src); gl.compileShader(x); return x; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS));
+  gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(pr);
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+  gl.useProgram(pr);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const u = (k) => gl.getUniformLocation(pr, k);
+  const U = { r: u("r"), t: u("t"), s: u("s"), a: u("a"), b: u("b"), c: u("c") };
+
+  cv.className = "lights";
+  cv.setAttribute("aria-hidden", "true");
+  document.body.prepend(cv);
+  document.documentElement.classList.add("lit");
+
+  // The house colours until a Flyer comes into view: the page's pink, violet and amber.
+  const HOUSE = [[1, .24, .55], [.49, .3, 1], [1, .69, .18]];
+  const cur = HOUSE.map((x) => x.slice()), want = HOUSE.map((x) => x.slice());
+
+  // A Flyer's three strongest colours: hue buckets weighted by saturation and brightness, each brightened
+  // to full strength, so a dark Flyer still lights the room.
+  const cache = new Map();
+  const palette = (img) => {
+    if (cache.has(img.src)) return cache.get(img.src);
+    let px;
+    try {
+      const x = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+      x.canvas.width = x.canvas.height = 32;
+      x.drawImage(img, 0, 0, 32, 32);
+      px = x.getImageData(0, 0, 32, 32).data;
+    } catch { return null; }
+    const bins = Array.from({ length: 12 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < px.length; i += 4) {
+      const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+      if (d < .12 || mx < .15) continue;
+      let hue = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      const bin = bins[Math.floor(((hue + 6) % 6) * 2) % 12], w = (d / mx) * mx * mx;
+      bin.w += w; bin.r += r * w; bin.g += g * w; bin.b += b * w;
+    }
+    const top = bins.filter((x) => x.w > 0).sort((p, q) => q.w - p.w).slice(0, 3)
+      .map((x) => { const m = Math.max(x.r, x.g, x.b) || 1; return [x.r / m, x.g / m, x.b / m]; });
+    const out = top.length ? [0, 1, 2].map((i) => top[i] || top[i % top.length].map((v, j) => (v + HOUSE[i][j]) / 2)) : null;
+    cache.set(img.src, out);
+    return out;
+  };
+  const light = (img) => {
+    const go = () => { const p = palette(img); if (p) p.forEach((c, i) => (want[i] = c)); kick(); };
+    if (img.complete && img.naturalWidth) go(); else img.addEventListener("load", go, { once: true });
+  };
+
+  // The Flyer crossing the middle band of the screen sets the colours.
+  const io = new IntersectionObserver((list) => list.forEach((x) => x.isIntersecting && light(x.target)),
+    { rootMargin: "-40% 0px -40% 0px" });
+  const watch = () => document.querySelectorAll('img[src^="/flyers/"]').forEach((img) => {
+    if (img.dataset.lit) return;
+    img.dataset.lit = "1";
+    if (img.closest(".story")) return;
+    io.observe(img);
+  });
+  watch();
+  new MutationObserver(watch).observe(document.body, { childList: true, subtree: true });
+  // The Story player shows one Flyer at a time; it lights the room while it is open.
+  document.addEventListener("load", (ev) => { if (ev.target.closest && ev.target.closest(".story")) light(ev.target); }, true);
+
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const size = () => {
+    const k = Math.min(devicePixelRatio || 1, 2) * .5;
+    cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k);
+    gl.viewport(0, 0, cv.width, cv.height);
+    kick();
+  };
+  let last = 0, raf = 0, t0 = performance.now();
+  const frame = (now) => {
+    raf = 0;
+    let moving = false;
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      const d = want[i][j] - cur[i][j];
+      if (Math.abs(d) > .002) { cur[i][j] += d * .05; moving = true; } else cur[i][j] = want[i][j];
+    }
+    if (now - last >= 33) {
+      last = now;
+      gl.uniform2f(U.r, cv.width, cv.height);
+      gl.uniform1f(U.t, still ? 12 : (now - t0) / 1000);
+      gl.uniform1f(U.s, scrollY);
+      gl.uniform3fv(U.a, cur[0]); gl.uniform3fv(U.b, cur[1]); gl.uniform3fv(U.c, cur[2]);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    if (!document.hidden && (!still || moving)) raf = requestAnimationFrame(frame);
+  };
+  function kick() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); }
+  addEventListener("resize", size);
+  document.addEventListener("visibilitychange", kick);
+  if (still) addEventListener("scroll", kick, { passive: true });
+  size();
+})();`;
 
 // ---- PROTOTYPE: the departure board (issues/29-design-review-and-desktop.md) ----
 // "Where do I dance tonight?" answered before any filter: tonight's Events as a split-flap board like a
@@ -1595,6 +1734,9 @@ const CSS = `
   :root { color-scheme:dark; --bg:#0c0a10; --card:#18141e; --ink:#f5f0ea; --mute:#a197ab; --line:#2e2738; --seg:#1d1824;
           --party:#ff3d8b; --workshop:#4f9dff; --festival:#ffb02e; --course:#3ddc84; --neon:linear-gradient(95deg,#ff3d8b,#b04bff 55%,#ffb02e); }
   html { background:var(--bg); }
+  /* the room lights: the canvas replaces the fixed spotlights once it draws */
+  canvas.lights { position:fixed; inset:0; width:100vw; height:100vh; z-index:-1; pointer-events:none; }
+  html.lit body { background:transparent; }
   body { color:var(--ink); padding:0 0 1rem; background:
     radial-gradient(42rem 30rem at 0% -8%, rgba(255,61,139,.20), transparent 65%),
     radial-gradient(40rem 32rem at 100% 4%, rgba(124,77,255,.20), transparent 65%),

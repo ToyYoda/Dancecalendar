@@ -4,7 +4,7 @@ Labels: wayfinder:map
 
 ## Destination
 
-A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live at a public URL: at least 2 Organizers post via WhatsApp (or have their Instagram posts picked up automatically), the next 4 weeks of their Events are in the calendar, and the launch is announced in the community WhatsApp groups.
+A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live at a public URL: at least 2 Organizers post via WhatsApp, the next 4 weeks of their Events are in the calendar, and the launch is announced in the community WhatsApp groups.
 
 ## Notes
 
@@ -16,7 +16,6 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
   - Feed-in: Flyer forwarded to a WhatsApp bot (web upload as second path); an AI vision model extracts one or more Events per Flyer; the Organizer confirms and Events go live immediately; a private edit link per Event handles changes and cancellations (cancelled Events stay visible, marked).
   - Organizers are individuals with a Display name (to be replaced by the Organizer's own name plus Organizer groups, see "Organizer name instead of a Display name, and Organizer groups"); join by applying, auto-approved (amended by "Organizer confirmation flow"; the Admin can remove them afterwards); identified by WhatsApp number.
   - Unregistered sender: bot asks "Is this your event?" (a "Tip" answer is remembered per number; amended by "Organizer application form"). Yes → apply link. No → Tip → Admin review queue; Tip Events shown under the Flyer's name, marked "added by the community".
-  - Instagram (added 2026-11-02): new posts on an Organizer's own Instagram account are picked up automatically, before launch; official API only, no scraping. Route and flow open, see "Instagram API for reading Organizers' posts" and "Instagram ingest flow".
   - Likely duplicates (same Venue, overlapping time) are warned about, not blocked.
   - Dancer side: mobile-first web overview only; no Dancer accounts; filters (style, center + radius km, type Party/Workshop/Course/Festival) encoded in the URL.
 
@@ -54,12 +53,11 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
 - [Immediate reply when a Flyer arrives](issues/31-immediate-flyer-reply.md): live; Organizers, remembered Tip numbers and a „Nein, ist ein Tipp“ tap hear „Ich lese deinen Flyer …“ before the AI read, once per message even when the queue retries.
 - [Distances from the Dancer's own position, or a place picked on a map](issues/33-distance-from-my-position.md): live; distances from the browser's position (asked on a bare visit) or a place tapped on the `/karte` map (MapLibre self-served, OpenFreeMap tiles only there); without either every Event shows without km; the Kassel/Göttingen chips are gone. Overrides the Kassel + Göttingen default of [Region boundary](issues/10-region-boundary.md).
 - [Wrong year on an old Flyer without a year](issues/28-wrong-year-old-flyer.md): live; the model returns `year_on_flyer`, and a date more than 183 days ahead with no printed year isn't published from the chat ("vom letzten Jahr?") and shows yellow on the confirm page (yellow, not red, so a real far-off date can still be confirmed); eval v4 unchanged, no Flyer that prints its year newly flagged.
-- [Instagram API for reading Organizers' posts](issues/34-instagram-api-feasibility.md): only Business Discovery with the Admin's own token, polled by cron (no webhook), is open to a private person; Organizers need a public Business/Creator account and an opt-in, no Meta login; no App Review; every Organizer-login route needs business verification (dead end); stories unreadable; €0. Live test pending.
+- [Instagram API for reading Organizers' posts](issues/34-instagram-api-feasibility.md): only Business Discovery with the Admin's own token, polled by cron (no webhook), is open to a private person; Organizers need a public Business/Creator account and an opt-in, no Meta login; no App Review; every Organizer-login route needs business verification (dead end); stories unreadable; €0. The ingest was then ruled out of scope (see Out of scope).
 
 ## Not yet specified
 
 - **Deploy**: domain, Cloudflare account (Workers, D1/R2 in `eu`, Queues, Access, Email; accept the Customer DPA). For the Admin's daily email: Email Routing on the domain, the Admin's address verified as a destination, a `send_email` binding `EMAIL` plus `ADMIN_EMAIL`/`EMAIL_FROM` vars (see [Admin tools and the daily email](issues/25-admin-tools-and-email.md)), then trigger it from `/admin`. GitHub Actions secrets, Impressum/privacy pages live. Meta/WhatsApp: replace the interim website in the business profile and move the webhook to the custom domain (the first webhook and secrets happened in [slice 17](issues/17-whatsapp-happy-path.md)); the Meta app is Live since 2026-11-01 (icon, privacy, Terms and data-deletion URLs set, see [Legal pages](issues/27-legal-pages.md)); the Admin still reviews the legal text. Work the legal pre-launch checklist, including Organizer data deleted ≤ 3 months after leaving (no leave flow yet; a removed Organizer's number stays for blocking, see [Retention and backups](issues/26-retention-and-backups.md)); re-check the CJEU appeal on the EU-US Data Privacy Framework (C-703/25 P).
-- **Instagram build**: the build slice(s) for the Instagram ingest, once "Instagram ingest flow" has decided it; may also need a Meta App Review step before launch.
 - **Launch**: onboarding the first Organizers in both cities and the announcement in the community groups.
 
 ## Out of scope
@@ -74,5 +72,5 @@ A running MVP of the shared dance calendar for the Kassel/Göttingen scene, live
 - Editing Events via WhatsApp chat — the edit link covers it.
 - Invite links — redundant since Organizer applications are auto-approved ([Organizer confirmation flow](issues/08-organizer-confirmation-flow.md)).
 - Proactive bot messages ("still running?" reminders, approval notices) — would need paid templates; the bot only replies.
-- Instagram Stories and personal/private Instagram accounts — unreachable without App Review plus business verification, which a private person can't get ([Instagram API for reading Organizers' posts](issues/34-instagram-api-feasibility.md)); those Organizers use WhatsApp.
+- Automatic Instagram ingest ([Instagram ingest flow](issues/35-instagram-ingest-flow.md), [Business Discovery test call](issues/36-business-discovery-test-call.md)) — the Organizers post Flyers in stories on personal accounts, which no official API reads; Business Discovery only reaches public posts of Business/Creator accounts ([Instagram API for reading Organizers' posts](issues/34-instagram-api-feasibility.md)). Organizers send the same image to the WhatsApp bot.
 - Organizers taking over Tip Events themselves — Admin reassigns by hand.

@@ -1,6 +1,7 @@
 # Business Discovery test call
 
 Type: task
+Status: resolved
 Labels: wayfinder:task
 Blocked by: 34
 
@@ -16,3 +17,7 @@ Before the Instagram flow is decided, prove the route from [Instagram API for re
 ## Done when
 
 The answer records: does the call work on Standard Access; do caption, `media_url` and carousel children come back nested; does the system-user token work (otherwise a 60-day token refresh is needed); same app or second app; the Admin's IG user ID and where tokens are kept (git-ignored `.dev.vars`). If the call fails, the Instagram ingest is not viable and the map is redrawn.
+
+## Out of scope (2026-11-02)
+
+Closed without resolving. The Admin reports that the Organizers they know post their Flyers in **stories on personal accounts**. No official API reads those, and even Business/Creator stories would need App Review plus business verification ([Instagram API for reading Organizers' posts](34-instagram-api-feasibility.md)). The Instagram ingest left the MVP; see the map's Out of scope.

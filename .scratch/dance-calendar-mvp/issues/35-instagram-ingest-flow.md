@@ -1,6 +1,7 @@
 # Instagram ingest flow
 
 Type: grilling
+Status: resolved
 Labels: wayfinder:grilling
 Blocked by: 34, 36
 
@@ -16,3 +17,7 @@ With the route from [Instagram API for reading Organizers' posts](34-instagram-a
 - Knock-on changes: privacy policy and Terms of Use, Admin tools (connected accounts, a failing token), `GLOSSARY.md`.
 
 The outcome is the decided flow plus the build ticket(s) that apply it.
+
+## Out of scope (2026-11-02)
+
+Closed without resolving. The Admin reports that the Organizers they know post their Flyers in **stories on personal accounts**. No official API reads those, and even Business/Creator stories would need App Review plus business verification ([Instagram API for reading Organizers' posts](34-instagram-api-feasibility.md)). The Instagram ingest left the MVP; see the map's Out of scope.

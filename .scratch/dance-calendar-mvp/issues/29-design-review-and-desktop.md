@@ -2,6 +2,7 @@
 
 Type: prototype
 Labels: wayfinder:prototype
+Status: claimed
 
 ## Question
 

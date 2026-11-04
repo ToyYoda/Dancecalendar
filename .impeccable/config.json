@@ -1,0 +1,53 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-ticket.html"
+        ],
+        "createdAt": "2026-11-04T10:34:24.724Z",
+        "reason": "agent: unchosen decision-round sketch; the gradient is a placeholder standing in for a Flyer image, not shipping UI"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-04T10:44:07.014Z",
+        "reason": "agent: spent decision-round sketch from before DESIGN.md existed; not shipping UI"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-ticket.html"
+        ],
+        "createdAt": "2026-11-04T10:44:07.159Z",
+        "reason": "agent: spent decision-round sketch from before DESIGN.md existed; not shipping UI"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-04T10:44:07.312Z",
+        "reason": "agent: spent decision-round sketch from before DESIGN.md existed; not shipping UI"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-04T10:44:07.458Z",
+        "reason": "agent: spent decision-round sketch from before DESIGN.md existed; not shipping UI"
+      }
+    ]
+  }
+}

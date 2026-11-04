@@ -178,7 +178,7 @@ describe("the Flyer feed", () => {
 
     const html = await page();
 
-    expect(html).toMatch(/class="card cancelled"/);
+    expect(html).toMatch(/class="entry cancelled"/);
     expect(html).toContain("Abgesagt");
     expect(html).toContain("von der Community hinzugefügt");
     expect(html).toContain("Salsa Freunde");
@@ -188,7 +188,7 @@ describe("the Flyer feed", () => {
     await add({ title: "Später Party", day: 12 });
 
     const html = await page("?styles=salsa");
-    const next = html.match(/href="(\/\?[^"]*w=\d{4}-\d{2}-\d{2}[^"]*)"[^>]*>›/)![1].replace(/&amp;/g, "&");
+    const next = html.match(/href="(\/\?[^"]*w=\d{4}-\d{2}-\d{2}[^"]*)"[^>]*aria-label="Später"/)![1].replace(/&amp;/g, "&");
 
     expect(next).toContain("styles=salsa");
     const later = await page(next.slice(1));

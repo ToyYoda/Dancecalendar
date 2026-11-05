@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T12:00:00Z",
+  "title": "Design System: DanceCalendar",
+  "extensions": {
+    "colorMeta": {
+      "magenta": { "role": "primary", "displayName": "Listings Magenta", "canonical": "#d6006d", "tonalRamp": ["#3d0020", "#66003a", "#8f0050", "#b0005a", "#d6006d", "#ec5a9c", "#f6a9cb", "#fde8f1"] },
+      "magenta-ink": { "role": "primary", "displayName": "Deep Magenta Ink", "canonical": "#b0005a", "tonalRamp": ["#33001a", "#57002c", "#7c003f", "#b0005a", "#c9307a", "#df72a3", "#f0b4cf", "#fbe7f0"] },
+      "ink": { "role": "neutral", "displayName": "Press Ink", "canonical": "#111111", "tonalRamp": ["#111111", "#262626", "#3d3d3d", "#595959", "#7a7a7a", "#a3a3a3", "#d4d4d4", "#f3f3f1"] },
+      "paper": { "role": "neutral", "displayName": "White Stock", "canonical": "#ffffff", "tonalRamp": ["#262626", "#595959", "#8a8a8a", "#b5b5b5", "#d4d4d4", "#ebebe9", "#f3f3f1", "#ffffff"] },
+      "mute": { "role": "neutral", "displayName": "Column Grey", "canonical": "#595959", "tonalRamp": ["#1f1f1f", "#2e2e2e", "#404040", "#595959", "#737373", "#8f8f8f", "#bdbdbd", "#ebebeb"] },
+      "hair": { "role": "neutral", "displayName": "Hairline Grey", "canonical": "#d4d4d4", "tonalRamp": ["#2e2e2e", "#4d4d4d", "#737373", "#9a9a9a", "#b8b8b8", "#d4d4d4", "#e6e6e6", "#f5f5f5"] },
+      "dot": { "role": "neutral", "displayName": "Dot Grey", "canonical": "#9a9a9a", "tonalRamp": ["#262626", "#404040", "#5e5e5e", "#7c7c7c", "#9a9a9a", "#bababa", "#d9d9d9", "#f2f2f2"] },
+      "wash": { "role": "neutral", "displayName": "Proof Wash", "canonical": "#f3f3f1", "tonalRamp": ["#2b2b29", "#4a4a47", "#6e6e6a", "#93938f", "#b8b8b4", "#d8d8d5", "#f3f3f1", "#fbfbfa"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Masthead", "purpose": "The \"Termine\" masthead only; 84px from 960px." },
+      "numeral": { "displayName": "Day Numeral", "purpose": "The pinned day numeral; 52px phone band, 120px from 960px." },
+      "headline": { "displayName": "Headline", "purpose": "Event details title, max 22ch, balanced." },
+      "title": { "displayName": "Entry Title", "purpose": "Event title in a listing entry; 26px from 960px." },
+      "body": { "displayName": "Body", "purpose": "Running text, tabular figures." },
+      "body-long": { "displayName": "Body Long", "purpose": "Event description, max 65ch." },
+      "control": { "displayName": "Control", "purpose": "Tabs, menu triggers, buttons." },
+      "label": { "displayName": "Label", "purpose": "Archivo Narrow 700 uppercase, 10 to 13px: weekdays, months, folio, fact captions, Event type, marks." }
+    },
+    "shadows": [
+      { "name": "open-menu", "value": "0 14px 30px rgba(17,17,17,.14)", "purpose": "The open Ort/Tanzstil menu panel only." }
+    ],
+    "motion": [
+      { "name": "chevron-turn", "value": "transform .2s cubic-bezier(.2,.7,.2,1)", "purpose": "Menu chevron rotates 180deg on open; disabled under prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "numeral-column", "value": "600px" },
+      { "name": "inline-styles", "value": "720px" },
+      { "name": "detail-split", "value": "860px" },
+      { "name": "wide", "value": "960px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Type Tabs",
+      "kind": "nav",
+      "refersTo": "type-tab",
+      "description": "Event type filter tabs on a hairline baseline; active is ink 800 with a 3px ink underline.",
+      "html": "<nav class=\"ds-tabs\"><a href=\"#\" class=\"on\">Alle</a><a href=\"#\">Partys</a><a href=\"#\">Workshops</a><a href=\"#\">Kurse</a><a href=\"#\">Festivals</a></nav>",
+      "css": ".ds-tabs { display:flex; gap:18px; border-bottom:1px solid #d4d4d4; font-family:Archivo, system-ui, sans-serif; } .ds-tabs a { padding:11px 0 9px; font-weight:600; font-size:14.5px; color:#595959; text-decoration:none; border-bottom:3px solid transparent; margin-bottom:-1px; } .ds-tabs a:hover { color:#111; } .ds-tabs a.on { color:#111; font-weight:800; border-bottom-color:#111; } .ds-tabs a:focus-visible { outline:2px solid #d6006d; outline-offset:2px; }"
+    },
+    {
+      "name": "Option Chip",
+      "kind": "chip",
+      "refersTo": "option-chip",
+      "description": "Square outlined style/place option; selected inverts to ink.",
+      "html": "<div class=\"ds-opts\"><a href=\"#\" class=\"ds-opt on\">Salsa</a><a href=\"#\" class=\"ds-opt\">Bachata</a><a href=\"#\" class=\"ds-opt\">West Coast Swing</a></div>",
+      "css": ".ds-opts { display:flex; flex-wrap:wrap; gap:6px; } .ds-opt { display:inline-block; padding:6px 10px; border:1px solid #111; font:600 13.5px/1.2 Archivo, system-ui, sans-serif; color:#111; background:#fff; text-decoration:none; white-space:nowrap; } .ds-opt:hover { background:#f3f3f1; } .ds-opt.on { background:#111; color:#fff; } .ds-opt:focus-visible { outline:2px solid #d6006d; outline-offset:2px; }"
+    },
+    {
+      "name": "View Switch",
+      "kind": "nav",
+      "refersTo": "view-switch-active",
+      "description": "Liste/Monat segmented switch in an ink outline.",
+      "html": "<div class=\"ds-views\"><a href=\"#\" class=\"on\">Liste</a><a href=\"#\">Monat</a></div>",
+      "css": ".ds-views { display:inline-flex; border:1px solid #111; font:600 13px Archivo, system-ui, sans-serif; } .ds-views a { padding:5px 10px; color:#111; text-decoration:none; } .ds-views a:hover { background:#f3f3f1; } .ds-views a.on { background:#111; color:#fff; } .ds-views a:focus-visible { outline:2px solid #d6006d; outline-offset:2px; }"
+    },
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Square outlined button, white with ink text.",
+      "html": "<button class=\"ds-btn\">Abbrechen</button>",
+      "css": ".ds-btn { font:600 14.5px Archivo, system-ui, sans-serif; padding:9px 14px; border:1px solid #111; border-radius:0; background:#fff; color:#111; cursor:pointer; } .ds-btn:hover { background:#f3f3f1; } .ds-btn:focus-visible { outline:2px solid #d6006d; outline-offset:2px; } .ds-btn:disabled { opacity:.35; cursor:default; }"
+    },
+    {
+      "name": "Solid Button",
+      "kind": "button",
+      "refersTo": "button-solid",
+      "description": "Ink-filled button for the primary action on /karte.",
+      "html": "<button class=\"ds-btn-solid\">Hier suchen</button>",
+      "css": ".ds-btn-solid { font:600 14.5px Archivo, system-ui, sans-serif; padding:9px 14px; border:1px solid #111; border-radius:0; background:#111; color:#fff; cursor:pointer; } .ds-btn-solid:focus-visible { outline:2px solid #d6006d; outline-offset:2px; } .ds-btn-solid:disabled { opacity:.35; cursor:default; }"
+    },
+    {
+      "name": "Week Step",
+      "kind": "button",
+      "refersTo": "week-step",
+      "description": "34px square outlined step with an inline SVG arrow; hover inverts.",
+      "html": "<span class=\"ds-steps\"><span class=\"ds-step off\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\"><path d=\"M8.5 2.5 4 7l4.5 4.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/></svg></span><a href=\"#\" class=\"ds-step\" aria-label=\"Nächste Woche\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\"><path d=\"M5.5 2.5 10 7l-4.5 4.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/></svg></a></span>",
+      "css": ".ds-steps { display:flex; gap:6px; } .ds-step { display:inline-grid; place-items:center; width:34px; height:34px; border:1px solid #111; color:#111; } .ds-step svg { display:block; } a.ds-step:hover { background:#111; color:#fff; } a.ds-step:focus-visible { outline:2px solid #d6006d; outline-offset:2px; } .ds-step.off { border-color:#d4d4d4; color:#d4d4d4; }"
+    },
+    {
+      "name": "Filter Menu",
+      "kind": "custom",
+      "refersTo": "menu",
+      "description": "Details trigger with SVG chevron; set value in Deep Magenta Ink; the only shadowed surface.",
+      "html": "<details class=\"ds-pick\" open><summary class=\"set\">Ab hier · überall <svg class=\"chev\" width=\"10\" height=\"10\" viewBox=\"0 0 10 10\"><path d=\"M1.5 3.5 5 7l3.5-3.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/></svg></summary><div class=\"menu\"><p class=\"hint\">Events in deiner Nähe zuerst.</p><div class=\"opts\"><a href=\"#\" class=\"opt on\">überall</a><a href=\"#\" class=\"opt\">10 km</a><a href=\"#\" class=\"opt\">25 km</a></div></div></details>",
+      "css": ".ds-pick { position:relative; font-family:Archivo, system-ui, sans-serif; } .ds-pick summary { list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:14.5px; padding:4px 0; color:#111; } .ds-pick summary::-webkit-details-marker { display:none; } .ds-pick summary.set { color:#b0005a; } .ds-pick summary:focus-visible { outline:2px solid #d6006d; outline-offset:2px; } .ds-pick .chev { transition:transform .2s cubic-bezier(.2,.7,.2,1); } .ds-pick[open] .chev { transform:rotate(180deg); } .ds-pick .menu { margin-top:6px; max-width:440px; padding:14px; background:#fff; border:1.5px solid #111; box-shadow:0 14px 30px rgba(17,17,17,.14); } .ds-pick .hint { margin:0 0 12px; font-size:13px; line-height:1.45; color:#595959; } .ds-pick .opts { display:flex; flex-wrap:wrap; gap:6px; } .ds-pick .opt { padding:6px 10px; border:1px solid #111; font-weight:600; font-size:13.5px; color:#111; text-decoration:none; } .ds-pick .opt:hover { background:#f3f3f1; } .ds-pick .opt.on { background:#111; color:#fff; } @media (prefers-reduced-motion: reduce) { .ds-pick .chev { transition:none; } }"
+    },
+    {
+      "name": "Listing Entry",
+      "kind": "card",
+      "refersTo": "title",
+      "description": "Signature entry: pinned numeral (magenta for today), title, run-in line, grey notes line, then the whole Flyer.",
+      "html": "<div class=\"ds-day\"><div class=\"ds-num\"><span class=\"big\">4</span><span class=\"wd\">Mittwoch</span><span class=\"mo\">Heute</span></div><div class=\"ds-entry\"><a href=\"#\"><h3>Kirche und Salsa – geht das?</h3><p class=\"when\"><b>19:00</b><span class=\"kind\">Party</span><span class=\"sty\">Salsa</span><span class=\"where\">Ort unbekannt</span></p><p class=\"notes\">Salsa Events mit DJ Clayton · Anfänger</p><div class=\"flyer\">Flyer</div></a></div></div>",
+      "css": ".ds-day { display:grid; grid-template-columns:78px minmax(0,1fr); column-gap:14px; padding:16px 0 4px; border-bottom:1px solid #111; font:400 15px/1.45 Archivo, system-ui, sans-serif; font-variant-numeric:tabular-nums; color:#111; } .ds-num { display:flex; flex-direction:column; } .ds-num .big { font:800 72px/.8 Archivo, system-ui, sans-serif; letter-spacing:-.04em; margin-left:-3px; color:#d6006d; } .ds-num .wd, .ds-num .mo, .ds-entry .kind { font-family:\"Archivo Narrow\", Archivo, system-ui, sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.08em; } .ds-num .wd { margin-top:10px; font-size:13px; } .ds-num .mo { font-size:11px; color:#d6006d; } .ds-entry { padding:0 0 16px; } .ds-entry a { display:block; color:inherit; text-decoration:none; } .ds-entry h3 { margin:0; font:800 20px/1.15 Archivo, system-ui, sans-serif; letter-spacing:-.015em; } .ds-entry a:hover h3 { text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:3px; } .ds-entry a:focus-visible { outline:2px solid #d6006d; outline-offset:2px; } .ds-entry .when { margin:5px 0 0; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:10px; } .ds-entry .when b { font-weight:800; } .ds-entry .kind { font-size:12px; color:#b0005a; } .ds-entry .sty { font-size:13.5px; color:#595959; } .ds-entry .where { font-size:14px; } .ds-entry .where::before { content:\"· \"; color:#595959; } .ds-entry .notes { margin:4px 0 0; font-size:13px; color:#595959; } .ds-entry .flyer { margin-top:12px; height:160px; background:#f3f3f1; display:grid; place-items:center; color:#595959; font-size:13px; }"
+    },
+    {
+      "name": "Status Marks",
+      "kind": "chip",
+      "refersTo": "mark-cancelled",
+      "description": "Cancelled (solid ink), registration (ink outline), Tip (italic grey line).",
+      "html": "<div class=\"ds-marks\"><span class=\"ds-mark cancel\">abgesagt</span><span class=\"ds-mark reg\">Anmeldung nötig</span><span class=\"ds-mark tip\">von der Community hinzugefügt</span></div>",
+      "css": ".ds-marks { display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .ds-mark { display:inline-block; font:700 11px/1.2 \"Archivo Narrow\", Archivo, system-ui, sans-serif; text-transform:uppercase; letter-spacing:.08em; padding:3px 6px 2px; color:#111; } .ds-mark.cancel { background:#111; color:#fff; } .ds-mark.reg { border:1px solid #111; } .ds-mark.tip { font:italic 400 12.5px Archivo, system-ui, sans-serif; text-transform:none; letter-spacing:0; color:#595959; padding-left:0; padding-right:0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Termine Page",
+    "overview": "The Dancer page is set like the listings section of a printed city magazine: a heavy masthead on white stock, a 4px ink rule beneath it, giant day numerals that stay pinned while their Events scroll past, and entries run in a strict column with each Organizer's whole Flyer set inside it. Everything typographic is black ink; the colour on the page belongs to the Flyers, and one magenta does the pointing (today, the type of each Event, the filter that is set).\n\nDensity is a listings page's density: tight leading, rules instead of boxes, labels in tracked narrow capitals, numbers in tabular figures. Structure comes from line weight, not from surfaces: 4px ink for the masthead and footer, 1px ink between days and around controls, dotted grey hairlines between entries. Corners are square throughout. The world explicitly refuses the dark nightclub feed with neon glow and the rounded card grid of event apps.\n\nThis system currently covers the Dancer overview (week and month), the Event details page and `/karte`. The confirm page, edit page and admin surfaces still carry their own older styles and have not adopted it.",
+    "keyCharacteristics": [
+      "White stock, ink type, one magenta pointer.",
+      "Rules, never cards: ink rules divide days, dotted hairlines divide entries.",
+      "Giant Archivo 800 numerals pinned per day; Archivo Narrow 700 tracked caps for every label.",
+      "The whole Flyer, uncropped and uncovered, inside each entry.",
+      "Square corners; the only soft shadow belongs to an open menu."
+    ],
+    "rules": [
+      { "name": "The Today Rule", "body": "Magenta means \"today\" or \"this is the type / the set filter\". It never decorates, never fills a surface, never tints a Flyer frame.", "section": "colors" },
+      { "name": "The Ink Fill Rule", "body": "A chosen option is shown by inverting to ink with white text, not by colouring it. Magenta is reserved for the pointer roles above.", "section": "colors" },
+      { "name": "The Two-Voice Rule", "body": "Headings and numerals are Archivo 800 with negative tracking; labels are Archivo Narrow 700 caps with positive tracking. Never set a label in Archivo, never set a heading in Narrow.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Figures are tabular everywhere, so times and day numbers align down the column.", "section": "typography" },
+      { "name": "The Pinned Day Rule", "body": "Every day's numeral stays visible while its Events scroll: beside them from 600px, as a band above them on a phone.", "section": "layout" },
+      { "name": "The Whole Flyer Rule", "body": "A Flyer is never cropped, overlaid or covered by UI. It scales to fit (max 82vh in a phone column, full 360px column on desktop, full width on details).", "section": "layout" },
+      { "name": "The Flat Stock Rule", "body": "Surfaces are flat white. A shadow appears only on an open menu. (The 4px inset magenta bar on a selected today cell in the month grid is a rule drawn with box-shadow, not elevation.)", "section": "elevation" }
+    ],
+    "dos": [
+      "Do set every label, weekday and status in Archivo Narrow 700 uppercase at 0.08em tracking.",
+      "Do divide days with 1px ink rules and entries with dotted Dot Grey rules; open and close the page with 4px ink rules.",
+      "Do show a chosen option by inverting to ink (#111111) with white text.",
+      "Do use Deep Magenta Ink (#b0005a) when magenta is small text, and Listings Magenta (#d6006d) for numerals, ticks, focus and selection.",
+      "Do show the whole Flyer in every entry, scaled to fit, with nothing over it.",
+      "Do keep icons as thin inline SVG strokes in currentColor."
+    ],
+    "donts": [
+      "Don't round corners or put Events in cards; the listing is ruled, not boxed.",
+      "Don't add shadows outside an open menu.",
+      "Don't use magenta for anything except today, the Event type, the set filter, focus and selection.",
+      "Don't introduce a dark theme, glow or neon; the stock is white.",
+      "Don't crop, overlay or tint a Flyer, except the greyscale-and-fade that marks a cancelled Event."
+    ]
+  }
+}

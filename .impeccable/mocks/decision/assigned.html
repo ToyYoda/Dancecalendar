@@ -1,0 +1,36 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Tanzfahrplan</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:390px;height:844px;overflow:hidden;background:#fff;color:#111;font:15px/1.35 Barlow,sans-serif;font-variant-numeric:tabular-nums}
+header{background:#FFD500;padding:14px 16px 12px;display:flex;align-items:center;gap:10px}
+.mark{width:34px;height:34px;border-radius:50%;background:#00843D;color:#FFD500;font:800 22px/34px 'Barlow Condensed';text-align:center}
+.wm{font:800 25px/1 'Barlow Condensed';color:#00843D;letter-spacing:.2px}
+.lang{margin-left:auto;font:600 13px Barlow;color:#00602c;border:1.5px solid #00843D;border-radius:4px;padding:3px 7px}
+nav{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid #e3e3e3;overflow:hidden}
+nav b{font:600 14px Barlow;padding:7px 11px;border-radius:4px;background:#f1f1ef;white-space:nowrap}
+nav b.on{background:#111;color:#fff}
+.lines{display:flex;gap:6px;padding:10px 16px 12px}
+.l{font:700 13px/1 'Barlow Condensed';color:#fff;padding:5px 7px;border-radius:3px;letter-spacing:.4px}
+.sal{background:#E30613}.bac{background:#7B2D8E}.kiz{background:#00897B}.wcs{background:#0060A9}.ukz{background:#1a1a1a}
+.off{opacity:.28}
+.day{background:#00843D;color:#fff;padding:8px 16px;display:flex;justify-content:space-between;font:700 16px 'Barlow Condensed';letter-spacing:.6px;text-transform:uppercase}
+.day span{font-weight:600;opacity:.85}
+.row{display:grid;grid-template-columns:58px 1fr auto;gap:0 10px;padding:10px 16px 8px;align-items:baseline}
+.t{font:700 22px/1 'Barlow Condensed'}
+.ti{font:700 17px/1.2 Barlow}
+.meta{grid-column:2/4;color:#555;font-size:13.5px;margin-top:2px}
+.km{font:600 13px Barlow;color:#555}
+.badges{grid-column:2/4;display:flex;gap:5px;margin-top:6px}
+.flyer{margin:4px 16px 0 84px;height:420px;border-radius:2px;background:linear-gradient(160deg,#5a0b0b,#d9480f 45%,#3b0a28);position:relative}
+.flyer i{position:absolute;left:14px;top:20px;font:italic 800 46px/1 'Barlow Condensed';color:#ffe066}
+</style></head><body>
+<header><div class="mark">T</div><div class="wm">DanceCalendar</div><div class="lang">EN</div></header>
+<nav><b class="on">Alle</b><b>Partys</b><b>Workshops</b><b>Kurse</b><b>Festivals</b></nav>
+<div class="lines"><span class="l sal">SALSA</span><span class="l bac">BACHATA</span><span class="l kiz off">KIZOMBA</span><span class="l wcs off">WCS</span><span class="l ukz off">URBAN KIZ</span></div>
+<div class="day">Heute · Mi 4.11.<span>3 Events · 📍 Kassel 30 km</span></div>
+<div class="row"><div class="t">18:15</div><div class="ti">Gießen Kurse – Anfänger</div><div class="km">62 km</div>
+<div class="meta">Workshop · Havanna Club · Salsa Events mit DJ Clayton</div>
+<div class="badges"><span class="l sal">SALSA</span><span class="l bac">BACHATA</span></div></div>
+<div class="flyer"><i>Salsa<br>Events</i></div>
+</body></html>

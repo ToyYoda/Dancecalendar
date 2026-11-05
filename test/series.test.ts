@@ -253,7 +253,7 @@ describe("the Series link", () => {
 
     const { results } = await env.DB.prepare("SELECT cancelled FROM event ORDER BY starts_at").all<{ cancelled: number }>();
     expect(results.map((r) => r.cancelled)).toEqual([1, ...Array(11).fill(0)]);
-    expect(await feed()).toContain("card cancelled");
+    expect(await feed()).toContain("entry cancelled");
   });
 
   it("is reachable from an occurrence's own edit page", async () => {

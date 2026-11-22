@@ -25,3 +25,9 @@ backup-*.sql
 .impeccable/review/
 .impeccable/config.local.json
 .impeccable/hook.cache.json
+
+# Taste-skill landing prototype: real sample Flyers, screenshots and the skill's run state
+.scratch/*/prototypes/taste-landing/flyers/
+.scratch/*/prototypes/taste-landing/shots/
+.scratch/*/prototypes/taste-landing/.taste-skill/
+.scratch/*/prototypes/taste-landing/share.jpg

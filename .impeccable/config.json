@@ -47,6 +47,18 @@
         ],
         "createdAt": "2026-11-04T10:44:07.458Z",
         "reason": "agent: spent decision-round sketch from before DESIGN.md existed; not shipping UI"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "outfit",
+        "createdAt": "2026-11-22T21:12:58.196Z",
+        "reason": "taste-skill redesign the user asked for (2026-11-22): the skill dealt Outfit; DESIGN.md is to follow the redesign"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "dm mono",
+        "createdAt": "2026-11-22T21:12:58.328Z",
+        "reason": "taste-skill redesign the user asked for (2026-11-22): dealt mono pairing for Outfit"
       }
     ]
   }

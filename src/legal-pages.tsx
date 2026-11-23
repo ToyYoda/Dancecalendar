@@ -154,8 +154,8 @@ function PrivacyDe(props: { op: Operator }) {
       <h2>2. Kurz gesagt</h2>
       <ul>
         <li>
-          Keine Cookies, kein Tracking, keine Analyse- oder Werbedienste. Darum gibt es kein Cookie-Banner. Inhalte Dritter lädt nur die Karte zum
-          Ortwählen, und erst, wenn du sie öffnest (Abschnitt 3).
+          Keine Cookies, kein Tracking, keine Analyse- oder Werbedienste. Darum gibt es kein Cookie-Banner. Inhalte Dritter laden nur die Karten (die
+          Kartenansicht und die Karte zum Ortwählen), und erst, wenn du sie öffnest (Abschnitt 3).
         </li>
         <li>Tänzer*innen brauchen kein Konto. Filter stehen nur in der Adresse (URL) der Seite.</li>
         <li>Telefonnummern und wer einen Tipp geschickt hat, erscheinen nie öffentlich.</li>
@@ -173,7 +173,7 @@ function PrivacyDe(props: { op: Operator }) {
         gespeichert. Ohne Freigabe siehst du alle Events ohne Entfernungen.
       </p>
       <p>
-        Öffnest du „Auf Karte wählen“, lädt dein Browser Kartenbilder von OpenFreeMap (openfreemap.org). Dabei erhält OpenFreeMap deine IP-Adresse und die
+        Öffnest du die Ansicht „Karte“ oder „Auf Karte wählen“, lädt dein Browser Kartenbilder von OpenFreeMap (openfreemap.org). Dabei erhält OpenFreeMap deine IP-Adresse und die
         Kartenausschnitte, die du ansiehst. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (die von dir gewählte Karte anzeigen). Ohne Öffnen der Karte wird
         nichts dorthin übertragen.
       </p>
@@ -301,8 +301,8 @@ function PrivacyEn(props: { op: Operator }) {
       <h2>2. In short</h2>
       <ul>
         <li>
-          No cookies, no tracking, no analytics or advertising services. That's why there is no cookie banner. Only the map for picking a place loads
-          third-party content, and only once you open it (section 3).
+          No cookies, no tracking, no analytics or advertising services. That's why there is no cookie banner. Only the maps (the map view and the map for
+          picking a place) load third-party content, and only once you open them (section 3).
         </li>
         <li>Dancers need no account. Filters live only in the page address (URL).</li>
         <li>Phone numbers, and who sent a Tip, are never shown publicly.</li>
@@ -320,7 +320,7 @@ function PrivacyEn(props: { op: Operator }) {
         see every Event, without distances.
       </p>
       <p>
-        If you open "Pick on map", your browser loads map images from OpenFreeMap (openfreemap.org), which receives your IP address and the map areas you view.
+        If you open the "Map" view or "Pick on map", your browser loads map images from OpenFreeMap (openfreemap.org), which receives your IP address and the map areas you view.
         Legal basis: Art. 6(1)(f) GDPR (showing the map you chose). Nothing is sent there unless you open the map.
       </p>
 

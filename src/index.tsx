@@ -14,6 +14,7 @@ import { readUpload, uploadFailed, type FlyerUpload } from "./upload";
 import { berlinDate, handleMessage } from "./whatsapp/bot";
 import type { InboundMessage } from "./whatsapp/types";
 import { webhook } from "./whatsapp/webhook";
+import { telegramWebhook } from "./telegram/webhook";
 
 // Not strict: "/admin/upload/" finds the same page as "/admin/upload".
 const app = new Hono<{ Bindings: Env }>({ strict: false });
@@ -25,9 +26,10 @@ app.route("/a", applyPage);
 app.route("/c", confirmPage);
 app.route("/admin", admin);
 app.route("/webhook", webhook);
+app.route("/telegram", telegramWebhook);
 app.route("/", overview);
 
-// Queue jobs: inbound WhatsApp messages from the webhook, and Flyers uploaded on the web.
+// Queue jobs: inbound WhatsApp and Telegram messages from the webhooks, and Flyers uploaded on the web.
 export type Job = InboundMessage | FlyerUpload;
 
 const SERIES_CRON = "30 2 * * *";

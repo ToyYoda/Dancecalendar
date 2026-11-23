@@ -3,7 +3,7 @@ import type { ExtractedEvent, Extraction } from "../extraction/extract";
 import { geocode, type Place } from "../geocode";
 import { findVenue, normalize, venueQuery } from "../publish";
 import { ruleButtons, ruleFromFlyer, ruleFromValue, seriesLeads, type Rule } from "../series";
-import { sendButtons, sendText, type Button } from "./graph";
+import { sendButtons, sendText, type Button } from "../messenger";
 import { formatDate, publishable, summary } from "./summary";
 
 // The blocking questions the bot asks about a held Flyer before its summary, one message each, in this

@@ -158,7 +158,7 @@ function PrivacyDe(props: { op: Operator }) {
           Kartenansicht und die Karte zum Ortwählen), und erst, wenn du sie öffnest (Abschnitt 3).
         </li>
         <li>Tänzer*innen brauchen kein Konto. Filter stehen nur in der Adresse (URL) der Seite.</li>
-        <li>Telefonnummern und wer einen Tipp geschickt hat, erscheinen nie öffentlich.</li>
+        <li>Telegram-Konten und wer einen Tipp geschickt hat, erscheinen nie öffentlich.</li>
       </ul>
 
       <h2>3. Website besuchen</h2>
@@ -178,19 +178,20 @@ function PrivacyDe(props: { op: Operator }) {
         nichts dorthin übertragen.
       </p>
 
-      <h2>4. Der WhatsApp-Bot</h2>
+      <h2>4. Der Telegram-Bot</h2>
       <p>
-        Wenn du dem Bot schreibst, verarbeiten wir deine Telefonnummer, deine Nachrichten und die Flyer, die du schickst, um daraus Events zu machen und dir zu
+        Wenn du dem Bot schreibst, verarbeiten wir deine Telegram-Nutzer-ID (eine Zahl, nicht deine Telefonnummer), deine Nachrichten und die Flyer, die du schickst, um daraus Events zu machen und dir zu
         antworten. Rechtsgrundlage für Veranstalter*innen ist Art. 6 Abs. 1 lit. b DSGVO (Nutzung nach den <a href="/nutzungsbedingungen">Nutzungsbedingungen</a>
         ), für alle anderen Art. 6 Abs. 1 lit. f DSGVO (unser Interesse, den Kalender zu betreiben und Tipps anzunehmen).
       </p>
       <p>
-        Die Nachrichten laufen über WhatsApp Ireland Limited (Meta), das sie für uns als Auftragsverarbeiter überträgt. Einige Daten (z. B. Metadaten deiner
-        Nutzung) verarbeitet WhatsApp in eigener Verantwortung, siehe die{" "}
-        <a href="https://www.whatsapp.com/legal/privacy-policy-eea">Datenschutzrichtlinie von WhatsApp</a>.
+        Die Nachrichten laufen über Telegram. Telegram (Telegram Group Inc. und Konzerngesellschaften, Britische Jungferninseln und Dubai) verarbeitet sie als
+        eigener Verantwortlicher, nicht in unserem Auftrag; Chats mit Bots sind nicht Ende-zu-Ende-verschlüsselt. Mehr dazu, auch zu Telegrams EU-Vertreter, in
+        der <a href="https://telegram.org/privacy/de">Datenschutzerklärung von Telegram</a>. Den Namen und Benutzernamen, die Telegram mitschickt, speichern
+        wir nicht.
       </p>
       <p>
-        Schreibst du „Admin“, speichern wir deine Nummer, damit sich der Admin bei dir meldet. Mit <strong>STOP</strong> bekommst du keine Nachrichten mehr;
+        Schreibst du „Admin“, speichern wir deine Nutzer-ID, damit sich der Admin bei dir meldet. Mit <strong>STOP</strong> bekommst du keine Nachrichten mehr;
         dass du STOP geschrieben hast, merken wir uns, damit es dabei bleibt.
       </p>
 
@@ -203,10 +204,10 @@ function PrivacyDe(props: { op: Operator }) {
 
       <h2>6. Veranstalter*innen</h2>
       <p>
-        Bei der Anmeldung speichern wir deinen Anzeigenamen (öffentlich bei deinen Events), deinen Vornamen (nur für den Admin) und deine WhatsApp-Nummer (nie
+        Bei der Anmeldung speichern wir deinen Anzeigenamen (öffentlich bei deinen Events), deinen Vornamen (nur für den Admin) und deine Telegram-Nutzer-ID (nie
         öffentlich). Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO. Die Daten bleiben, solange du angemeldet bist. Hörst du auf oder wirst du entfernt, löschen
-        wir deine künftigen Events sofort und deine übrigen Daten spätestens nach 3 Monaten. Wird eine Nummer wegen eines Verstoßes gesperrt, behalten wir nur
-        die Nummer, damit die Sperre wirkt (Art. 6 Abs. 1 lit. f DSGVO).
+        wir deine künftigen Events sofort und deine übrigen Daten spätestens nach 3 Monaten. Wird ein Konto wegen eines Verstoßes gesperrt, behalten wir nur
+        seine Nutzer-ID, damit die Sperre wirkt (Art. 6 Abs. 1 lit. f DSGVO).
       </p>
 
       <h2>7. Tipps</h2>
@@ -247,9 +248,9 @@ function PrivacyDe(props: { op: Operator }) {
           <td>Auftragsverarbeitungsvertrag mit EU-Standardvertragsklauseln</td>
         </tr>
         <tr>
-          <td>WhatsApp Ireland Limited (Irland)</td>
+          <td>Telegram (Britische Jungferninseln, Dubai)</td>
           <td>Nachrichten des Bots</td>
-          <td>WhatsApp Business Data Processing Terms; für Unterauftragnehmer in den USA Data Privacy Framework bzw. Standardvertragsklauseln</td>
+          <td>Kein Auftragsverarbeiter: Telegram ist selbst verantwortlich, die Übermittlung geschieht, weil du den Bot über Telegram nutzt</td>
         </tr>
       </table>
 
@@ -278,7 +279,7 @@ function PrivacyDe(props: { op: Operator }) {
       <p>Du kannst dich bei einer Datenschutz-Aufsichtsbehörde beschweren, zum Beispiel bei: {HBDI}.</p>
 
       <h2>13. Pflicht zur Angabe</h2>
-      <p>Du musst uns keine Daten geben. Ohne deine Telefonnummer kannst du den Bot aber nicht nutzen; den Kalender ansehen kannst du immer.</p>
+      <p>Du musst uns keine Daten geben. Ohne Telegram-Konto kannst du den Bot aber nicht nutzen; den Kalender ansehen kannst du immer.</p>
     </>
   );
 }
@@ -305,7 +306,7 @@ function PrivacyEn(props: { op: Operator }) {
           picking a place) load third-party content, and only once you open them (section 3).
         </li>
         <li>Dancers need no account. Filters live only in the page address (URL).</li>
-        <li>Phone numbers, and who sent a Tip, are never shown publicly.</li>
+        <li>Telegram accounts, and who sent a Tip, are never shown publicly.</li>
       </ul>
 
       <h2>3. Visiting the website</h2>
@@ -324,18 +325,19 @@ function PrivacyEn(props: { op: Operator }) {
         Legal basis: Art. 6(1)(f) GDPR (showing the map you chose). Nothing is sent there unless you open the map.
       </p>
 
-      <h2>4. The WhatsApp bot</h2>
+      <h2>4. The Telegram bot</h2>
       <p>
-        When you message the bot, we process your phone number, your messages and the Flyers you send, to turn them into Events and to reply. For Organizers the
+        When you message the bot, we process your Telegram user ID (a number, not your phone number), your messages and the Flyers you send, to turn them into Events and to reply. For Organizers the
         legal basis is Art. 6(1)(b) GDPR (use under the <a href="/nutzungsbedingungen?lang=en">Terms of Use</a>); for everyone else Art. 6(1)(f) GDPR (our
         interest in running the calendar and accepting Tips).
       </p>
       <p>
-        Messages are carried by WhatsApp Ireland Limited (Meta) as our processor. WhatsApp processes some data (such as metadata about your use) as an independent
-        controller; see <a href="https://www.whatsapp.com/legal/privacy-policy-eea">WhatsApp's privacy policy</a>.
+        Messages are carried by Telegram. Telegram (Telegram Group Inc. and group companies, British Virgin Islands and Dubai) processes them as an independent
+        controller, not on our behalf; chats with bots are not end-to-end encrypted. See <a href="https://telegram.org/privacy">Telegram's privacy policy</a>,
+        which also names its EU representative. We don't store the name and username Telegram sends along.
       </p>
       <p>
-        If you write "Admin", we store your number so the Admin can get back to you. Send <strong>STOP</strong> and you get no more messages; we remember that
+        If you write "Admin", we store your user ID so the Admin can get back to you. Send <strong>STOP</strong> and you get no more messages; we remember that
         you sent STOP so that it stays that way.
       </p>
 
@@ -348,9 +350,9 @@ function PrivacyEn(props: { op: Operator }) {
 
       <h2>6. Organizers</h2>
       <p>
-        When you sign up we store your Display name (public on your Events), your first name (for the Admin only) and your WhatsApp number (never public). Legal
+        When you sign up we store your Display name (public on your Events), your first name (for the Admin only) and your Telegram user ID (never public). Legal
         basis: Art. 6(1)(b) GDPR. The data is kept while you are registered. If you stop or are removed, we delete your future Events at once and the rest of
-        your data within 3 months. If a number is blocked for a breach, we keep only the number so the block works (Art. 6(1)(f) GDPR).
+        your data within 3 months. If an account is blocked for a breach, we keep only its user ID so the block works (Art. 6(1)(f) GDPR).
       </p>
 
       <h2>7. Tips</h2>
@@ -390,9 +392,9 @@ function PrivacyEn(props: { op: Operator }) {
           <td>Data processing agreement with EU Standard Contractual Clauses</td>
         </tr>
         <tr>
-          <td>WhatsApp Ireland Limited (Ireland)</td>
+          <td>Telegram (British Virgin Islands, Dubai)</td>
           <td>The bot's messages</td>
-          <td>WhatsApp Business Data Processing Terms; for sub-processors in the USA the Data Privacy Framework or Standard Contractual Clauses</td>
+          <td>Not a processor: Telegram is a controller itself; the transfer happens because you use the bot through Telegram</td>
         </tr>
       </table>
 
@@ -420,7 +422,7 @@ function PrivacyEn(props: { op: Operator }) {
       <p>You can complain to a data protection supervisory authority, for example: {HBDI}.</p>
 
       <h2>13. Do you have to give us data?</h2>
-      <p>No. Without your phone number you can't use the bot, but you can always browse the calendar.</p>
+      <p>No. Without a Telegram account you can't use the bot, but you can always browse the calendar.</p>
     </>
   );
 }
@@ -568,8 +570,8 @@ function DeletionDe(props: { op: Operator }) {
         <Mail op={props.op} />.
       </p>
       <p>
-        Möchtest du, dass wir deine Daten löschen (Telefonnummer, Nachrichten, Flyer und deine Events), schreib an <Mail op={props.op} />, am besten mit der
-        Telefonnummer, um die es geht. Wir löschen innerhalb eines Monats und bestätigen dir die Löschung. Aus den wöchentlichen Sicherungen verschwinden die
+        Möchtest du, dass wir deine Daten löschen (Telegram-Nutzer-ID, Nachrichten, Flyer und deine Events), schreib an <Mail op={props.op} />, am besten mit
+        deinem Telegram-Namen, damit wir dich finden. Wir löschen innerhalb eines Monats und bestätigen dir die Löschung. Aus den wöchentlichen Sicherungen verschwinden die
         Daten spätestens nach 8 Wochen.
       </p>
       <p>
@@ -590,7 +592,7 @@ function DeletionEn(props: { op: Operator }) {
         <Mail op={props.op} />.
       </p>
       <p>
-        If you want us to delete your data (phone number, messages, Flyers and your Events), email <Mail op={props.op} />, ideally with the phone number concerned.
+        If you want us to delete your data (Telegram user ID, messages, Flyers and your Events), email <Mail op={props.op} />, ideally with your Telegram name so we can find you.
         We delete within one month and confirm the deletion to you. The data disappears from the weekly backups after 8 weeks at the latest.
       </p>
       <p>

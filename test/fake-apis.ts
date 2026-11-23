@@ -1,7 +1,8 @@
 import { vi } from "vitest";
 
-// Plays Meta's Graph API, the Anthropic API and the geocoders (Photon, Nominatim) at the fetch boundary.
-// `sent` collects every WhatsApp message the bot sends, in order. `places` maps the start of a geocoder
+// Plays Meta's Graph API, Telegram's Bot API, the Anthropic API and the geocoders (Photon, Nominatim) at the fetch boundary.
+// `sent` collects every WhatsApp and Telegram message the bot sends, in order (a Telegram chat as "tg:<id>");
+// `telegramCalls` every other Bot API call. `places` maps the start of a geocoder
 // query to what Photon finds for it; anything else isn't found. `photonDown` makes Photon fail.
 
 export type SentMessage = { to: string; text: string; buttons: { id: string; title: string }[] };
@@ -12,6 +13,7 @@ export function fakeApis(options: { extraction?: object; anthropicError?: string
   const sent: SentMessage[] = [];
   const anthropicCalls: any[] = [];
   const geocoded: string[] = [];
+  const telegramCalls: { method: string; body: any }[] = [];
   // Like the real Photon, an unknown name in front of a findable address finds nothing.
   const find = (q: string) => Object.entries(options.places ?? {}).find(([word]) => q.toLowerCase().startsWith(word.toLowerCase()))?.[1];
 
@@ -27,6 +29,26 @@ export function fakeApis(options: { extraction?: object; anthropicError?: string
         buttons: body.type === "interactive" ? body.interactive.action.buttons.map((b: any) => b.reply) : [],
       });
       return Response.json({ messages: [{ id: "wamid.OUT" }] });
+    }
+    if (url.hostname === "api.telegram.org" && url.pathname.startsWith("/file/")) {
+      return new Response(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), { headers: { "content-type": "image/jpeg" } });
+    }
+    if (url.hostname === "api.telegram.org") {
+      const method = url.pathname.split("/").pop()!;
+      const body: any = await req.json();
+      if (method === "sendMessage") {
+        sent.push({
+          to: `tg:${body.chat_id}`,
+          text: body.text,
+          buttons: (body.reply_markup?.inline_keyboard ?? []).flat().map((b: any) => ({ id: b.callback_data, title: b.text })),
+        });
+        return Response.json({ ok: true, result: { message_id: sent.length } });
+      }
+      telegramCalls.push({ method, body });
+      if (method === "getFile") return Response.json({ ok: true, result: { file_id: body.file_id, file_path: `photos/${body.file_id}.jpg` } });
+      if (method === "getMe") return Response.json({ ok: true, result: { id: 123, is_bot: true, username: "DanceCalendarTestBot" } });
+      if (method === "getWebhookInfo") return Response.json({ ok: true, result: { url: "", pending_update_count: 0 } });
+      return Response.json({ ok: true, result: true });
     }
     if (url.hostname === "graph.facebook.com" && req.method === "GET") {
       const mediaId = url.pathname.split("/").pop();
@@ -68,7 +90,7 @@ export function fakeApis(options: { extraction?: object; anthropicError?: string
     throw new Error(`Unexpected fetch in test: ${req.method} ${req.url}`);
   });
 
-  return { sent, anthropicCalls, geocoded, fetchSpy, texts: () => sent.map((m) => m.text) };
+  return { sent, anthropicCalls, geocoded, telegramCalls, fetchSpy, texts: () => sent.map((m) => m.text) };
 }
 
 // What the model returns for a Flyer, in the schema of src/extraction/schema.json.

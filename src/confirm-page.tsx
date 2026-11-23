@@ -7,7 +7,7 @@ import { Layout } from "./layout";
 import { findVenue, publishSubmission, venueQuery, type Entry, type Held } from "./publish";
 import { heldRule, seriesLeads } from "./series";
 import { berlinDate } from "./whatsapp/bot";
-import { sendText } from "./whatsapp/graph";
+import { sendText } from "./messenger";
 import { guessVenue } from "./whatsapp/questions";
 import { formatDate, uncertainFields } from "./whatsapp/summary";
 
@@ -222,7 +222,7 @@ export function Done(props: { s: Submission; entries: Entry[]; skipped: Extracte
       {props.skipped.length > 0 && <p>Nicht eingetragen: {props.skipped.map((e) => e.title).join(", ")}</p>}
       <p>
         Die Links sind privat – nicht weiterleiten.
-        {props.s.source === "whatsapp" ? " Du bekommst sie auch per WhatsApp." : ""}
+        {props.s.source === "whatsapp" ? " Du bekommst sie auch im Chat." : ""}
       </p>
       <p>{props.s.source === "tip" ? <a href="/admin/tips">Zu den Tipps</a> : <a href="/">Zum Kalender</a>}</p>
     </Layout>

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { sendText } from "./graph";
+import { sendText } from "../messenger";
 import type { InboundMessage } from "./types";
 
 // Meta's webhook: https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks
@@ -36,7 +36,7 @@ webhook.post("/", async (c) => {
 // so the sender hears here, at once, that the Flyer arrived: an Organizer's or a remembered Tip number's
 // Flyer, or a tap on "Nein, ist ein Tipp". An unknown sender's Flyer gets "Ist das deine Veranstaltung?"
 // from the queue instead. A failed reply only loses the reply, never the Flyer.
-async function replyReading(env: Env, message: InboundMessage) {
+export async function replyReading(env: Env, message: InboundMessage) {
   const flyer = message.type === "image";
   const tipTap = message.interactive?.button_reply?.id.startsWith("tip:") ?? false;
   if (!flyer && !tipTap) return;

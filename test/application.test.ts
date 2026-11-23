@@ -80,7 +80,7 @@ describe("an unregistered sender's Flyer", () => {
     const res = await post(link, ...form(filled(await (await get(link)).text(), "Bachata Göttingen")));
 
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("Fertig! Zurück zu WhatsApp");
+    expect(await res.text()).toContain("Fertig! Zurück zum Chat");
     const summary = api.sent.at(-1)!;
     expect(summary.to).toBe(STRANGER);
     expect(summary.text).toContain("Danke, Ben!");

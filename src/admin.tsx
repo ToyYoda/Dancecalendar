@@ -4,10 +4,12 @@ import { sendDailyEmail } from "./admin-email";
 import { adminTools } from "./admin-tools";
 import { Layout } from "./layout";
 import { tipReview } from "./tips";
+import * as telegram from "./telegram/api";
 import { queueUpload, waitForUpload } from "./upload";
 
 // /admin, behind a password (the ADMIN_SECRET Worker secret) until Cloudflare Access comes with Deploy.
 // /admin/upload seeds the calendar with Flyers published under a chosen Organizer (see upload.tsx).
+// /admin/telegram connects the Telegram bot (src/telegram).
 // /admin/tips is the review queue of Tips and free-text Series rules (see tips.tsx).
 // Organizers, Events, Series ending soon and Venues: admin-tools.tsx. The daily email: admin-email.ts.
 
@@ -22,6 +24,63 @@ admin.route("/tips", tipReview);
 admin.route("/", adminTools);
 
 admin.get("/", (c) => c.html(<Home />));
+
+// The Telegram bot: what Telegram has on record, and one button that points its webhook at this Worker.
+admin.get("/telegram", async (c) => c.html(<TelegramPage {...(await telegramState(c.env))} />));
+admin.post("/telegram", async (c) => {
+  const done = await telegram.connect(c.env).then(
+    () => "✅ Webhook und Befehle sind eingerichtet.",
+    (err) => `Das hat nicht geklappt: ${err instanceof Error ? err.message : err}`,
+  );
+  return c.html(<TelegramPage {...(await telegramState(c.env))} note={done} />);
+});
+
+async function telegramState(env: Env) {
+  if (!env.TELEGRAM_BOT_TOKEN) return { error: "Der Secret TELEGRAM_BOT_TOKEN fehlt noch." };
+  return telegram.status(env).then(
+    (s) => ({ ...s, expected: `${env.PUBLIC_URL}/telegram` }),
+    (err) => ({ error: `Telegram antwortet nicht: ${err instanceof Error ? err.message : err}` }),
+  );
+}
+
+function TelegramPage(props: {
+  note?: string;
+  error?: string;
+  username?: string;
+  url?: string;
+  expected?: string;
+  pending?: number;
+  lastError?: string;
+}) {
+  return (
+    <Layout title="Telegram – DanceCalendar">
+      <p>
+        <a href="/admin">← Admin</a>
+      </p>
+      <h1>Telegram-Bot</h1>
+      {props.note && <p>{props.note}</p>}
+      {props.error ? (
+        <p>{props.error}</p>
+      ) : (
+        <ul>
+          <li>
+            Bot: <a href={`https://t.me/${props.username}`}>@{props.username}</a>
+          </li>
+          <li>
+            Webhook: {props.url || "keiner"} {props.url === props.expected ? "✅" : `(erwartet: ${props.expected})`}
+          </li>
+          <li>Wartende Nachrichten: {props.pending}</li>
+          {props.lastError && <li>Letzter Fehler: {props.lastError}</li>}
+        </ul>
+      )}
+      {!props.error && (
+        <form method="post" action="/admin/telegram">
+          <button type="submit">Webhook einrichten</button>
+        </form>
+      )}
+    </Layout>
+  );
+}
 
 // The daily email's job, run by hand: it sends only when something is pending.
 admin.post("/email", async (c) => {
@@ -42,6 +101,7 @@ function Home(props: { note?: string }) {
     ["/admin/series", "Serien, die bald auslaufen"],
     ["/admin/venues", "Orte"],
     ["/admin/upload", "Flyer hochladen"],
+    ["/admin/telegram", "Telegram-Bot"],
   ];
   return (
     <Layout title="Admin – DanceCalendar">

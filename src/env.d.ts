@@ -3,6 +3,7 @@
 // The operator's name, address and email for the legal pages (src/legal-pages.tsx) stay out of the public repo.
 interface Env {
   ANTHROPIC_API_KEY: string;
+  TELEGRAM_BOT_TOKEN: string; // from @BotFather; the Telegram bot (src/telegram) is off without it
   ADMIN_SECRET: string; // /admin password until Cloudflare Access is set up at Deploy
   EMAIL?: SendEmail; // a send_email binding, once Cloudflare Email is set up on a domain
   ADMIN_EMAIL?: string;
@@ -14,6 +15,7 @@ interface Env {
 declare namespace Cloudflare {
   interface Env {
     ANTHROPIC_API_KEY: string;
+    TELEGRAM_BOT_TOKEN: string;
     ADMIN_SECRET: string;
     EMAIL?: SendEmail;
     ADMIN_EMAIL?: string;

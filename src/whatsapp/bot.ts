@@ -3,12 +3,12 @@ import { holdTip } from "../tips";
 import { extractFlyer, type Extraction } from "../extraction/extract";
 import { answerButton, answerTyped, continueFlyer } from "./questions";
 import { publishable } from "./summary";
-import { downloadMedia, sendButtons, sendText } from "./graph";
+import { downloadMedia, sendText } from "../messenger";
 import { publishSubmission, randomToken } from "../publish";
 import type { InboundMessage } from "./types";
 
-// Handles one inbound WhatsApp message (queue consumer). The bot only ever replies, so every
-// message stays inside WhatsApp's free 24-hour service window.
+// Handles one inbound WhatsApp or Telegram message (queue consumer, see src/messenger.ts). The bot only
+// ever replies, so every WhatsApp message stays inside WhatsApp's free 24-hour service window.
 
 export type Organizer = { id: number; first_name: string | null };
 

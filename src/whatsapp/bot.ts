@@ -55,7 +55,7 @@ export async function handleMessage(env: Env, message: InboundMessage) {
   const buttonId = message.interactive?.button_reply?.id ?? "";
   if (/^(mine|tip):/.test(buttonId)) return answerOwnership(env, from, buttonId);
   if (!organizer) {
-    if (message.type !== "image") return sendText(env, from, "Schick mir einfach einen Flyer als Bild, dann trage ich die Veranstaltung ein.");
+    if (message.type !== "image") return sendText(env, from, SEND_A_FLYER);
     if (contact?.tip_at) return receiveTip(env, message);
     return askOwnership(env, message);
   }
@@ -64,9 +64,13 @@ export async function handleMessage(env: Env, message: InboundMessage) {
   if (buttonId.startsWith("q|")) return answerButton(env, from, organizer.id, buttonId);
   if (buttonId) return pressButton(env, from, organizer, buttonId);
   if (message.type === "text" && (await answerTyped(env, from, organizer.id, message.text!.body))) return;
-  if (message.type === "text") return sendText(env, from, "Schick mir einfach einen Flyer als Bild, dann trage ich die Veranstaltung ein.");
+  if (message.type === "text") return sendText(env, from, SEND_A_FLYER);
   return sendText(env, from, "Bitte schick den Flyer als Bild (Foto oder Screenshot).");
 }
+
+// The answer to any other text. It names the way to a human, too, so everyone who writes the bot
+// something it cannot handle sees it, not only in the first greeting (Meta's policy for automated replies).
+const SEND_A_FLYER = "Schick mir einfach einen Flyer als Bild, dann trage ich die Veranstaltung ein.\nMensch erreichen: „Admin“ schreiben";
 
 function greeting(env: Env): string {
   return (

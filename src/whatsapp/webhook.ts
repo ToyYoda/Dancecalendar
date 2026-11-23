@@ -60,7 +60,11 @@ function inboundMessages(payload: any): InboundMessage[] {
   for (const entry of payload?.entry ?? []) {
     for (const change of entry?.changes ?? []) {
       if (change?.field !== "messages") continue;
-      // Delivery/read statuses arrive in the same field without `messages`; they are ignored.
+      // Delivery/read statuses arrive in the same field without `messages`. Only a failed delivery is
+      // logged (Meta's error code and title, never the number), since it is the only sign a reply got lost.
+      for (const s of change.value?.statuses ?? []) {
+        if (s?.status === "failed") console.error("WhatsApp delivery failed", JSON.stringify((s.errors ?? []).map((e: any) => ({ code: e.code, title: e.title, details: e.error_data?.details }))));
+      }
       for (const m of change.value?.messages ?? []) out.push(m);
     }
   }

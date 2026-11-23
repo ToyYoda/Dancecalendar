@@ -207,6 +207,15 @@ describe("chat commands and unknown senders", () => {
     expect(api.anthropicCalls).toHaveLength(0);
   });
 
+  it("names the way to a human when it is sent text it cannot handle", async () => {
+    const api = fakeApis();
+
+    await deliver(textMessage("Hallo, wann ist die nächste Party?"));
+
+    expect(api.sent.at(-1)!.text).toContain("Flyer als Bild");
+    expect(api.sent.at(-1)!.text).toContain("„Admin“ schreiben");
+  });
+
   it("records a request for a human when someone writes Admin", async () => {
     const api = fakeApis();
 

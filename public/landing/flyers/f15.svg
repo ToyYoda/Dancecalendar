@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1018" width="720" height="1018">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#fffde7"/><stop offset="1" stop-color="#ffca28"/></linearGradient></defs>
+<rect width="720" height="1018" fill="url(#g)"/>
+<circle cx="560" cy="250" r="190" fill="#2e7d32" opacity=".9"/><circle cx="560" cy="250" r="250" fill="none" stroke="#2e7d32" stroke-width="6" opacity=".45"/>
+<g font-family="Arial Black, Helvetica, Arial, sans-serif" fill="#3e2723">
+<text x="56" y="325" font-size="30" font-weight="700" letter-spacing="2" fill="#2e7d32">OPEN AIR, BEI GUTEM WETTER</text>
+<text x="56" y="485" font-size="150" font-weight="900" letter-spacing="-4">SALSA</text><text x="56" y="627.5" font-size="150" font-weight="900" letter-spacing="-4">IM PARK</text>
+<rect x="56" y="768" width="608" height="4" fill="#2e7d32"/>
+<text x="56" y="838" font-size="54" font-weight="900">SO 25.10. · 15:00</text>
+<text x="56" y="896" font-size="34" font-weight="700">Stadtpark, Musikpavillon</text>
+<text x="56" y="946" font-size="28" font-weight="400" opacity=".85">Ein Tipp aus der Community</text>
+</g>
+</svg>

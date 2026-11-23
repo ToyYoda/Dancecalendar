@@ -3,7 +3,7 @@ import { Layout } from "./layout";
 import { addDays, ruleWords, type Rule } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 
-// The Dancer overview at "/": a list of Events by day, paged by week (the default), and a month calendar with a day
+// The Dancer overview at "/" (what DanceCalendar is: /ueber): a list of Events by day, paged by week (the default), and a month calendar with a day
 // list (?view=cal) and a map of the week's Events (?view=map), all beside one sidebar of filters kept in the URL (and subscribable at /kalender.ics), so a link shows the same view on
 // any phone. No accounts, no cookies. Distances are measured from the Dancer's position (the browser is
 // asked on a visit without one) or a place picked on the map at /karte; without either, every Event shows
@@ -39,7 +39,7 @@ const T = {
     radius: "Umkreis", none: "Keine Events für diese Filter.", cancelled: "Abgesagt", tip: "von der Community hinzugefügt",
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
     series: "Serie", link: "Link", styles: "Tanzstil", day: "Tag", feed: "Liste", calendar: "Monat", back: "Zurück",
-    today: "Heute", sub: "Partnertanz in Kassel, Göttingen und drumherum",
+    today: "Heute", sub: "Paartanz in Kassel, Göttingen und drumherum", about: "Was ist DanceCalendar?",
     filters: "Filter", week: "KW", prev: "Früher", next: "Später", view: "Ansicht", mapView: "Karte", unplaced: "Nicht auf der Karte", noCoords: "Diese Orte haben noch keine Koordinaten.",
     subscribe: "Abonnieren", subHint: "Die Events mit diesen Filtern erscheinen in deiner Kalender-App und bleiben dort von selbst aktuell.",
     openApp: "In Kalender-App öffnen", copy: "Link kopieren", copied: "Link kopiert",
@@ -53,7 +53,7 @@ const T = {
     radius: "Radius", none: "No events for these filters.", cancelled: "Cancelled", tip: "added by the community",
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
     series: "Series", link: "Link", styles: "Style", day: "Day", feed: "List", calendar: "Month", back: "Back",
-    today: "Today", sub: "Partner dance in and around Kassel and Göttingen",
+    today: "Today", sub: "Partner dance in and around Kassel and Göttingen", about: "What is DanceCalendar?",
     filters: "Filters", week: "Week", prev: "Earlier", next: "Later", view: "View", mapView: "Map", unplaced: "Not on the map", noCoords: "These places have no coordinates yet.",
     subscribe: "Subscribe", subHint: "The Events for these filters show up in your calendar app and stay up to date there on their own.",
     openApp: "Open in calendar app", copy: "Copy link", copied: "Link copied",
@@ -374,6 +374,7 @@ function Page(props: { f: Filters; title?: string; head?: any; week?: string; ch
         </a>
         <span class="meta">
           {props.week && <span class="brand">{props.week}</span>}
+          <a class="about" href="/ueber" lang="de">{t.about}</a>
           <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
             {props.f.lang === "de" ? "English" : "Deutsch"}
           </a>
@@ -1024,8 +1025,8 @@ const CSS = `${FONTS}
   .lbl, .facts dt { font-size:13px; font-weight:500; color:var(--mute); }
 
   /* the bar: the mark and the name, the week, the language */
-  .mast { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px var(--g); background:var(--card); border-bottom:1px solid var(--line); }
-  .mast .home { display:flex; flex-direction:column; min-width:0; }
+  .mast { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 12px; padding:14px var(--g); background:var(--card); border-bottom:1px solid var(--line); }
+  .mast .home { display:flex; flex-direction:column; min-width:0; flex:1 1 15rem; } /* on a phone the links wrap below */
   .mast .name { display:inline-flex; align-items:center; gap:8px; font:500 21px/1.1 var(--sans); letter-spacing:-.02em; }
   .mast .logo { color:var(--accent); flex:none; }
   .mast .sub { display:block; margin-top:4px; font-size:13px; color:var(--mute); }
@@ -1033,6 +1034,7 @@ const CSS = `${FONTS}
   .mast .brand { font-size:14px; color:var(--mute); white-space:nowrap; }
   .mast .lang { font-size:14px; font-weight:500; padding:6px 12px; border-radius:99px; border:1px solid var(--line); white-space:nowrap; transition:background .15s; }
   .mast .lang:hover { background:var(--wash); }
+  .mast .about { font-size:14px; font-weight:500; color:var(--accent-ink); white-space:nowrap; text-decoration:underline; text-underline-offset:3px; }
 
   /* the calendar: sidebar and pane; on a phone the sidebar is a sticky bar of menus */
   .app { margin:0; }

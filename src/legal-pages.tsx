@@ -141,7 +141,7 @@ function PrivacyDe(props: { op: Operator }) {
   return (
     <>
       <p>
-        DanceCalendar zeigt Partnertanz-Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz …) rund um Kassel und Göttingen. Hier steht, welche
+        DanceCalendar zeigt Paartanz-Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz …) rund um Kassel und Göttingen. Hier steht, welche
         personenbezogenen Daten dabei verarbeitet werden, warum und wie lange.
       </p>
 

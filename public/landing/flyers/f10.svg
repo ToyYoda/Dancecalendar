@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1018" width="720" height="1018">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#2b0f3a"/><stop offset="1" stop-color="#c2185b"/></linearGradient></defs>
+<rect width="720" height="1018" fill="url(#g)"/>
+<circle cx="560" cy="250" r="190" fill="#ffd54f" opacity=".9"/><circle cx="560" cy="250" r="250" fill="none" stroke="#ffd54f" stroke-width="6" opacity=".45"/>
+<g font-family="Arial Black, Helvetica, Arial, sans-serif" fill="#fff">
+<text x="56" y="358" font-size="30" font-weight="700" letter-spacing="2" fill="#ffd54f">SALSA · BACHATA · KIZOMBA</text>
+<text x="56" y="496" font-size="128" font-weight="900" letter-spacing="-4">NOCHE</text><text x="56" y="617.6" font-size="128" font-weight="900" letter-spacing="-4">CALIENTE</text>
+<rect x="56" y="768" width="608" height="4" fill="#ffd54f"/>
+<text x="56" y="838" font-size="54" font-weight="900">SA 17.10. · 21:30</text>
+<text x="56" y="896" font-size="34" font-weight="700">Studio Movimiento · Kassel</text>
+<text x="56" y="946" font-size="28" font-weight="400" opacity=".85">20:30 Einsteigerkurs · Gast-DJ</text>
+</g>
+</svg>

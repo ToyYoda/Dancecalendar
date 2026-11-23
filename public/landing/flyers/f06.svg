@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1018" width="720" height="1018">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#1a1a2e"/><stop offset="1" stop-color="#e94560"/></linearGradient></defs>
+<rect width="720" height="1018" fill="url(#g)"/>
+<g transform="rotate(-24 360 260)" opacity=".85"><rect x="-200" y="90" width="1200" height="26" fill="#f9d342" opacity="0.9"/><rect x="-200" y="160" width="1200" height="26" fill="#fff" opacity="0.25"/><rect x="-200" y="230" width="1200" height="26" fill="#f9d342" opacity="0.9"/><rect x="-200" y="300" width="1200" height="26" fill="#fff" opacity="0.25"/><rect x="-200" y="370" width="1200" height="26" fill="#f9d342" opacity="0.9"/></g>
+<g font-family="Arial Black, Helvetica, Arial, sans-serif" fill="#fff">
+<text x="56" y="325" font-size="30" font-weight="700" letter-spacing="2" fill="#f9d342">DIE SALSA-PARTY</text>
+<text x="56" y="485" font-size="150" font-weight="900" letter-spacing="-4">SALSA</text><text x="56" y="627.5" font-size="150" font-weight="900" letter-spacing="-4">NACHT</text>
+<rect x="56" y="768" width="608" height="4" fill="#f9d342"/>
+<text x="56" y="838" font-size="54" font-weight="900">SA 17.10. · 21:30</text>
+<text x="56" y="896" font-size="34" font-weight="700">Alte Weberei</text>
+<text x="56" y="946" font-size="28" font-weight="400" opacity=".85">Salsa Cubana &amp; LA</text>
+</g>
+</svg>

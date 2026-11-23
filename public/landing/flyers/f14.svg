@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1018" width="720" height="1018">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#fff4e0"/><stop offset="1" stop-color="#ffb74d"/></linearGradient></defs>
+<rect width="720" height="1018" fill="url(#g)"/>
+<circle cx="620" cy="160" r="70" fill="none" stroke="#d84315" stroke-width="10" opacity="0.8"/><circle cx="620" cy="160" r="125" fill="none" stroke="#d84315" stroke-width="10" opacity="0.66"/><circle cx="620" cy="160" r="180" fill="none" stroke="#d84315" stroke-width="10" opacity="0.52"/><circle cx="620" cy="160" r="235" fill="none" stroke="#d84315" stroke-width="10" opacity="0.38"/><circle cx="620" cy="160" r="290" fill="none" stroke="#d84315" stroke-width="10" opacity="0.24"/>
+<g font-family="Arial Black, Helvetica, Arial, sans-serif" fill="#3e2723">
+<text x="56" y="358" font-size="30" font-weight="700" letter-spacing="2" fill="#d84315">WORKSHOP AM NACHMITTAG</text>
+<text x="56" y="496" font-size="128" font-weight="900" letter-spacing="-4">LATIN</text><text x="56" y="617.6" font-size="128" font-weight="900" letter-spacing="-4">WORKSHOP</text>
+<rect x="56" y="768" width="608" height="4" fill="#d84315"/>
+<text x="56" y="838" font-size="54" font-weight="900">SA 17.10. · 16:00</text>
+<text x="56" y="896" font-size="34" font-weight="700">Kulturhalle am Park</text>
+<text x="56" y="946" font-size="28" font-weight="400" opacity=".85">Salsa On1 · Mittelstufe</text>
+</g>
+</svg>

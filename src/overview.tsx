@@ -1,10 +1,13 @@
 import { Hono } from "hono";
 import { Layout } from "./layout";
+import { Masthead, SITE_CSS } from "./site";
 import { addDays, ruleWords, type Rule } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 
-// The Dancer overview at "/" (what DanceCalendar is: /ueber): a list of Events by day, paged by week (the default), and a month calendar with a day
-// list (?view=cal) and a map of the week's Events (?view=map), all beside one sidebar of filters kept in the URL (and subscribable at /kalender.ics), so a link shows the same view on
+// The Dancer overview at "/" (what DanceCalendar is: /ueber): the Events of a span of days as a list by day
+// (the default: today and the next 7 days) or on a map (?view=map). Above both, a small month calendar shows
+// which days have something on and picks the span (a first and a last day, or Von/Bis); beside them one
+// sidebar of filters. All of it stays in the URL (and is subscribable at /kalender.ics), so a link shows the same view on
 // any phone. No accounts, no cookies. Distances are measured from the Dancer's position (the browser is
 // asked on a visit without one) or a place picked on the map at /karte; without either, every Event shows
 // and no km. Decisions: .scratch/dance-calendar-mvp/issues/07-dancer-overview-prototype.md (variant D),
@@ -14,9 +17,13 @@ type Lang = "de" | "en";
 
 // URL parameters, all optional:
 // c = "lat,lng" (without it: no distances, every Event), r = 10|25|50|100|all (default 50, only with c),
-// styles = salsa,bachata,…, type = party|workshop|course|festival, view = cal|map, w = a week's Monday (list and map),
-// d = the calendar's selected day, lang = en.
-type Filters = { c: string; r: string; styles: string[]; type: string; view: string; w: string; d: string; lang: Lang };
+// styles = salsa,bachata,…, type = party|workshop|course|festival, view = map, von and bis = the first and last day
+// shown, m = the month the small calendar shows (YYYY-MM, else von's month), lang = en. Older links' w (a week)
+// and d (one day) still open that span.
+type Filters = { c: string; r: string; styles: string[]; type: string; view: string; von: string; bis: string; m: string; lang: Lang };
+
+const DEFAULT_DAYS = 8; // today and the next 7 days
+const MAX_DAYS = 92;
 
 const RADII = ["10", "25", "50", "100", "all"];
 const DEFAULT_RADIUS = "50";
@@ -38,7 +45,8 @@ const T = {
     pick: "Tippe auf die Karte, um den Ort zu wählen.", use: "Von hier messen",
     radius: "Umkreis", none: "Keine Events für diese Filter.", cancelled: "Abgesagt", tip: "von der Community hinzugefügt",
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
-    series: "Serie", link: "Link", styles: "Tanzstil", day: "Tag", feed: "Liste", calendar: "Monat", back: "Zurück",
+    series: "Serie", link: "Link", styles: "Tanz", day: "Tag", feed: "Liste", back: "Zurück",
+    from: "Von", to: "Bis", show: "Zeigen", span: "Zeitraum", nextDays: "Nächste 7 Tage", pickHint: "Tippe den ersten und den letzten Tag.", pickEnd: "Jetzt den letzten Tag tippen.", busy: "Events",
     today: "Heute", sub: "Paartanz in Kassel, Göttingen und drumherum", about: "Was ist DanceCalendar?",
     filters: "Filter", week: "KW", prev: "Früher", next: "Später", view: "Ansicht", mapView: "Karte", unplaced: "Nicht auf der Karte", noCoords: "Diese Orte haben noch keine Koordinaten.",
     subscribe: "Abonnieren", subHint: "Die Events mit diesen Filtern erscheinen in deiner Kalender-App und bleiben dort von selbst aktuell.",
@@ -52,7 +60,8 @@ const T = {
     pick: "Tap the map to pick the place.", use: "Measure from here",
     radius: "Radius", none: "No events for these filters.", cancelled: "Cancelled", tip: "added by the community",
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
-    series: "Series", link: "Link", styles: "Style", day: "Day", feed: "List", calendar: "Month", back: "Back",
+    series: "Series", link: "Link", styles: "Style", day: "Day", feed: "List", back: "Back",
+    from: "From", to: "To", show: "Show", span: "Dates", nextDays: "Next 7 days", pickHint: "Tap the first and the last day.", pickEnd: "Now tap the last day.", busy: "events",
     today: "Today", sub: "Partner dance in and around Kassel and Göttingen", about: "What is DanceCalendar?",
     filters: "Filters", week: "Week", prev: "Earlier", next: "Later", view: "View", mapView: "Map", unplaced: "Not on the map", noCoords: "These places have no coordinates yet.",
     subscribe: "Subscribe", subHint: "The Events for these filters show up in your calendar app and stay up to date there on their own.",
@@ -93,19 +102,16 @@ export const overview = new Hono<{ Bindings: Env }>();
 overview.get("/", async (c) => {
   const f = filters(new URL(c.req.url).searchParams);
   const today = berlinDate(new Date());
-  if (f.view === "cal") {
-    const sel = isDate(f.d) ? f.d : today;
-    const first = `${sel.slice(0, 7)}-01`;
-    const gridStart = addDays(first, -((weekday(first) + 6) % 7));
-    const days = range(gridStart, 42);
-    const byDay = await eventsByDay(c.env.DB, f, days);
-    return c.html(<CalendarPage f={f} today={today} sel={sel} first={first} byDay={byDay} />);
-  }
-  // Without a week in the URL: today and the next 7 days. With one: that Monday to Sunday.
-  const monday = isDate(f.w) ? addDays(f.w, -((weekday(f.w) + 6) % 7)) : "";
-  const days = monday ? range(monday, 7) : range(today, 8);
-  const byDay = await eventsByDay(c.env.DB, f, days);
-  return c.html(<FeedPage f={f} today={today} monday={monday} byDay={byDay} />);
+  const [from, to] = span(f, today);
+  const days = range(from, daysBetween(from, to) + 1);
+  const month = /^\d{4}-\d{2}$/.test(f.m) ? f.m : from.slice(0, 7);
+  const grid = monthGrid(month);
+  // One query for the listed days and the small calendar's month.
+  const all = range(grid[0] < from ? grid[0] : from, daysBetween(grid[0] < from ? grid[0] : from, grid.at(-1)! > to ? grid.at(-1)! : to) + 1);
+  const byAll = await eventsByDay(c.env.DB, f, all);
+  const byDay = new Map(days.map((d) => [d, byAll.get(d) ?? []]));
+  const busy = new Set(grid.filter((d) => byAll.get(d)?.length));
+  return c.html(<FeedPage f={f} today={today} from={from} to={to} month={month} grid={grid} busy={busy} byDay={byDay} />);
 });
 
 overview.get("/events/:id", async (c) => {
@@ -252,16 +258,40 @@ function filters(p: URLSearchParams): Filters {
   const list = (k: string) => (p.get(k) ?? "").split(",").filter(Boolean);
   const c = p.get("c") ?? "";
   const r = p.get("r") ?? "";
+  let von = p.get("von") ?? "";
+  let bis = p.get("bis") ?? "";
+  const w = p.get("w") ?? "";
+  const d = p.get("d") ?? "";
+  if (!isDate(von) && isDate(w)) [von, bis] = [addDays(w, -((weekday(w) + 6) % 7)), addDays(w, 6 - ((weekday(w) + 6) % 7))];
+  if (!isDate(von) && isDate(d)) [von, bis] = [d, d];
   return {
     c: coordinates(c) ? c : "",
     r: RADII.includes(r) ? r : "",
     styles: list("styles").filter((s) => STYLES.some(([k]) => k === s)),
     type: (TYPES as readonly string[]).includes(p.get("type") ?? "") ? p.get("type")! : "",
-    view: ["cal", "map"].includes(p.get("view") ?? "") ? p.get("view")! : "",
-    w: p.get("w") ?? "",
-    d: p.get("d") ?? "",
+    view: p.get("view") === "map" ? "map" : "",
+    von: isDate(von) ? von : "",
+    bis: isDate(von) && isDate(bis) ? bis : "",
+    m: /^\d{4}-\d{2}$/.test(p.get("m") ?? "") ? p.get("m")! : "",
     lang: p.get("lang") === "en" ? "en" : "de",
   };
+}
+
+// The days shown: von to bis (in either order, at most MAX_DAYS), von alone is one day, neither is the default.
+function span(f: Filters, today: string): [string, string] {
+  if (!f.von) return [today, addDays(today, DEFAULT_DAYS - 1)];
+  const [a, b] = f.bis && f.bis < f.von ? [f.bis, f.von] : [f.von, f.bis || f.von];
+  return [a, daysBetween(a, b) >= MAX_DAYS ? addDays(a, MAX_DAYS - 1) : b];
+}
+
+// The small calendar's days: whole weeks from the Monday before the 1st to the Sunday after the last day.
+function monthGrid(month: string): string[] {
+  const first = `${month}-01`;
+  const start = addDays(first, -((weekday(first) + 6) % 7));
+  const [y, m] = month.split("-").map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+  const end = addDays(last, (7 - weekday(last)) % 7);
+  return range(start, daysBetween(start, end) + 1);
 }
 
 // A link to the overview with some filters changed; defaults stay out of the URL.
@@ -273,8 +303,9 @@ function href(f: Filters, changes: Partial<Filters> = {}, path = "/"): string {
   if (g.r && g.r !== DEFAULT_RADIUS) p.set("r", g.r);
   if (g.styles.length) p.set("styles", g.styles.join(","));
   if (g.type) p.set("type", g.type);
-  if (g.view === "cal" && g.d) p.set("d", g.d);
-  if (g.view !== "cal" && g.w) p.set("w", g.w);
+  if (g.von) p.set("von", g.von);
+  if (g.von && g.bis && g.bis !== g.von) p.set("bis", g.bis);
+  if (g.m) p.set("m", g.m);
   if (g.lang === "en") p.set("lang", "en");
   const q = p.toString().replace(/%2C/g, ",");
   return q ? `${path}?${q}` : path;
@@ -351,7 +382,7 @@ async function eventsByDay(db: D1Database, f: Filters, days: string[]): Promise<
 // in their card, never cropped or covered. One teal marks today, each Event's type and what a filter has
 // picked. The font comes from this site, so no font host learns who looks.
 
-function Page(props: { f: Filters; title?: string; head?: any; week?: string; children: any }) {
+function Page(props: { f: Filters; title?: string; head?: any; children: any }) {
   const t = T[props.f.lang];
   const head = (
     <>
@@ -362,24 +393,12 @@ function Page(props: { f: Filters; title?: string; head?: any; week?: string; ch
   );
   return (
     <Layout title={props.title ? `${props.title} – DanceCalendar` : "DanceCalendar"} lang={props.f.lang} head={head}>
-      <header class="mast">
-        <a class="home" href={href(props.f, { w: "", d: "" })}>
-          <span class="name">
-            <svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M2.5 21.5V12a9.5 9.5 0 0 1 19 0v9.5h-6V12a3.5 3.5 0 0 0-7 0v9.5z" fill="currentColor" />
-            </svg>
-            DanceCalendar
-          </span>
-          <span class="sub">{t.sub}</span>
+      <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add>
+        <a class="about" href="/ueber" lang="de">{t.about}</a>
+        <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
+          {props.f.lang === "de" ? "English" : "Deutsch"}
         </a>
-        <span class="meta">
-          {props.week && <span class="brand">{props.week}</span>}
-          <a class="about" href="/ueber" lang="de">{t.about}</a>
-          <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
-            {props.f.lang === "de" ? "English" : "Deutsch"}
-          </a>
-        </span>
-      </header>
+      </Masthead>
       {props.children}
       <script dangerouslySetInnerHTML={{ __html: GEO_SCRIPT }} />
     </Layout>
@@ -401,13 +420,6 @@ const Chevron = () => (
 const ListIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
     <path d="M2 3.5h12M2 8h12M2 12.5h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-  </svg>
-);
-
-const MonthIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-    <rect x="2" y="3" width="12" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6" />
-    <path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
   </svg>
 );
 
@@ -449,19 +461,15 @@ function Sidebar(props: { f: Filters }) {
     </a>
   ));
   const picked = STYLES.filter(([k]) => f.styles.includes(k)).map(([, name]) => name);
-  const feed = href({ ...f, view: "", w: "", d: "" }, {}, "/kalender.ics");
+  const feed = href({ ...f, view: "", von: "", bis: "", m: "" }, {}, "/kalender.ics");
   return (
     <aside class="side" aria-label={t.filters}>
       <div class="views" aria-label={t.view}>
-        <a class={f.view ? "" : "on"} href={href(f, { view: "", d: "" })} aria-current={f.view ? undefined : "page"}>
+        <a class={f.view ? "" : "on"} href={href(f, { view: "" })} aria-current={f.view ? undefined : "page"}>
           <ListIcon />
           {t.feed}
         </a>
-        <a class={f.view === "cal" ? "on" : ""} href={href(f, { view: "cal", w: "" })} aria-current={f.view === "cal" ? "page" : undefined}>
-          <MonthIcon />
-          {t.calendar}
-        </a>
-        <a class={f.view === "map" ? "on" : ""} href={href(f, { view: "map", d: "" })} aria-current={f.view === "map" ? "page" : undefined}>
+        <a class={f.view === "map" ? "on" : ""} href={href(f, { view: "map" })} aria-current={f.view === "map" ? "page" : undefined}>
           <PinIcon />
           {t.mapView}
         </a>
@@ -553,31 +561,15 @@ function TypeTabs(props: { f: Filters }) {
   );
 }
 
-function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map<string, OnDay[]> }) {
-  const { f, today, monday, byDay } = props;
+function FeedPage(props: { f: Filters; today: string; from: string; to: string; month: string; grid: string[]; busy: Set<string>; byDay: Map<string, OnDay[]> }) {
+  const { f, today, from, to, byDay } = props;
   const t = T[f.lang];
-  const days = [...byDay.keys()];
-  const thisMonday = addDays(today, -((weekday(today) + 6) % 7));
-  // ‹ leads back to the default view once it reaches this week.
-  const prev = monday && monday > thisMonday ? (addDays(monday, -7) > thisMonday ? addDays(monday, -7) : "") : null;
-  const next = addDays(monday || thisMonday, 7);
   const any = [...byDay.values()].some((l) => l.length);
   return (
-    <Page f={f} week={`${t.week} ${isoWeek(days[0])}`} head={f.view === "map" ? MAP_HEAD : undefined}>
+    <Page f={f} head={f.view === "map" ? MAP_HEAD : undefined}>
       <Shell f={f}>
-        <div class="weekbar">
-          <span class="range">
-            {short(days[0], f.lang)} – {short(days.at(-1)!, f.lang)}
-          </span>
-          <span class="nav">
-            {prev !== null ? (
-              <a href={href(f, { w: prev })} aria-label={t.prev}><Arrow back /></a>
-            ) : (
-              <span class="off" aria-hidden="true"><Arrow back /></span>
-            )}
-            <a href={href(f, { w: next })} aria-label={t.next}><Arrow /></a>
-          </span>
-        </div>
+        <SpanPicker {...props} />
+        <h2 class="range">{from === to ? longDay(from, f.lang) : `${short(from, f.lang)} – ${short(to, f.lang)}`}</h2>
         <TypeTabs f={f} />
         {f.view === "map" ? (
           <EventMap f={f} today={today} byDay={byDay} />
@@ -591,6 +583,107 @@ function FeedPage(props: { f: Filters; today: string; monday: string; byDay: Map
     </Page>
   );
 }
+
+// The small month calendar above the list and the map: a dot under each day with something on, the shown
+// span marked. Without script a tap shows that day; with it the first tap marks the first day and the
+// second the last. Von and Bis pick the span exactly; it stays when switching between list and map.
+function SpanPicker(props: { f: Filters; today: string; from: string; to: string; month: string; grid: string[]; busy: Set<string> }) {
+  const { f, today, from, to, month, grid, busy } = props;
+  const t = T[f.lang];
+  const shift = (n: number) => {
+    const [y, m] = month.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7);
+  };
+  const dows = f.lang === "de" ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const isDefault = !f.von;
+  const keep: [string, string][] = [
+    ["view", f.view],
+    ["c", f.c],
+    ["r", f.r],
+    ["styles", f.styles.join(",")],
+    ["type", f.type],
+    ["lang", f.lang === "en" ? "en" : ""],
+  ];
+  return (
+    <section class="spanpick" aria-label={t.span}>
+      <div class="mini" data-mini>
+        <div class="mhead">
+          <a href={href(f, { m: shift(-1) })} aria-label={t.prev}><Arrow back /></a>
+          <span>{monthName(`${month}-01`, f.lang)}</span>
+          <a href={href(f, { m: shift(1) })} aria-label={t.next}><Arrow /></a>
+        </div>
+        <div class="mgrid" role="grid">
+          {dows.map((d) => (
+            <span class="dow" role="columnheader">{d}</span>
+          ))}
+          {grid.map((d) => {
+            const cls = [
+              "c",
+              d.slice(0, 7) !== month ? "out" : "",
+              d < today ? "past" : "",
+              d === today ? "today" : "",
+              busy.has(d) ? "busy" : "",
+              d >= from && d <= to ? "in" : "",
+              d === from ? "first" : "",
+              d === to ? "last" : "",
+            ].filter(Boolean).join(" ");
+            return (
+              <a class={cls} href={href(f, { von: d, bis: "", m: "" })} data-day={d} aria-label={`${longDay(d, f.lang)}${busy.has(d) ? ` · ${t.busy}` : ""}`} aria-current={d >= from && d <= to ? "date" : undefined}>
+                {Number(d.slice(8))}
+              </a>
+            );
+          })}
+        </div>
+        <p class="hint" data-mini-hint data-end={t.pickEnd} aria-live="polite">{t.pickHint}</p>
+      </div>
+      <form class="dates" method="get" action="/">
+        {keep.filter(([, v]) => v).map(([k, v]) => (
+          <input type="hidden" name={k} value={v} />
+        ))}
+        <label>
+          {t.from}
+          <input type="date" name="von" value={from} required />
+        </label>
+        <label>
+          {t.to}
+          <input type="date" name="bis" value={to} min={from} />
+        </label>
+        <button class="btn" type="submit">{t.show}</button>
+        {!isDefault && <a class="reset" href={href(f, { von: "", bis: "", m: "" })}>{t.nextDays}</a>}
+      </form>
+      <script dangerouslySetInnerHTML={{ __html: SPAN_SCRIPT }} />
+    </section>
+  );
+}
+
+// Two taps pick a span: the first marks its first day, hovering shows the span, the second opens it.
+// Changing Von or Bis opens the new span at once.
+const SPAN_SCRIPT = `(() => {
+  const box = document.querySelector("[data-mini]"), hint = document.querySelector("[data-mini-hint]");
+  if (!box) return;
+  let first = null;
+  const cells = [...box.querySelectorAll("a[data-day]")];
+  const mark = (a, b) => cells.forEach((c) => c.classList.toggle("pend", !!a && c.dataset.day >= a && c.dataset.day <= b));
+  box.addEventListener("click", (ev) => {
+    const a = ev.target.closest("a[data-day]");
+    if (!a) return;
+    ev.preventDefault();
+    const d = a.dataset.day;
+    if (!first) { first = d; mark(d, d); hint.textContent = hint.dataset.end; return; }
+    const [von, bis] = d < first ? [d, first] : [first, d];
+    const u = new URL(a.href, location.href);
+    u.searchParams.set("von", von);
+    if (bis !== von) u.searchParams.set("bis", bis); else u.searchParams.delete("bis");
+    location.href = u.pathname + "?" + u.searchParams.toString().replace(/%2C/g, ",");
+  });
+  box.addEventListener("mouseover", (ev) => {
+    const a = first && ev.target.closest("a[data-day]");
+    if (a) mark(a.dataset.day < first ? a.dataset.day : first, a.dataset.day < first ? first : a.dataset.day);
+  });
+  const form = document.querySelector(".spanpick .dates");
+  form && form.classList.add("auto");
+  form && form.addEventListener("change", () => { const v = form.elements.von.value, b = form.elements.bis.value; if (v && (!b || b >= v)) form.submit(); });
+})();`;
 
 // The week's Events on a map: one pin per Venue with its count, a tap lists that Venue's Events with links.
 // Like the place picker, only this view loads MapLibre (from this site) and tiles from OpenFreeMap.
@@ -749,7 +842,7 @@ function Entry(props: { f: Filters; o: OnDay }) {
     <article class={e.cancelled ? "entry cancelled" : "entry"}>
       <a href={href(f, {}, `/events/${e.id}`)}>
         {e.flyer_key ? (
-          <img class="thumb" src={`/${e.flyer_key}`} alt="" width="44" height="58" loading="lazy" decoding="async" />
+          <img class="thumb" src={`/${e.flyer_key}`} alt="" width="88" height="116" loading="lazy" decoding="async" />
         ) : (
           <span class="thumb none" aria-hidden="true" />
         )}
@@ -765,56 +858,6 @@ function Entry(props: { f: Filters; o: OnDay }) {
         <span class="tag">{e.cancelled ? <span class="kind off">{t.cancelled}</span> : <TypeLabel f={f} e={e} />}</span>
       </a>
     </article>
-  );
-}
-
-function CalendarPage(props: { f: Filters; today: string; sel: string; first: string; byDay: Map<string, OnDay[]> }) {
-  const { f, today, sel, first, byDay } = props;
-  const t = T[f.lang];
-  const month = first.slice(0, 7);
-  const shift = (n: number) => {
-    const [y, m] = month.split("-").map(Number);
-    const d = new Date(Date.UTC(y, m - 1 + n, 1));
-    return d.toISOString().slice(0, 10);
-  };
-  const dows = f.lang === "de" ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-  const list = byDay.get(sel) ?? [];
-  return (
-    <Page f={f} week={monthName(first, f.lang)}>
-      <Shell f={f}>
-        <div class="weekbar">
-          <span class="range">{monthName(first, f.lang)}</span>
-          <span class="nav">
-            <a href={href(f, { d: shift(-1) })} aria-label={t.prev}><Arrow back /></a>
-            <a href={href(f, { d: shift(1) })} aria-label={t.next}><Arrow /></a>
-          </span>
-        </div>
-        <TypeTabs f={f} />
-        <div class="month" role="grid">
-          {dows.map((d) => (
-            <div class="dow" role="columnheader">{d}</div>
-          ))}
-          {[...byDay].map(([d, l]) => {
-            const cls = ["cell", d.slice(0, 7) !== month ? "out" : "", d === sel ? "sel" : "", d === today ? "today" : "", d < today ? "past" : ""]
-              .filter(Boolean)
-              .join(" ");
-            const own = l.filter((o) => o.e.type !== "festival");
-            return (
-              <a class={cls} href={href(f, { d })} aria-label={`${longDay(d, f.lang)}: ${l.length}`} aria-current={d === sel ? "date" : undefined}>
-                <span class="n">{Number(d.slice(8))}</span>
-                <span class="ticks">
-                  {own.slice(0, 4).map((o) => (
-                    <i class={o.e.cancelled ? "x" : ""} />
-                  ))}
-                </span>
-                {l.some((o) => o.e.type === "festival") && <span class="fest" />}
-              </a>
-            );
-          })}
-        </div>
-        {list.length ? <Day f={f} d={sel} today={today} list={list} /> : <p class="empty">{t.none}</p>}
-      </Shell>
-    </Page>
   );
 }
 
@@ -974,20 +1017,11 @@ const short = (iso: string, lang: Lang) => fmt(iso, lang, { weekday: "short", da
 const weekdayShort = (iso: string, lang: Lang) => fmt(iso, lang, { weekday: "short" });
 const dayMonth = (iso: string, lang: Lang) => fmt(iso, lang, { day: "numeric", month: "long" });
 const longWeekday = (iso: string, lang: Lang) => fmt(iso, lang, { weekday: "long" });
-const monthShort = (iso: string, lang: Lang) => fmt(iso, lang, { month: "long" });
 const monthName = (iso: string, lang: Lang) => fmt(iso, lang, { month: "long", year: "numeric" });
 const weekday = (iso: string) => asDate(iso).getUTCDay();
 const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(asDate(s).getTime());
 const range = (from: string, n: number) => Array.from({ length: n }, (_, i) => addDays(from, i));
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
-// ISO 8601 week number: the week with the year's first Thursday is week 1.
-const isoWeek = (iso: string) => {
-  const d = asDate(iso);
-  d.setUTCDate(d.getUTCDate() + 3 - ((d.getUTCDay() + 6) % 7));
-  const jan4 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
-  return 1 + Math.round((d.getTime() - jan4.getTime()) / 86_400_000 / 7 - 3 / 7 + ((jan4.getUTCDay() + 6) % 7) / 7);
-};
-
 // The Dancer's position, rounded to about a kilometre, opens the same view measured from there. Asked by
 // "Mein Standort", and on its own on a page without a place (data-autogeo) unless the browser already
 // knows the answer is no; nothing is stored, so a denial just leaves every Event without km.
@@ -1008,34 +1042,8 @@ const GEO_SCRIPT = `(() => {
   else ask();
 })();`;
 
-// PROTOTYPE (taste-skill redesign): Outfit, self-hosted as one variable file (no Google Fonts request, so no tracking).
-const FONTS = `@font-face{font-family:"Outfit";font-weight:100 900;font-style:normal;font-display:swap;src:url(/fonts/outfit-latin-wght-normal.woff2) format("woff2");}`;
-
-const CSS = `${FONTS}
-  :root { color-scheme:light; --paper:#f7f9fa; --card:#fff; --ink:#1f3038; --mute:#5d6b72; --hair:#dfe5e8; --line:rgb(31 48 56 / .1); --wash:#ecf0f2;
-          --accent:#0d7480; --accent-ink:#0b5e68; --tint:#e3f1f2; --off:#a3271b; --off-tint:#fbe6e3; --warm:#7a4f00; --warm-tint:#fbefd6;
-          --r:16px; --r-sm:10px; --shadow:0 1px 2px rgb(31 48 56 / .06), 0 18px 44px -24px rgb(31 48 56 / .35);
-          --sans:"Outfit", system-ui, sans-serif; --stick:0px; --g:16px; }
-  html { background:var(--paper); scroll-padding-top:calc(var(--stick) + 12px); }
-  body { max-width:none; margin:0; padding:0; background:var(--paper); color:var(--ink); font:400 16px/1.5 var(--sans);
-         font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
-  a { color:inherit; text-decoration:none; }
-  ::selection { background:var(--accent); color:#fff; }
-  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
-  .lbl, .facts dt { font-size:13px; font-weight:500; color:var(--mute); }
-
-  /* the bar: the mark and the name, the week, the language */
-  .mast { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 12px; padding:14px var(--g); background:var(--card); border-bottom:1px solid var(--line); }
-  .mast .home { display:flex; flex-direction:column; min-width:0; flex:1 1 15rem; } /* on a phone the links wrap below */
-  .mast .name { display:inline-flex; align-items:center; gap:8px; font:500 21px/1.1 var(--sans); letter-spacing:-.02em; }
-  .mast .logo { color:var(--accent); flex:none; }
-  .mast .sub { display:block; margin-top:4px; font-size:13px; color:var(--mute); }
-  .mast .meta { display:flex; align-items:center; gap:14px; }
-  .mast .brand { font-size:14px; color:var(--mute); white-space:nowrap; }
-  .mast .lang { font-size:14px; font-weight:500; padding:6px 12px; border-radius:99px; border:1px solid var(--line); white-space:nowrap; transition:background .15s; }
-  .mast .lang:hover { background:var(--wash); }
-  .mast .about { font-size:14px; font-weight:500; color:var(--accent-ink); white-space:nowrap; text-decoration:underline; text-underline-offset:3px; }
-
+// The shared look (src/site.tsx) first: fonts, tokens, the bar, the buttons, the footer.
+const CSS = `${SITE_CSS}
   /* the calendar: sidebar and pane; on a phone the sidebar is a sticky bar of menus */
   .app { margin:0; }
   aside.side { position:sticky; top:0; z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px var(--g); background:var(--paper); border-bottom:1px solid var(--line); }
@@ -1094,14 +1102,48 @@ const CSS = `${FONTS}
     .pane { padding:20px 28px 28px; border-left:1px solid var(--line); }
   }
 
-  /* the pane: the dates, the type tabs, the days */
-  .weekbar { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  .weekbar .range { font-size:20px; font-weight:500; letter-spacing:-.01em; }
-  .weekbar .nav { display:flex; gap:6px; }
-  .weekbar .nav a, .weekbar .nav .off { display:inline-grid; place-items:center; width:38px; height:38px; border-radius:50%; background:var(--card); box-shadow:0 0 0 1px var(--line); transition:background .15s, transform .15s; }
-  .weekbar .nav a:hover { background:var(--wash); }
-  .weekbar .nav a:active { transform:scale(.96); }
-  .weekbar .nav .off { color:#b5c0c4; box-shadow:0 0 0 1px var(--hair); background:none; }
+  /* the pane: the small calendar with Von and Bis, the shown span, the type tabs, the days */
+  .spanpick { display:flex; flex-wrap:wrap; align-items:flex-start; gap:16px 28px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+  .mini { width:252px; max-width:100%; }
+  .mhead { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; font-size:15px; font-weight:500; }
+  .mhead a { display:inline-grid; place-items:center; width:30px; height:30px; border-radius:50%; transition:background .15s; }
+  .mhead a:hover { background:var(--wash); }
+  .mgrid { display:grid; grid-template-columns:repeat(7, 1fr); row-gap:2px; }
+  .mgrid .dow { padding:2px 0 4px; text-align:center; font-size:11px; font-weight:500; color:var(--mute); }
+  .mgrid .c { position:relative; display:grid; place-items:center; height:32px; font-size:13px; font-variant-numeric:tabular-nums; border-radius:8px; transition:background .12s; }
+  .mgrid .c:hover { background:var(--wash); }
+  .mgrid .c.out { color:#a3aeb3; }
+  .mgrid .c.past { color:#8b989e; }
+  .mgrid .c.today { font-weight:600; color:var(--accent-ink); }
+  .mgrid .c.busy::after { content:""; position:absolute; bottom:3px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:var(--accent); }
+  .mgrid .c.past.busy::after, .mgrid .c.out.busy::after { background:#a3aeb3; }
+  .mgrid .c.in { background:var(--tint); border-radius:0; }
+  .mgrid .c.first { border-radius:8px 0 0 8px; } .mgrid .c.last { border-radius:0 8px 8px 0; } .mgrid .c.first.last { border-radius:8px; }
+  .mgrid .c.first, .mgrid .c.last { background:var(--accent); color:#fff; font-weight:500; }
+  .mgrid .c.first::after, .mgrid .c.last::after { background:#fff; }
+  .mgrid .c.pend { background:var(--ink); color:#fff; border-radius:0; }
+  .mgrid .c.pend::after { background:#fff; }
+  .mini .hint { margin:8px 0 0; font-size:13px; color:var(--mute); }
+  .dates { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px 12px; }
+  .dates label { display:grid; gap:4px; font-size:13px; font-weight:500; color:var(--mute); }
+  .dates input { height:38px; padding:0 10px; border:1px solid rgb(31 48 56 / .18); border-radius:10px; background:var(--card); color:var(--ink); font:400 15px var(--sans); }
+  .dates .btn { height:38px; }
+  .dates .reset { flex-basis:100%; font-size:14px; font-weight:500; color:var(--accent-ink); text-decoration:underline; text-underline-offset:3px; }
+  .dates.auto .btn { display:none; }
+  @media (min-width:600px) { .dates { flex-direction:column; align-items:stretch; padding-top:36px; } .dates .reset { flex-basis:auto; } }
+  @media (max-width:599px) {
+    .spanpick { gap:10px; padding-bottom:12px; }
+    .mini { width:100%; max-width:340px; }
+    .mhead { margin-bottom:2px; }
+    .mgrid .dow { padding:0 0 2px; font-size:10px; }
+    .mgrid .c { height:26px; font-size:12px; }
+    .mgrid .c.busy::after { bottom:1px; width:3px; height:3px; margin-left:-1.5px; }
+    .mini .hint { margin-top:4px; font-size:12px; }
+    .dates { width:100%; }
+    .dates label { flex:1; font-size:12px; }
+    .dates input { width:100%; height:34px; font-size:14px; }
+  }
+  .range { margin:18px 0 0; font:500 20px/1.3 var(--sans); letter-spacing:-.01em; }
   .types { display:flex; gap:4px; margin:14px 0 0; overflow-x:auto; scrollbar-width:none; }
   .types::-webkit-scrollbar { display:none; }
   .types a { flex:none; padding:6px 13px; border-radius:99px; font-size:15px; color:var(--mute); transition:background .15s, color .15s; }
@@ -1114,17 +1156,17 @@ const CSS = `${FONTS}
   .dayhead .date { margin-left:4px; font-size:15px; font-weight:400; color:var(--mute); }
   .dayhead .now { display:inline-block; margin-left:8px; padding:1px 9px; border-radius:99px; background:var(--accent); color:#fff; font-size:12px; vertical-align:2px; }
   .dayhead .count { font-size:14px; color:var(--mute); white-space:nowrap; }
-  .entry > a { display:grid; grid-template-columns:44px minmax(0, 1fr) auto 112px; column-gap:16px; align-items:center; padding:10px 8px; border-bottom:1px solid var(--line); border-radius:10px; transition:background .15s; }
+  .entry > a { display:grid; grid-template-columns:88px minmax(0, 1fr) auto 112px; column-gap:20px; align-items:center; padding:14px 8px; border-bottom:1px solid var(--line); border-radius:10px; transition:background .15s; }
   .entry:last-child > a { border-bottom-color:transparent; }
   .entry > a:hover { background:var(--wash); }
-  .thumb { display:block; width:44px; height:58px; object-fit:contain; border-radius:6px; background:var(--wash); }
+  .thumb { display:block; width:88px; height:116px; object-fit:contain; border-radius:8px; background:var(--wash); }
   .thumb.none { box-shadow:inset 0 0 0 1px var(--hair); background:none; }
   .what { min-width:0; }
-  .what h3 { margin:0; font:500 16px/1.3 var(--sans); }
-  .where { margin:1px 0 0; font-size:14px; color:var(--mute); }
-  .what .notes { margin:2px 0 0; font-size:13px; color:#6b7a81; }
+  .what h3 { margin:0; font:500 18px/1.3 var(--sans); }
+  .where { margin:2px 0 0; font-size:15px; color:var(--mute); }
+  .what .notes { margin:4px 0 0; font-size:14px; color:#6b7a81; }
   .what .marks { margin:6px 0 0; }
-  .time { font-size:15px; text-align:right; white-space:nowrap; }
+  .time { font-size:16px; text-align:right; white-space:nowrap; }
   .tag { justify-self:end; }
   .kind { display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 10px; border-radius:99px; background:var(--tint); color:var(--accent-ink); font-size:13px; font-weight:500; white-space:nowrap; }
   .kind::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
@@ -1140,8 +1182,8 @@ const CSS = `${FONTS}
   .cancelled .thumb { filter:grayscale(1); opacity:.5; }
   .empty { margin:0; padding:48px 0; color:var(--mute); }
   @media (max-width:599px) {
-    .entry > a { grid-template-columns:48px auto minmax(0, 1fr); grid-template-areas:"thumb time tag" "thumb what what"; column-gap:10px; row-gap:2px; align-items:start; padding:12px 4px; }
-    .thumb { grid-area:thumb; width:48px; height:64px; }
+    .entry > a { grid-template-columns:96px auto minmax(0, 1fr); grid-template-areas:"thumb time tag" "thumb what what"; column-gap:14px; row-gap:4px; align-items:start; padding:14px 4px; }
+    .thumb { grid-area:thumb; width:96px; height:128px; }
     .time { grid-area:time; text-align:left; font-weight:500; line-height:24px; }
     .tag { grid-area:tag; justify-self:start; }
     .what { grid-area:what; }
@@ -1170,24 +1212,6 @@ const CSS = `${FONTS}
   .unplaced > h2 { margin:0; font:500 19px/1.3 var(--sans); }
   .unplaced > .hint { margin:2px 0 0; font-size:14px; color:var(--mute); }
   .unplaced .day { margin-top:16px; }
-
-  /* the month */
-  .month { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; margin:16px 0 0; }
-  .month .dow { padding:6px 0; text-align:center; font-size:13px; font-weight:500; color:var(--mute); }
-  .cell { position:relative; min-height:58px; padding:6px 8px; border-radius:var(--r-sm); background:var(--card); box-shadow:0 0 0 1px var(--line); overflow:hidden; transition:background .15s; }
-  .cell:hover { background:var(--wash); }
-  .cell .n { font:500 17px/1 var(--sans); }
-  .cell.out, .cell.past { background:none; }
-  .cell.out .n, .cell.past .n { color:#8b989e; }
-  .cell.today .n { color:var(--accent); }
-  .cell.sel { background:var(--ink); box-shadow:none; color:#fff; } .cell.sel .n { color:#fff; }
-  .cell .ticks { display:flex; flex-wrap:wrap; gap:3px; margin-top:8px; }
-  .cell .ticks i { width:7px; height:7px; border-radius:50%; background:var(--accent); }
-  .cell .ticks i.x { background:#a3aeb3; }
-  .cell.sel .ticks i { background:#fff; }
-  .cell.today.sel { box-shadow:inset 0 0 0 2px var(--accent); } .cell.today.sel .ticks i { background:#7fd3dc; }
-  .cell .fest { position:absolute; left:0; right:0; bottom:0; height:4px; background:var(--accent); opacity:.5; }
-  @media (min-width:860px) { .cell { min-height:76px; } }
 
   /* details, map */
   @media (min-width:960px) { :root { --g:max(32px, calc((100vw - 1180px) / 2)); } .mast { padding-top:16px; padding-bottom:16px; } }

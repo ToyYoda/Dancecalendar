@@ -184,16 +184,25 @@ describe("the Flyer feed", () => {
     expect(html).toContain("Salsa Freunde");
   });
 
-  it("pages by week, keeping the filters", async () => {
+  it("shows the days from von to bis, keeping the filters", async () => {
+    await add({ title: "Bald Party", day: 2 });
     await add({ title: "Später Party", day: 12 });
 
-    const html = await page("?styles=salsa");
-    const next = html.match(/href="(\/\?[^"]*w=\d{4}-\d{2}-\d{2}[^"]*)"[^>]*aria-label="Später"/)![1].replace(/&amp;/g, "&");
+    const html = await page(`?styles=salsa&von=${berlinDate(10)}&bis=${berlinDate(14)}`);
 
-    expect(next).toContain("styles=salsa");
-    const later = await page(next.slice(1));
-    const w = new URLSearchParams(next.slice(2)).get("w")!;
-    if (berlinDate(12) <= plusDays(w, 6)) expect(later).toContain("Später Party");
+    expect(html).toContain("Später Party");
+    expect(html).not.toContain("Bald Party");
+    // Von and Bis keep the other filters when they change the span.
+    expect(html).toContain('<input type="hidden" name="styles" value="salsa"/>');
+    expect(html).toContain(`name="von" value="${berlinDate(10)}"`);
+    expect(html).toContain(`name="bis" value="${berlinDate(14)}"`);
+  });
+
+  it("opens an older week or day link as that span", async () => {
+    await add({ title: "Später Party", day: 12 });
+
+    expect(await page(`?w=${berlinDate(12)}`)).toContain("Später Party");
+    expect(await page(`?view=cal&d=${berlinDate(12)}`)).toContain("Später Party");
   });
 
   it("is in English with lang=en", async () => {
@@ -205,18 +214,25 @@ describe("the Flyer feed", () => {
   });
 });
 
-describe("the calendar view", () => {
-  it("shows the month with the selected day's Events, and keeps the filters", async () => {
+describe("the small calendar", () => {
+  it("marks the days with something on and the shown span, and a tap on a day shows that day", async () => {
     await add({ title: "Kassel Salsa", day: 2 });
-    await add({ title: "Göttingen Salsa", day: 2, venue: 2 });
+    await add({ title: "Göttingen Salsa", day: 3, venue: 2 });
 
-    const html = await page(`?view=cal&c=51.31,9.48&r=25&d=${berlinDate(2)}`);
+    const html = await page("?c=51.31,9.48&r=25");
 
-    expect(html).toContain("Kassel Salsa");
-    expect(html).not.toContain("Göttingen Salsa");
-    expect(html).toMatch(/class="cell[^"]*sel/);
-    // Switching back to the feed keeps the place.
-    expect(html).toMatch(/href="\/\?c=51.31,9.48&amp;r=25"/);
+    const cell = (d: string) => html.match(new RegExp(`<a class="([^"]*)" href="([^"]*)" data-day="${d}"`))!;
+    expect(cell(berlinDate(2))[1]).toContain("busy");
+    expect(cell(berlinDate(3))[1]).not.toContain("busy"); // only Events that match the filters
+    expect(cell(berlinDate(0))[1]).toMatch(/\bin\b.*\bfirst\b/);
+    expect(cell(berlinDate(2))[2]).toBe(`/?c=51.31,9.48&amp;r=25&amp;von=${berlinDate(2)}`);
+  });
+
+  it("stays above the map, and the span stays when switching between list and map", async () => {
+    const html = await page(`?view=map&von=${berlinDate(1)}&bis=${berlinDate(3)}`);
+
+    expect(html).toContain('data-mini');
+    expect(html).toContain(`href="/?von=${berlinDate(1)}&amp;bis=${berlinDate(3)}"`);
   });
 });
 

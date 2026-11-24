@@ -6,8 +6,8 @@ import { firstDates, heldRule, ruleWords, seriesLeads } from "../series";
 
 const FIELD_NAMES: Record<string, string> = {
   title: "Titel",
-  type: "Art",
-  styles: "Tanzstil",
+  type: "Art der Veranstaltung",
+  styles: "Tanz",
   start_date: "Datum",
   start_time: "Uhrzeit",
   intro_class_time: "Einsteigerkurs",

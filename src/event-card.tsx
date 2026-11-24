@@ -92,7 +92,7 @@ export function Card(props: {
       {field("title", "Titel", "text", true)}
       <div class="row">
         <div>
-          <label for={`type.${i}`}>Art</label>
+          <label for={`type.${i}`}>Art der Veranstaltung</label>
           <select id={`type.${i}`} name={`type.${i}`} class={yellow.has("type") ? "unc" : undefined}>
             {Object.entries(TYPES).map(([value, label]) => (
               <option value={value} selected={e.type === value}>
@@ -117,7 +117,7 @@ export function Card(props: {
       {field("city", "Stadt")}
       {props.venue && <p class="series">📍 {props.venue}</p>}
       <div class={yellow.has("styles") ? "styles unc" : "styles"}>
-        <span>Tanzstile</span>
+        <span>Tänze</span>
         {Object.entries(STYLES).map(([value, label]) => (
           <label>
             <input type="checkbox" name={`styles.${i}`} value={value} checked={e.styles.includes(value)} /> {label}
@@ -157,26 +157,36 @@ export function RuleSelect(props: { i: number; e: ExtractedEvent; rule: Rule | n
   );
 }
 
+// In the site's look (src/site.tsx): its tokens, with yellow (--warm) to check and red (--off) for what's missing.
 export const CARD_CSS = `
-  .flyer { display: block; max-width: 100%; max-height: 45vh; margin: 0 auto 1rem; border-radius: 8px; }
-  .card { border: 1px solid #e4dfd8; border-radius: 10px; padding: .75rem; margin: 1rem 0; }
-  .card.dropped { opacity: .45; }
-  .card legend { display: flex; gap: 1rem; justify-content: space-between; width: 100%; font-weight: bold; padding: 0 .25rem; box-sizing: border-box; }
-  .card legend label { font-weight: normal; margin: 0; color: inherit; font-size: 1rem; }
-  .card label, .styles > span { display: block; font-size: .8rem; color: #6f6861; margin-top: .5rem; }
-  .card input:not([type=checkbox]), .card select { width: 100%; box-sizing: border-box; border: 1px solid #e4dfd8; border-radius: 6px; padding: .4rem .5rem; font: inherit; background: #fff; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-  .styles label { display: inline-block; margin-right: .75rem; color: inherit; font-size: .9rem; }
-  .styles.unc { background: #fff8e1; border-radius: 6px; padding: 0 .25rem .25rem; }
-  .card :is(input, select).unc, .unc-key { background: #fff8e1; border-color: #e0b100; }
-  .card :is(input, select).miss, .miss-key { background: #fde2e2; border-color: #d33; }
-  .why { font-size: .8rem; color: #8a6d00; }
-  .why.r { color: #a30000; }
-  .warn { font-size: .9rem; background: #fff8e1; border-radius: 6px; padding: .4rem .5rem; margin: .25rem 0; }
-  .series { font-size: .9rem; margin: .5rem 0 0; }
-  .publish { width: 100%; padding: .75rem; font: inherit; font-weight: bold; border: 0; border-radius: 8px; background: #c2185b; color: #fff; }
-  .publish:disabled { background: #ccc; color: #666; }
-  .shown-as input { width: 100%; box-sizing: border-box; border: 1px solid #e4dfd8; border-radius: 6px; padding: .4rem .5rem; font: inherit; }
-  .reject { width: 100%; margin-top: .75rem; padding: .6rem; font: inherit; border: 1px solid #a30000; border-radius: 8px; background: #fff; color: #a30000; }
-  .hint { font-size: .85rem; color: #6f6861; }
+  .flyer { display:block; max-width:100%; max-height:45vh; margin:0 auto 16px; border-radius:var(--r-sm, 8px); box-shadow:0 0 0 1px var(--line, #e4dfd8); }
+  .card { border:0; border-radius:var(--r, 10px); padding:16px 18px 18px; margin:16px 0; background:var(--card, #fff); box-shadow:var(--shadow, none), 0 0 0 1px var(--line, #e4dfd8); min-width:0; }
+  .card.dropped { opacity:.45; }
+  .card legend { float:left; display:flex; gap:16px; justify-content:space-between; align-items:center; width:100%; margin-bottom:6px; padding:0; font:500 19px/1.3 var(--sans, inherit); box-sizing:border-box; }
+  .card legend + * { clear:both; }
+  .card legend label { font-weight:400; margin:0; color:inherit; font-size:15px; display:flex; gap:6px; align-items:center; }
+  .card label, .styles > span { display:block; font-size:14px; font-weight:500; color:var(--mute, #6f6861); margin-top:12px; margin-bottom:4px; }
+  .card input:not([type=checkbox]), .card select { width:100%; box-sizing:border-box; height:44px; border:1px solid rgb(31 48 56 / .18); border-radius:var(--r-sm, 6px); padding:0 12px; font:400 16px var(--sans, inherit); background:var(--card, #fff); color:var(--ink, inherit); }
+  .card input:focus, .card select:focus { outline:2px solid var(--accent, #c2185b); outline-offset:0; border-color:transparent; }
+  .card input[type=checkbox] { width:18px; height:18px; accent-color:var(--accent, #c2185b); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .row > * { min-width:0; }
+  .styles { margin-top:4px; }
+  .styles label { display:inline-flex; gap:6px; align-items:center; margin:4px 14px 4px 0; color:var(--ink, inherit); font-size:15px; font-weight:400; }
+  .styles.unc { background:var(--warm-tint, #fff8e1); border-radius:var(--r-sm, 6px); padding:2px 8px 6px; }
+  .card :is(input, select).unc, .unc-key { background:var(--warm-tint, #fff8e1); border-color:#d9a400; }
+  .card :is(input, select).miss, .miss-key { background:var(--off-tint, #fde2e2); border-color:var(--off, #d33); }
+  .why { font-size:14px; color:var(--warm, #8a6d00); margin-top:4px; }
+  .why.r { color:var(--off, #a30000); }
+  .warn { font-size:15px; background:var(--warm-tint, #fff8e1); color:var(--warm, inherit); border-radius:var(--r-sm, 6px); padding:10px 14px; margin:6px 0; }
+  .series { font-size:15px; margin:10px 0 0; color:var(--mute, inherit); }
+  .publish { width:100%; height:48px; font:500 16px var(--sans, inherit); border:0; border-radius:99px; background:var(--accent, #c2185b); color:#fff; cursor:pointer; transition:background .15s, transform .15s; }
+  .publish:hover { background:var(--accent-ink, #a0144b); }
+  .publish:active { transform:scale(.98); }
+  .publish:disabled { background:var(--hair, #ccc); color:var(--mute, #666); cursor:default; }
+  .shown-as input { width:100%; box-sizing:border-box; height:44px; border:1px solid rgb(31 48 56 / .18); border-radius:var(--r-sm, 6px); padding:0 12px; font:inherit; }
+  .reject { width:100%; height:44px; margin-top:12px; font:500 15px var(--sans, inherit); border:1px solid rgb(163 39 27 / .35); border-radius:99px; background:var(--card, #fff); color:var(--off, #a30000); cursor:pointer; }
+  .reject:hover { background:var(--off-tint, #fde2e2); }
+  .hint { font-size:14px; color:var(--mute, #6f6861); }
+  @media (max-width:420px) { .row { grid-template-columns:1fr; gap:0; } }
 `;

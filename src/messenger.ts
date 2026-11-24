@@ -10,11 +10,16 @@ export type Button = { id: string; title: string }; // WhatsApp: title max 20 ch
 const TG = "tg:";
 export const isTelegram = (address: string) => address.startsWith(TG);
 
-export function sendText(env: Env, to: string, text: string) {
+// "web:<random>" is someone who logged in on the website with Google only: no chat to write to.
+const WEB = "web:";
+
+export async function sendText(env: Env, to: string, text: string) {
+  if (to.startsWith(WEB)) return;
   return isTelegram(to) ? telegram.sendText(env, to.slice(TG.length), text) : whatsapp.sendText(env, to, text);
 }
 
-export function sendButtons(env: Env, to: string, text: string, buttons: Button[]) {
+export async function sendButtons(env: Env, to: string, text: string, buttons: Button[]) {
+  if (to.startsWith(WEB)) return;
   return isTelegram(to) ? telegram.sendButtons(env, to.slice(TG.length), text, buttons) : whatsapp.sendButtons(env, to, text, buttons);
 }
 
@@ -24,5 +29,6 @@ export function downloadMedia(env: Env, mediaId: string) {
 
 // How the Admin sees an address.
 export function showAddress(address: string): string {
+  if (address.startsWith(WEB)) return "nur Website";
   return isTelegram(address) ? `Telegram ${address.slice(TG.length)}` : `+${address.replace(/^\+/, "")}`;
 }

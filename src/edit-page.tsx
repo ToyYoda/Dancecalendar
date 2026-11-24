@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { duplicatesOfEvent } from "./duplicates";
 import { Card, CARD_CSS, fromForm, missing } from "./event-card";
 import type { ExtractedEvent } from "./extraction/extract";
-import { Layout } from "./layout";
+import { SitePage } from "./site";
 import { columns, findVenue, venueQuery } from "./publish";
 import { signOfLife } from "./series";
 import { queueUpload, waitForUpload } from "./upload";
@@ -170,13 +170,16 @@ function EditPage(props: {
 }) {
   const { token, row } = props;
   return (
-    <Layout title={`${row.title} – DanceCalendar`} head={<style>{CARD_CSS + CSS}</style>}>
+    <SitePage title={row.title} css={CARD_CSS + CSS}>
       <h1>Event bearbeiten</h1>
-      {props.saved && <p class="saved">✅ Gespeichert.</p>}
-      {row.cancelled ? <p class="cancelled">❌ Abgesagt – steht im Kalender als „abgesagt“.</p> : null}
+      {props.saved && <p class="note">Gespeichert. Der Kalender zeigt schon die neue Fassung.</p>}
+      {row.cancelled ? <p class="note bad">Abgesagt. Im Kalender steht das Event als „abgesagt“.</p> : null}
       {row.series_token && (
-        <p>
-          🔁 Ein Termin einer Serie – Änderungen hier gelten nur für diesen Tag. <a href={`/s/${row.series_token}`}>Ganze Serie bearbeiten</a>
+        <p class="note">
+          Ein Termin einer Serie. Änderungen hier gelten nur für diesen Tag.{" "}
+          <a class="about" href={`/s/${row.series_token}`}>
+            Ganze Serie bearbeiten
+          </a>
         </p>
       )}
       {row.flyer_key && <img class="flyer" src={`/e/${token}/flyer`} alt="Flyer" />}
@@ -188,50 +191,58 @@ function EditPage(props: {
       </form>
       {row.cancelled ? (
         <form method="post" action={`/e/${token}/reinstate`}>
-          <button type="submit" class="secondary">
+          <button type="submit" class="btn wide" style="margin-top:12px">
             Absage zurücknehmen
           </button>
         </form>
       ) : (
         <form method="post" action={`/e/${token}/cancel`} onsubmit="return confirm('Event wirklich absagen?')">
-          <button type="submit" class="secondary">
+          <button type="submit" class="btn danger wide" style="margin-top:12px">
             Event absagen
           </button>
         </form>
       )}
       {row.organizer_id && (
-        <p>
-          Neues Event? <a href={`/e/${token}/upload`}>Flyer hochladen</a>
+        <p style="margin-top:20px">
+          Neues Event?{" "}
+          <a class="about" href={`/e/${token}/upload`}>
+            Flyer hochladen
+          </a>
         </p>
       )}
-      <p class="hint">Dieser Link ist privat – nicht weiterleiten.</p>
-    </Layout>
+      <p class="hint">Dieser Link ist privat, bitte nicht weiterleiten.</p>
+    </SitePage>
   );
 }
 
 function UploadForm(props: { token: string; displayName: string; error?: string }) {
   return (
-    <Layout title="Flyer hochladen – DanceCalendar">
+    <SitePage title="Flyer hochladen">
+      <a class="back" href={`/e/${props.token}`}>
+        ← Zurück
+      </a>
       <h1>Flyer hochladen</h1>
-      {props.error && <p style="color:#a30000">{props.error}</p>}
-      <p>
-        Ich lese den Flyer aus, du prüfst alles, und es wird als <strong>{props.displayName}</strong> veröffentlicht.
+      {props.error && <p class="note bad">{props.error}</p>}
+      <p class="lead">
+        DanceCalendar liest den Flyer aus, du prüfst alles, und es erscheint als <b>{props.displayName}</b>.
       </p>
-      <form method="post" enctype="multipart/form-data">
-        <p>
+      <form method="post" enctype="multipart/form-data" class="stack">
+        <label class="drop">
           <input type="file" name="flyer" accept="image/jpeg,image/png,image/webp" required />
-        </p>
-        <button type="submit">Hochladen und auslesen</button>
+          <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <b>Flyer wählen</b>
+          <small>Foto oder Screenshot</small>
+        </label>
+        <button class="btn solid wide" type="submit">
+          Hochladen und auslesen
+        </button>
       </form>
-      <p>
-        <a href={`/e/${props.token}`}>Zurück</a>
-      </p>
-    </Layout>
+    </SitePage>
   );
 }
 
 const CSS = `
-  .saved { background: #e6f4ea; border-radius: 6px; padding: .5rem; }
-  .cancelled { background: #fde2e2; border-radius: 6px; padding: .5rem; font-weight: bold; }
-  .secondary { width: 100%; margin-top: .75rem; padding: .6rem; font: inherit; border: 1px solid #e4dfd8; border-radius: 8px; background: #fff; }
+  .wrap > form > .publish { margin-top:4px; }
 `;

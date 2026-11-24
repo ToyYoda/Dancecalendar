@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { replyReading } from "../whatsapp/webhook";
 import type { InboundMessage } from "../whatsapp/types";
+import { handleTelegramLogin } from "../web-login";
 import { answerCallback, webhookSecret } from "./api";
 
 // Telegram's webhook: https://core.telegram.org/bots/api#setwebhook
@@ -17,6 +18,8 @@ telegramWebhook.post("/", async (c) => {
   if (update?.callback_query?.id) {
     await answerCallback(c.env, update.callback_query.id).catch((err) => console.error("Telegram answerCallbackQuery failed", err));
   }
+  // Logging in on the website (src/web-login.ts) is answered here, outside the bot's conversation.
+  if (await handleTelegramLogin(c.env, update)) return c.text("OK");
   const message = inboundMessage(update);
   if (!message) return c.text("OK");
 

@@ -154,7 +154,8 @@ function PrivacyDe(props: { op: Operator }) {
       <h2>2. Kurz gesagt</h2>
       <ul>
         <li>
-          Keine Cookies, kein Tracking, keine Analyse- oder Werbedienste. Darum gibt es kein Cookie-Banner. Inhalte Dritter laden nur die Karten (die
+          Kein Tracking, keine Analyse- oder Werbedienste. Ein Cookie gibt es nur, wenn du dich als Veranstalter*in auf der Website anmeldest (Abschnitt 6);
+          es ist technisch nötig und braucht darum kein Cookie-Banner. Inhalte Dritter laden nur die Karten (die
           Kartenansicht und die Karte zum Ortwählen), und erst, wenn du sie öffnest (Abschnitt 3).
         </li>
         <li>Tänzer*innen brauchen kein Konto. Filter stehen nur in der Adresse (URL) der Seite.</li>
@@ -197,7 +198,7 @@ function PrivacyDe(props: { op: Operator }) {
 
       <h2>5. Flyer lesen mit KI</h2>
       <p>
-        Den Flyer liest ein KI-Modell von Anthropic aus (Titel, Datum, Uhrzeit, Ort, Stil). Dafür geht das Bild an Anthropic. Anthropic nutzt die Daten nicht
+        Den Flyer liest ein KI-Modell von Anthropic aus (Titel, Datum, Uhrzeit, Ort, Tanz). Dafür geht das Bild an Anthropic. Anthropic nutzt die Daten nicht
         zum Training seiner Modelle und löscht sie nach kurzer Zeit. Das Ergebnis prüfst du (oder bei Tipps der Admin), bevor es veröffentlicht wird. Es gibt
         keine automatisierte Entscheidung im Sinne von Art. 22 DSGVO.
       </p>
@@ -208,6 +209,14 @@ function PrivacyDe(props: { op: Operator }) {
         öffentlich). Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO. Die Daten bleiben, solange du angemeldet bist. Hörst du auf oder wirst du entfernt, löschen
         wir deine künftigen Events sofort und deine übrigen Daten spätestens nach 3 Monaten. Wird ein Konto wegen eines Verstoßes gesperrt, behalten wir nur
         seine Nutzer-ID, damit die Sperre wirkt (Art. 6 Abs. 1 lit. f DSGVO).
+      </p>
+      <p>
+        <strong>Anmelden auf der Website</strong> (/veranstalter): Meldest du dich mit Telegram an, schickt dir der Bot eine Rückfrage, und erst dein „Ja“ meldet
+        den Browser an. Meldest du dich mit Google an, bekommen wir von Google eine Kennung deines Google-Kontos und deine E-Mail-Adresse; beides sehen nur
+        du und der Admin, nie die Öffentlichkeit. Google (Google Ireland Ltd.) ist dabei selbst verantwortlich. Danach hält ein Cookie („dc_session“) dich
+        angemeldet, bis du dich abmeldest, höchstens 90 Tage. Während der Anmeldung setzen wir für 10 Minuten ein zweites Cookie, damit nur dein Browser die
+        Anmeldung abschließen kann. Die Cookies enthalten nur Zufallswerte; wir speichern davon nur eine Prüfsumme. Rechtsgrundlage: Art. 6 Abs. 1 lit. b
+        DSGVO und § 25 Abs. 2 Nr. 2 TDDDG.
       </p>
 
       <h2>7. Tipps</h2>
@@ -251,6 +260,11 @@ function PrivacyDe(props: { op: Operator }) {
           <td>Telegram (Britische Jungferninseln, Dubai)</td>
           <td>Nachrichten des Bots</td>
           <td>Kein Auftragsverarbeiter: Telegram ist selbst verantwortlich, die Übermittlung geschieht, weil du den Bot über Telegram nutzt</td>
+        </tr>
+        <tr>
+          <td>Google Ireland Ltd. (Irland)</td>
+          <td>Nur wenn du „Mit Google anmelden“ wählst: Anmeldung</td>
+          <td>Kein Auftragsverarbeiter: Google ist selbst verantwortlich, du meldest dich dort an</td>
         </tr>
       </table>
 
@@ -302,7 +316,8 @@ function PrivacyEn(props: { op: Operator }) {
       <h2>2. In short</h2>
       <ul>
         <li>
-          No cookies, no tracking, no analytics or advertising services. That's why there is no cookie banner. Only the maps (the map view and the map for
+          No tracking, no analytics or advertising services. There is a cookie only when you log in on the website as an Organizer (section 6); it is
+          strictly necessary, so there is no cookie banner. Only the maps (the map view and the map for
           picking a place) load third-party content, and only once you open them (section 3).
         </li>
         <li>Dancers need no account. Filters live only in the page address (URL).</li>
@@ -343,7 +358,7 @@ function PrivacyEn(props: { op: Operator }) {
 
       <h2>5. Reading Flyers with AI</h2>
       <p>
-        An AI model by Anthropic reads the Flyer (title, date, time, Venue, style), so the image is sent to Anthropic. Anthropic does not use the data to train
+        An AI model by Anthropic reads the Flyer (title, date, time, Venue, dance), so the image is sent to Anthropic. Anthropic does not use the data to train
         its models and deletes it after a short time. You (or, for Tips, the Admin) check the result before it is published. There is no automated decision
         within the meaning of Art. 22 GDPR.
       </p>
@@ -353,6 +368,13 @@ function PrivacyEn(props: { op: Operator }) {
         When you sign up we store your Display name (public on your Events), your first name (for the Admin only) and your Telegram user ID (never public). Legal
         basis: Art. 6(1)(b) GDPR. The data is kept while you are registered. If you stop or are removed, we delete your future Events at once and the rest of
         your data within 3 months. If an account is blocked for a breach, we keep only its user ID so the block works (Art. 6(1)(f) GDPR).
+      </p>
+      <p>
+        <strong>Logging in on the website</strong> (/veranstalter): with Telegram, the bot asks you first, and only your "yes" logs the browser in. With Google,
+        Google gives us an ID of your Google account and your email address; only you and the Admin see them, never the public. Google (Google Ireland Ltd.)
+        is a controller itself here. A cookie ("dc_session") then keeps you logged in until you log out, for at most 90 days. While you log in, a second
+        cookie lasts 10 minutes so that only your browser can finish the login. The cookies hold only random values, of which we store only a checksum. Legal
+        basis: Art. 6(1)(b) GDPR and Section 25(2) no. 2 TDDDG.
       </p>
 
       <h2>7. Tips</h2>
@@ -395,6 +417,11 @@ function PrivacyEn(props: { op: Operator }) {
           <td>Telegram (British Virgin Islands, Dubai)</td>
           <td>The bot's messages</td>
           <td>Not a processor: Telegram is a controller itself; the transfer happens because you use the bot through Telegram</td>
+        </tr>
+        <tr>
+          <td>Google Ireland Ltd. (Ireland)</td>
+          <td>Only if you choose "Log in with Google": the login</td>
+          <td>Not a processor: Google is a controller itself; you log in there</td>
         </tr>
       </table>
 

@@ -3,7 +3,7 @@ import { duplicatesOfExtracted } from "./duplicates";
 import { lastYearsFlyer } from "./extraction/checks";
 import { Card, CARD_CSS, fromForm, missing, RuleSelect } from "./event-card";
 import type { ExtractedEvent, Extraction } from "./extraction/extract";
-import { Layout } from "./layout";
+import { SitePage } from "./site";
 import { findVenue, publishSubmission, venueQuery, type Entry, type Held } from "./publish";
 import { heldRule, seriesLeads } from "./series";
 import { berlinDate } from "./whatsapp/bot";
@@ -146,12 +146,12 @@ export function ConfirmPage(props: PageProps & { tip?: { shownAs: string; error?
   const isBlocked = blocked(events, include, today);
   const verb = tip ? "freigeben" : "veröffentlichen";
   return (
-    <Layout title={`${tip ? "Tipp" : "Events"} prüfen – DanceCalendar`} head={<style>{CARD_CSS}</style>}>
+    <SitePage title={tip ? "Tipp prüfen" : "Events prüfen"} css={CARD_CSS}>
       <h1>{tip ? "Tipp prüfen" : "Events prüfen"}</h1>
       <img class="flyer" src={tip ? `/admin/tips/${s.confirm_token}/flyer` : `/c/${s.confirm_token}/flyer`} alt="Flyer" />
       <p>
         {s.source !== "admin" && s.first_name ? `Hallo ${s.first_name}! ` : ""}
-        Das habe ich auf dem Flyer erkannt. <span class="unc-key">Gelb</span> = bitte prüfen, <span class="miss-key">rot</span> = fehlt.
+        Das habe ich auf dem Flyer erkannt. <span class="unc-key" style="padding:0 4px;border-radius:4px">Gelb</span> = bitte prüfen, <span class="miss-key" style="padding:0 4px;border-radius:4px">rot</span> = fehlt.
         {tip ? " Wird als „von der Community hinzugefügt“ gezeigt." : <> Wird veröffentlicht als <strong>{s.display_name}</strong>.</>}
       </p>
       <form id="confirm" method="post" data-today={today}>
@@ -190,7 +190,7 @@ export function ConfirmPage(props: PageProps & { tip?: { shownAs: string; error?
         )}
       </form>
       <script dangerouslySetInnerHTML={{ __html: SCRIPT }} />
-    </Layout>
+    </SitePage>
   );
 }
 
@@ -207,15 +207,17 @@ function SeriesField(props: { events: ExtractedEvent[]; i: number }) {
 
 export function Done(props: { s: Submission; entries: Entry[]; skipped: ExtractedEvent[] }) {
   return (
-    <Layout title="Ist online – DanceCalendar">
-      <h1>✅ Ist online!</h1>
-      <ul>
+    <SitePage title="Ist online">
+      <h1>Ist online!</h1>
+      <ul class="evs panel">
         {props.entries.map((p) => (
-          <li>
-            <strong>{p.title}</strong> – {p.when}
+          <li style="padding:10px 0;border-bottom:1px solid var(--line)">
+            <strong>{p.title}</strong> · {p.when}
             {p.note}
             <br />
-            {p.label}: <a href={p.link} style="overflow-wrap: anywhere">{p.link}</a>
+            <a class="about" href={p.link}>
+              {p.label}
+            </a>
           </li>
         ))}
       </ul>
@@ -224,19 +226,39 @@ export function Done(props: { s: Submission; entries: Entry[]; skipped: Extracte
         Die Links sind privat – nicht weiterleiten.
         {props.s.source === "whatsapp" ? " Du bekommst sie auch im Chat." : ""}
       </p>
-      <p>{props.s.source === "tip" ? <a href="/admin/tips">Zu den Tipps</a> : <a href="/">Zum Kalender</a>}</p>
-    </Layout>
+      <p class="row2">
+        {props.s.source === "tip" ? (
+          <a class="btn solid" href="/admin/tips">
+            Zu den Tipps
+          </a>
+        ) : (
+          <>
+            <a class="btn solid" href="/veranstalter">
+              Zu deinen Events
+            </a>
+            <a class="btn" href="/">
+              Zum Kalender
+            </a>
+          </>
+        )}
+      </p>
+    </SitePage>
   );
 }
 
 export function AlreadyDone() {
   return (
-    <Layout title="Erledigt – DanceCalendar">
+    <SitePage title="Erledigt">
       <h1>Dieser Flyer ist schon erledigt.</h1>
-      <p>
-        <a href="/">Zum Kalender</a>
+      <p class="row2">
+        <a class="btn solid" href="/veranstalter">
+          Zu deinen Events
+        </a>
+        <a class="btn" href="/">
+          Zum Kalender
+        </a>
       </p>
-    </Layout>
+    </SitePage>
   );
 }
 

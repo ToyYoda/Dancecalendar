@@ -10,6 +10,8 @@ import { cleanUpPast } from "./retention";
 import { extendSeries } from "./series";
 import { seriesPage } from "./series-page";
 import { cleanUpTips } from "./tips";
+import { portal } from "./portal";
+import { cleanUpLogins } from "./web-login";
 import { readUpload, uploadFailed, type FlyerUpload } from "./upload";
 import { berlinDate, handleMessage } from "./whatsapp/bot";
 import type { InboundMessage } from "./whatsapp/types";
@@ -26,6 +28,7 @@ app.get("/ueber", async (c) => (await c.env.ASSETS.fetch(new URL("/landing/", c.
 app.get("/kalender", (c) => c.redirect(`/${new URL(c.req.url).search}`, 301));
 
 app.route("/", legalPages);
+app.route("/veranstalter", portal);
 app.route("/e", editPage);
 app.route("/s", seriesPage);
 app.route("/a", applyPage);
@@ -50,7 +53,7 @@ export default {
     const now = new Date(controller.scheduledTime);
     if (controller.cron === SERIES_CRON) ctx.waitUntil(cleanUpPast(env, berlinDate(now)).then(() => extendSeries(env.DB, berlinDate(now))));
     else if (controller.cron === EMAIL_CRON) ctx.waitUntil(digestDue(now) ? sendDailyEmail(env, now) : Promise.resolve());
-    else ctx.waitUntil(Promise.all([cleanUpApplications(env), cleanUpTips(env)]));
+    else ctx.waitUntil(Promise.all([cleanUpApplications(env), cleanUpTips(env), cleanUpLogins(env)]));
   },
   async queue(batch: MessageBatch<Job>, env: Env, _ctx: ExecutionContext) {
     for (const message of batch.messages) {

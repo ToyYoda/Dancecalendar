@@ -1,7 +1,7 @@
 // The ink couple in the night band at the top of the calendar: a dancing couple traced in a few thousand
 // particles from a silhouette (couple.png), swaying slightly and lit by an apricot lamp that follows the pointer
 // or finger. With reduced motion it is drawn once and stays still; it pauses while the band is off screen or the
-// tab is hidden.
+// tab is hidden. data-ink-x and data-ink-h (shares of the canvas) place it in a frame other than the band.
 (() => {
   const canvas = document.querySelector("canvas[data-ink]");
   if (!canvas || !canvas.getContext) return;
@@ -43,7 +43,9 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const add = host.querySelector(".add"), narrow = W < 700;
     let h, cx, bottom;
-    if (narrow && add) { h = Math.max(60, add.offsetTop - 14); cx = W * .84; bottom = add.offsetTop - 8; }
+    const fx = parseFloat(canvas.dataset.inkX), fh = parseFloat(canvas.dataset.inkH);
+    if (fx && fh) { h = H * fh; cx = W * fx; bottom = H - H * (1 - fh) / 2; } // a frame that says where the couple stands
+    else if (narrow && add) { h = Math.max(60, add.offsetTop - 14); cx = W * .84; bottom = add.offsetTop - 8; }
     else {
       // on a wide screen the band's content is centred, so the couple stands just left of the links on the right
       h = H * .96; bottom = H - 2;

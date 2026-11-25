@@ -4,7 +4,7 @@ import { Masthead, SITE_CSS } from "./site";
 import { addDays, ruleWords, type Rule } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 
-// The Dancer overview at "/" (what DanceCalendar is: /ueber): the Events of a span of days as a list by day
+// The Dancer overview at "/" (what Taktvoll is: /ueber): the Events of a span of days as a list by day
 // (the default: today and the next 7 days) or on a map (?view=map). Above both, a small month calendar shows
 // which days have something on and picks the span (a first and a last day, or Von/Bis); beside them one
 // sidebar of filters. All of it stays in the URL (and is subscribable at /kalender.ics), so a link shows the same view on
@@ -47,7 +47,7 @@ const T = {
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
     series: "Serie", link: "Link", styles: "Tanz", day: "Tag", feed: "Liste", back: "Zurück",
     from: "Von", to: "Bis", show: "Zeigen", span: "Zeitraum", nextDays: "Nächste 7 Tage", pickHint: "Tippe den ersten und den letzten Tag.", pickEnd: "Jetzt den letzten Tag tippen.", busy: "Events",
-    today: "Heute", sub: "Paartanz in Kassel, Göttingen und drumherum", about: "Was ist DanceCalendar?",
+    today: "Heute", sub: "wo heute getanzt wird", about: "Was ist Taktvoll?",
     filters: "Filter", week: "KW", prev: "Früher", next: "Später", view: "Ansicht", mapView: "Karte", unplaced: "Nicht auf der Karte", noCoords: "Diese Orte haben noch keine Koordinaten.",
     subscribe: "Abonnieren", subHint: "Die Events mit diesen Filtern erscheinen in deiner Kalender-App und bleiben dort von selbst aktuell.",
     openApp: "In Kalender-App öffnen", copy: "Link kopieren", copied: "Link kopiert",
@@ -62,7 +62,7 @@ const T = {
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
     series: "Series", link: "Link", styles: "Style", day: "Day", feed: "List", back: "Back",
     from: "From", to: "To", show: "Show", span: "Dates", nextDays: "Next 7 days", pickHint: "Tap the first and the last day.", pickEnd: "Now tap the last day.", busy: "events",
-    today: "Today", sub: "Partner dance in and around Kassel and Göttingen", about: "What is DanceCalendar?",
+    today: "Today", sub: "where to dance tonight", about: "What is Taktvoll?",
     filters: "Filters", week: "Week", prev: "Earlier", next: "Later", view: "View", mapView: "Map", unplaced: "Not on the map", noCoords: "These places have no coordinates yet.",
     subscribe: "Subscribe", subHint: "The Events for these filters show up in your calendar app and stay up to date there on their own.",
     openApp: "Open in calendar app", copy: "Copy link", copied: "Link copied",
@@ -168,12 +168,12 @@ function calendar(events: Shown[], f: Filters, origin: string): string {
     ...STYLES.filter(([k]) => f.styles.includes(k)).map(([, n]) => n),
     ...(f.type ? [t[PLURAL[f.type as keyof typeof PLURAL]]] : []),
   ];
-  const name = ["DanceCalendar", ...(picked.length ? [picked.join(", ")] : [])].join(" · ");
+  const name = ["Taktvoll", ...(picked.length ? [picked.join(", ")] : [])].join(" · ");
   const local = (iso: string) => iso.replace(/[-:]/g, "") + "00";
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//DanceCalendar//Kalender//DE",
+    "PRODID:-//Taktvoll//Kalender//DE",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${text(name)}`,
@@ -392,7 +392,7 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
     </>
   );
   return (
-    <Layout title={props.title ? `${props.title} – DanceCalendar` : "DanceCalendar"} lang={props.f.lang} head={head}>
+    <Layout title={props.title ? `${props.title} – Taktvoll` : "Taktvoll"} lang={props.f.lang} head={head}>
       <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add>
         <a class="about" href="/ueber" lang="de">{t.about}</a>
         <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
@@ -894,7 +894,7 @@ const MAP_SCRIPT = `(() => {
   let marker, picked;
   map.on("click", (ev) => {
     picked = ev.lngLat;
-    marker = marker || new maplibregl.Marker({ color: "#0d7480" }).setLngLat(picked).addTo(map);
+    marker = marker || new maplibregl.Marker({ color: "#d6006d" }).setLngLat(picked).addTo(map);
     marker.setLngLat(picked);
     use.disabled = false;
   });
@@ -1196,7 +1196,7 @@ const CSS = `${SITE_CSS}
     box-shadow:0 2px 10px rgb(31 48 56 / .3); cursor:pointer; transition:transform .15s; }
   .pin:hover { transform:scale(1.08); }
   .pin.off { background:#8b989e; }
-  .pin.group { min-width:38px; height:38px; font-size:15px; background:var(--ink); box-shadow:0 0 0 5px rgb(13 116 128 / .25), 0 2px 10px rgb(31 48 56 / .3); }
+  .pin.group { min-width:38px; height:38px; font-size:15px; background:var(--ink); box-shadow:0 0 0 5px rgb(214 0 109 / .25), 0 2px 10px rgb(31 48 56 / .3); }
   .pop .venue + .venue { margin-top:10px; padding-top:8px; border-top:2px solid var(--line); }
   .here { width:12px; height:12px; border-radius:50%; background:var(--ink); border:3px solid #fff; box-shadow:0 0 0 6px rgb(31 48 56 / .15); }
   .maplibregl-popup-content { font-family:var(--sans); border-radius:12px; padding:12px 14px; box-shadow:0 18px 40px -16px rgb(31 48 56 / .45); }

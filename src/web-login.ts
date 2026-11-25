@@ -96,7 +96,7 @@ export async function handleTelegramLogin(env: Env, update: any): Promise<boolea
     await sendButtons(
       env,
       to,
-      `Jemand möchte sich mit deinem Telegram auf der Website von DanceCalendar anmelden (Prüfcode ${await checkDigits(start[1])}).\n\n` +
+      `Jemand möchte sich mit deinem Telegram auf der Website von Taktvoll anmelden (Prüfcode ${await checkDigits(start[1])}).\n\n` +
         "Bestätige nur, wenn du das gerade selbst im Browser gestartet hast und dort derselbe Prüfcode steht.",
       [
         { id: `login:${start[1]}`, title: "Ja, das war ich" },

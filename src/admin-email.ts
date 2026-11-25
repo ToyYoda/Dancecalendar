@@ -25,7 +25,7 @@ export async function sendDailyEmail(env: Env, now: Date): Promise<"sent" | "not
     console.warn("daily email not sent: EMAIL, ADMIN_EMAIL or EMAIL_FROM is missing");
     return "unconfigured";
   }
-  await env.EMAIL.send({ from: { name: "DanceCalendar", email: env.EMAIL_FROM }, to: env.ADMIN_EMAIL, subject: digest.subject, text: digest.text });
+  await env.EMAIL.send({ from: { name: "Taktvoll", email: env.EMAIL_FROM }, to: env.ADMIN_EMAIL, subject: digest.subject, text: digest.text });
   return "sent";
 }
 
@@ -87,9 +87,9 @@ async function composeDigest(env: Env, now: Date): Promise<{ subject: string; te
 
   const count = tipRows.length + ruleRows.length + organizerRows.length + ending.length;
   const text = [
-    `Heute (${formatDate(today, today)}) wartet im DanceCalendar:`,
+    `Heute (${formatDate(today, today)}) wartet im Taktvoll:`,
     ...sections.map((s) => `${s.heading}\n${s.lines.join("\n")}`),
     `Admin: ${url}/admin`,
   ].join("\n\n");
-  return { subject: `DanceCalendar: ${count} ${count === 1 ? "Punkt" : "Punkte"} für dich`, text };
+  return { subject: `Taktvoll: ${count} ${count === 1 ? "Punkt" : "Punkte"} für dich`, text };
 }

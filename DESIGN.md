@@ -1,5 +1,5 @@
 ---
-name: DanceCalendar
+name: Taktvoll
 description: The regional partner-dance week, set as a city magazine's "Termine" listings around each Organizer's whole Flyer.
 colors:
   ink: "#111111"
@@ -116,20 +116,20 @@ components:
     padding: "14px"
 ---
 
-# Design System: DanceCalendar
+# Design System: Taktvoll
 
 ## Overview
 
 **Creative North Star: "The Termine Page"**
 
-The Dancer page is set like the listings section of a printed city magazine: a heavy masthead on white stock, a 4px ink rule beneath it, giant day numerals that stay pinned while their Events scroll past, and entries run in a strict column with each Organizer's whole Flyer set inside it. Everything typographic is black ink; the colour on the page belongs to the Flyers, and one magenta does the pointing (today, the type of each Event, the filter that is set).
+The Dancer page is set like the listings section of a printed city magazine: a heavy masthead on white stock, a 4px ink rule beneath it, giant day numerals that stay pinned while their Events scroll past, and entries run in a strict column with each Organizer's whole Flyer set inside it. Everything typographic is black ink; the colour on the page belongs to the Flyers, and one magenta is the brand's accent.
 
 Density is a listings page's density: tight leading, rules instead of boxes, labels in tracked narrow capitals, numbers in tabular figures. Structure comes from line weight, not from surfaces: 4px ink for the masthead and footer, 1px ink between days and around controls, dotted grey hairlines between entries. Corners are square throughout. The world explicitly refuses the dark nightclub feed with neon glow and the rounded card grid of event apps.
 
 This system currently covers the Dancer overview (week and month), the Event details page and `/karte`. The confirm page, edit page and admin surfaces still carry their own older styles and have not adopted it.
 
 **Key Characteristics:**
-- White stock, ink type, one magenta pointer.
+- White stock, ink type, one magenta accent.
 - Rules, never cards: ink rules divide days, dotted hairlines divide entries.
 - Giant Archivo 800 numerals pinned per day; Archivo Narrow 700 tracked caps for every label.
 - The whole Flyer, uncropped and uncovered, inside each entry.
@@ -152,9 +152,9 @@ A monochrome print palette with a single saturated magenta; the Flyers supply al
 - **Proof Wash** (#f3f3f1): hover fill for chips, index days and month cells; placeholder behind a loading Flyer.
 
 ### Named Rules
-**The Today Rule.** Magenta means "today" or "this is the type / the set filter". It never decorates, never fills a surface, never tints a Flyer frame.
+**The Accent Rule.** Magenta (#d6006d, text form #b0005a, tint #fce8f1) is the one accent and the brand colour (ADR 0004). It marks the thick barline of the Taktvoll wordmark, today, each Event's type, picked filters, links, the solid button and focus. It never fills a page surface and never tints a Flyer frame, so the Flyers keep all other colour.
 
-**The Ink Fill Rule.** A chosen option is shown by inverting to ink with white text, not by colouring it. Magenta is reserved for the pointer roles above.
+**The Mark.** The wordmark sets the last two letters of "Taktvoll" as a final barline: a thin ink bar and a thick magenta bar. The claim below it is "wo heute getanzt wird" / "where to dance tonight", without a place. The barline on ink is the favicon (`public/favicon.svg`) and the bot avatar.
 
 ## Typography
 

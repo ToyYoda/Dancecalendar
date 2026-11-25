@@ -7,6 +7,7 @@ export function Layout(props: { title: string; lang?: "de" | "en"; head?: Child;
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{props.title}</title>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <style>{`
           body { font-family: system-ui, sans-serif; margin: 0 auto; max-width: 40rem; padding: 1rem; line-height: 1.4; }
           h2 { font-size: 1rem; margin: 1.5rem 0 .5rem; }

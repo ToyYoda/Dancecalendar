@@ -283,7 +283,7 @@ describe("the calendar subscription", () => {
 
     expect(res.headers.get("content-type")).toBe("text/calendar; charset=utf-8");
     expect(body.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
-    expect(body).toContain("X-WR-CALNAME:DanceCalendar · Bachata");
+    expect(body).toContain("X-WR-CALNAME:Taktvoll · Bachata");
     expect(body).toContain("TZID:Europe/Berlin");
     expect(body).toContain(`DTSTART;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T213000`);
     expect(body).toContain(`DTEND;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T235900`);
@@ -347,6 +347,31 @@ describe("Flyer images", () => {
     expect(res.headers.get("cache-control")).toContain("max-age=31536000");
     expect(res.headers.get("content-type")).toBe("image/jpeg");
     expect((await get("http://dancecalendar.test/flyers/held.jpg")).status).toBe(404);
+  });
+});
+
+describe("the brand", () => {
+  it("is called Taktvoll, with its claim and no place in it", async () => {
+    const html = await page();
+    expect(html).toContain("<title>Taktvoll</title>");
+    expect(html).toContain('aria-label="Taktvoll"');
+    expect(html).toContain("wo heute getanzt wird");
+    expect(html).not.toContain("DanceCalendar");
+    expect(html).not.toContain("Kassel, Göttingen und drumherum");
+    expect(await page("?lang=en")).toContain("where to dance tonight");
+  });
+
+  it("names the page in the tab after the brand", async () => {
+    expect(await page("karte")).toMatch(/<title>[^<]+ – Taktvoll<\/title>/);
+  });
+
+  it("serves its mark as the favicon on every page", async () => {
+    expect(await page()).toContain('<link rel="icon" href="/favicon.svg" type="image/svg+xml"');
+    expect(await (await get("http://dancecalendar.test/impressum")).text()).toContain('href="/favicon.svg"');
+  });
+
+  it("uses magenta as its accent", async () => {
+    expect(await page()).toContain("--accent:#d6006d");
   });
 });
 

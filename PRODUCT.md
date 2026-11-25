@@ -38,9 +38,9 @@ The calendar is built from the Flyers the scene already makes. An AI reads each 
 
 ## Brand Commitments
 
-- The name is **DanceCalendar**.
+- The name is **Taktvoll**, with the claim "wo heute getanzt wird" (EN "where to dance tonight"). Neither names a place (ADR 0004). The bot handle is still @DanceCalBot.
 - German first, English second.
-- No other visual commitment. The current dark "Nach Acht" look and the 💃 mark are not binding.
+- The mark is the final barline (thin ink bar, thick magenta bar), and magenta is the one accent colour (DESIGN.md, The Accent Rule).
 
 ## Evidence on Hand
 

@@ -27,20 +27,17 @@ const RUNS_OUT = `date(last_sign_of_life, '+${HORIZON_DAYS} days')`;
 
 type OrganizerRow = {
   id: number;
-  display_name: string;
-  first_name: string | null;
+  name: string;
   whatsapp_number: string;
   created_at: string;
   blocked_at: string | null;
   upcoming: number;
-  shares_name: number;
 };
 
 adminTools.get("/organizers", async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT o.id, o.display_name, o.first_name, o.whatsapp_number, o.created_at, o.blocked_at,
-            (SELECT COUNT(*) FROM event e WHERE e.organizer_id = o.id AND e.starts_at >= ?) AS upcoming,
-            EXISTS (SELECT 1 FROM organizer p WHERE p.display_name = o.display_name AND p.id <> o.id) AS shares_name
+    `SELECT o.id, o.name, o.whatsapp_number, o.created_at, o.blocked_at,
+            (SELECT COUNT(*) FROM event e WHERE e.organizer_id = o.id AND e.starts_at >= ?) AS upcoming
      FROM organizer o ORDER BY o.created_at DESC, o.id DESC`,
   )
     .bind(berlinDate(new Date()))
@@ -53,11 +50,10 @@ adminTools.get("/organizers", async (c) => {
       <ul>
         {results.map((o) => (
           <li>
-            <strong>{o.display_name}</strong> ({o.first_name ?? "?"}) · {showAddress(o.whatsapp_number)}
+            <strong>{o.name}</strong> · {showAddress(o.whatsapp_number)}
             <br />
             <small>
               seit {o.created_at.slice(0, 10)} · {o.upcoming} kommende Events
-              {o.shares_name ? " · teilt den Display name mit anderen" : ""}
             </small>
             {o.blocked_at ? (
               <p style="color:#a30000">entfernt am {o.blocked_at.slice(0, 10)}</p>
@@ -65,7 +61,7 @@ adminTools.get("/organizers", async (c) => {
               <form
                 method="post"
                 action={`/admin/organizers/${o.id}/remove`}
-                onsubmit={`return confirm('${o.display_name.replace(/['\\]/g, "")} entfernen? Die Nummer wird gesperrt, alle kommenden Events und Serien werden gelöscht.')`}
+                onsubmit={`return confirm('${o.name.replace(/['\\]/g, "")} entfernen? Die Nummer wird gesperrt, alle kommenden Events und Serien werden gelöscht.')`}
               >
                 <button type="submit">Entfernen</button>
               </form>
@@ -113,7 +109,7 @@ type EventRow = {
 
 const EVENT_SELECT = `
   SELECT e.id, e.title, e.starts_at, e.cancelled, e.is_tip, e.flyer_key, e.edit_token, e.series_id, s.edit_token AS series_token,
-         v.name AS venue, COALESCE(o.display_name, e.shown_as) AS posted_by
+         v.name AS venue, COALESCE(o.name, e.shown_as) AS posted_by
   FROM event e JOIN venue v ON v.id = e.venue_id LEFT JOIN organizer o ON o.id = e.organizer_id LEFT JOIN series s ON s.id = e.series_id`;
 
 adminTools.get("/events", async (c) => {
@@ -122,7 +118,7 @@ adminTools.get("/events", async (c) => {
   const like = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
   const { results } = await c.env.DB.prepare(
     `${EVENT_SELECT}
-     WHERE ?1 = '' OR e.title LIKE ?2 ESCAPE '\\' OR v.name LIKE ?2 ESCAPE '\\' OR o.display_name LIKE ?2 ESCAPE '\\' OR e.shown_as LIKE ?2 ESCAPE '\\'
+     WHERE ?1 = '' OR e.title LIKE ?2 ESCAPE '\\' OR v.name LIKE ?2 ESCAPE '\\' OR o.name LIKE ?2 ESCAPE '\\' OR e.shown_as LIKE ?2 ESCAPE '\\'
      ORDER BY e.starts_at < ?3, CASE WHEN e.starts_at >= ?3 THEN e.starts_at END, e.starts_at DESC LIMIT 50`,
   )
     .bind(q, like, today)
@@ -203,12 +199,12 @@ function loadEvent(db: D1Database, id: number) {
 
 async function activeOrganizers(db: D1Database) {
   const { results } = await db
-    .prepare("SELECT id, display_name, first_name FROM organizer WHERE blocked_at IS NULL ORDER BY display_name, first_name")
-    .all<{ id: number; display_name: string; first_name: string | null }>();
+    .prepare("SELECT id, name, whatsapp_number FROM organizer WHERE blocked_at IS NULL ORDER BY name, id")
+    .all<{ id: number; name: string; whatsapp_number: string }>();
   return results;
 }
 
-function EventPage(props: { e: EventRow; organizers: { id: number; display_name: string; first_name: string | null }[]; error?: string }) {
+function EventPage(props: { e: EventRow; organizers: { id: number; name: string; whatsapp_number: string }[]; error?: string }) {
   const { e } = props;
   const today = berlinDate(new Date());
   return (
@@ -239,7 +235,7 @@ function EventPage(props: { e: EventRow; organizers: { id: number; display_name:
           <select name="organizer_id" required>
             {props.organizers.map((o) => (
               <option value={String(o.id)}>
-                {o.display_name} ({o.first_name ?? "?"})
+                {o.name} (+{o.whatsapp_number.replace(/^\+/, "")})
               </option>
             ))}
           </select>{" "}
@@ -268,7 +264,7 @@ export async function seriesEnding(db: D1Database, today: string, until: string)
   const { results } = await db
     .prepare(
       `SELECT s.id, json_extract(s.template, '$.title') AS title, ${RUNS_OUT} AS runs_out, s.edit_token,
-              COALESCE(o.display_name, s.shown_as) AS posted_by
+              COALESCE(o.name, s.shown_as) AS posted_by
        FROM series s LEFT JOIN organizer o ON o.id = s.organizer_id
        WHERE s.ended_at IS NULL AND json_extract(s.rule, '$.freq') <> 'custom' AND ${RUNS_OUT} BETWEEN ? AND ?
        ORDER BY runs_out, s.id`,

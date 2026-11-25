@@ -44,11 +44,11 @@ export type HeldAnswers = {
 export type Extraction = {
   is_event_flyer: boolean;
   flyer_language: string;
-  display_name_on_flyer: string;
+  organizer_name_on_flyer: string;
   events: ExtractedEvent[];
 };
 
-const NOT_A_FLYER: Extraction = { is_event_flyer: false, flyer_language: "other", display_name_on_flyer: "", events: [] };
+const NOT_A_FLYER: Extraction = { is_event_flyer: false, flyer_language: "other", organizer_name_on_flyer: "", events: [] };
 
 export async function extractFlyer(apiKey: string, image: ArrayBuffer, mediaType: string, receivedOn: string): Promise<Extraction> {
   const client = new Anthropic({ apiKey });

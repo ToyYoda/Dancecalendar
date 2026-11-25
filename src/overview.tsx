@@ -347,7 +347,7 @@ const isCourse = (e: Row) => e.registration_required === 1;
 // ---- Events ----
 
 const SELECT = `SELECT e.id, e.title, e.type, e.styles, e.starts_at, e.ends_at, e.intro_class_at, e.level, e.price, e.link,
-                       e.description, e.cancelled, e.is_tip, e.flyer_key, COALESCE(o.display_name, e.shown_as) AS posted_by,
+                       e.description, e.cancelled, e.is_tip, e.flyer_key, COALESCE(o.name, e.shown_as) AS posted_by,
                        v.name AS venue, v.address, v.lat, v.lng, s.rule, s.registration_required
                 FROM event e JOIN venue v ON v.id = e.venue_id LEFT JOIN organizer o ON o.id = e.organizer_id
                 LEFT JOIN series s ON s.id = e.series_id`;

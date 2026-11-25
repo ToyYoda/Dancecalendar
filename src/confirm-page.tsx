@@ -22,8 +22,7 @@ export type Submission = Held & {
   source: "whatsapp" | "admin" | "web" | "tip";
   confirm_token: string;
   whatsapp_number: string | null;
-  first_name: string | null;
-  display_name: string | null;
+  organizer_name: string | null;
 };
 
 export const confirmPage = new Hono<{ Bindings: Env }>();
@@ -61,7 +60,7 @@ export async function loadSubmission(db: D1Database, token: string) {
   return db
     .prepare(
       `SELECT s.id, s.organizer_id, s.flyer_key, s.received_on, s.extraction, s.status, s.source, s.confirm_token,
-              o.whatsapp_number, o.first_name, o.display_name
+              o.whatsapp_number, o.name AS organizer_name
        FROM submission s LEFT JOIN organizer o ON o.id = s.organizer_id WHERE s.confirm_token = ?`,
     )
     .bind(token)
@@ -150,9 +149,9 @@ export function ConfirmPage(props: PageProps & { tip?: { shownAs: string; error?
       <h1>{tip ? "Tipp prüfen" : "Events prüfen"}</h1>
       <img class="flyer" src={tip ? `/admin/tips/${s.confirm_token}/flyer` : `/c/${s.confirm_token}/flyer`} alt="Flyer" />
       <p>
-        {s.source !== "admin" && s.first_name ? `Hallo ${s.first_name}! ` : ""}
+        {s.source !== "admin" && s.organizer_name ? `Hallo ${s.organizer_name}! ` : ""}
         Das habe ich auf dem Flyer erkannt. <span class="unc-key" style="padding:0 4px;border-radius:4px">Gelb</span> = bitte prüfen, <span class="miss-key" style="padding:0 4px;border-radius:4px">rot</span> = fehlt.
-        {tip ? " Wird als „von der Community hinzugefügt“ gezeigt." : <> Wird veröffentlicht als <strong>{s.display_name}</strong>.</>}
+        {tip ? " Wird als „von der Community hinzugefügt“ gezeigt." : <> Wird veröffentlicht als <strong>{s.organizer_name}</strong>.</>}
       </p>
       <form id="confirm" method="post" data-today={today}>
         {tip && (

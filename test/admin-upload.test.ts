@@ -10,8 +10,8 @@ const base = "http://dancecalendar.test/admin/upload";
 beforeEach(async () => {
   await env.DB.batch([
     ...["event", "submission", "venue", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (1, '4915200000001', 'Salsa Kassel')"),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (2, '4915200000002', 'Bachata Göttingen')"),
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, '4915200000001', 'Ana Alves')"),
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (2, '4915200000002', 'Ben Becker')"),
     knownVenue(env.DB),
   ]);
 });
@@ -46,8 +46,8 @@ describe("/admin", () => {
   it("lists the Organizers to publish under", async () => {
     const html = await (await get(base, ADMIN)).text();
 
-    expect(html).toContain("Salsa Kassel");
-    expect(html).toContain("Bachata Göttingen");
+    expect(html).toContain("Ana Alves");
+    expect(html).toContain("Ben Becker");
   });
 });
 
@@ -70,7 +70,7 @@ describe("an Admin Flyer upload", () => {
     expect(await res.text()).toMatch(/\/e\/[\w-]+/);
     const html = await feed();
     expect(html).toContain("Salsa Night");
-    expect(html).toContain("Bachata Göttingen");
+    expect(html).toContain("Ben Becker");
     expect(api.anthropicCalls).toHaveLength(1);
     expect(api.sent).toEqual([]);
   });

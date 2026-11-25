@@ -10,7 +10,7 @@ import { ORGANIZER_NUMBER } from "./whatsapp-fixtures";
 beforeEach(async () => {
   await env.DB.batch([
     ...["event", "series", "submission", "venue", "admin_request", "contact", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')").bind(
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, ?, 'Ana Alves')").bind(
       ORGANIZER_NUMBER,
     ),
     knownVenue(env.DB),

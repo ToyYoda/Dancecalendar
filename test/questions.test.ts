@@ -10,10 +10,10 @@ const EXIL: FakePlace = { name: "EXIL", street: "Weender Landstraße", housenumb
 beforeEach(async () => {
   await env.DB.batch([
     ...["event", "submission", "venue", "admin_request", "contact", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')").bind(
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, ?, 'Ana Alves')").bind(
       ORGANIZER_NUMBER,
     ),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (2, '4915200000002', 'Bachata Göttingen')"),
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (2, '4915200000002', 'Ben Becker')"),
     knownVenue(env.DB),
   ]);
 });
@@ -281,7 +281,7 @@ describe("a likely duplicate of another Organizer's Event", () => {
 
     await deliver(imageMessage("media1"));
 
-    expect(last(api).text).toContain("„Bachata Party“ (Bachata Göttingen");
+    expect(last(api).text).toContain("„Bachata Party“ (Ben Becker");
     expect(last(api).text).toContain("doppelt?");
     expect(last(api).buttons.map((b) => b.title)).toEqual(["Beide behalten", "Meins weglassen"]);
     await tap(api, "Beide behalten");

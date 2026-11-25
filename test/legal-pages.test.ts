@@ -31,6 +31,18 @@ describe("legal pages", () => {
     }
   });
 
+  it("says the Organizer's name is published with their Events, in both languages, and nothing about shared names", async () => {
+    const de = await page("/datenschutz");
+    const en = await page("/datenschutz?lang=en");
+    const terms = (await page("/nutzungsbedingungen")) + (await page("/nutzungsbedingungen?lang=en"));
+
+    expect(de).toContain("deinen Namen (wird mit deinen Events veröffentlicht");
+    expect(en).toContain("your name (published with your Events");
+    for (const html of [de, en, terms]) {
+      expect(html).not.toMatch(/Anzeigename|Display name|Vorname|first name/);
+    }
+  });
+
   it("serves the data-deletion instructions with the contact email", async () => {
     const html = await page("/datenloeschung");
 

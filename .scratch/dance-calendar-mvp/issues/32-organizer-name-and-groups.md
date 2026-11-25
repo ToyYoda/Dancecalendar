@@ -2,6 +2,7 @@
 
 Type: grilling
 Labels: wayfinder:grilling
+Status: resolved
 
 ## Question
 
@@ -15,3 +16,7 @@ Decide:
 - Knock-on changes: the application form ([Organizer application form](12-organizer-application.md), [Organizer application](20-organizer-application.md)), Admin tools („Organizer zuweisen“), the Dancer overview, the privacy policy (a real name in public is new personal data) and `GLOSSARY.md` (Display name, a new term for the group).
 
 The outcome is the decided model plus the build ticket(s) that apply it.
+
+## Answer
+
+Decided by the Admin (2026-11-25): no Display name and no Organizer group. Each Organizer has only their own name, one free-text field („Dein Name“), no first/last split; their Events show it exactly as entered. Nobody can join someone else's name, so the join-by-existing-name path and its Admin flag are gone. The private first name goes too: the bot greets with the name. Existing Organizers keep their current Display name as their name, nothing is deduplicated; the Admin asks anyone whose name is a brand for their own name. The privacy policy now says the name is published with the Organizer's Events. Recorded in [ADR 0003](../../../docs/adr/0003-organizer-personal-name.md); built in migration `0010_organizer_name.sql`.

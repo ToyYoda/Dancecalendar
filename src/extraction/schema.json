@@ -13,7 +13,7 @@
         "other"
       ]
     },
-    "display_name_on_flyer": {
+    "organizer_name_on_flyer": {
       "type": "string"
     },
     "events": {
@@ -160,7 +160,7 @@
   "required": [
     "is_event_flyer",
     "flyer_language",
-    "display_name_on_flyer",
+    "organizer_name_on_flyer",
     "events"
   ],
   "additionalProperties": false

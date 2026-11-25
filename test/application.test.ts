@@ -12,7 +12,7 @@ beforeEach(async () => {
   await env.DB.batch(
     ["event", "submission", "application", "venue", "admin_request", "contact", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
   );
-  await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')")
+  await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, ?, 'Ana Alves')")
     .bind(ORGANIZER_NUMBER)
     .run();
   await knownVenue(env.DB).run();
@@ -30,10 +30,9 @@ async function applyLink(api: ReturnType<typeof fakeApis>) {
   return api.texts().findLast((t) => t.includes("/a/"))!.match(/https:\/\/dancecalendar\.test\/a\/\S+/)![0];
 }
 
-function filled(html: string, displayName: string) {
+function filled(html: string, name: string) {
   const fields = formFrom(html);
-  fields.set("display_name", displayName);
-  fields.set("first_name", "Ben");
+  fields.set("name", name);
   fields.set("terms", "on");
   return fields;
 }
@@ -65,25 +64,27 @@ describe("an unregistered sender's Flyer", () => {
     expect(api.texts().at(-1)).toContain("24 Stunden");
     expect(api.anthropicCalls).toHaveLength(1);
     const html = await (await get(link)).text();
-    expect(html).toContain('name="display_name"');
-    expect(html).toContain('name="first_name"');
+    expect(html).toContain("Dein Name");
+    expect(html).toContain('name="name"');
+    expect(html).toContain("öffentlich bei deinen Events");
+    expect(html).not.toContain('name="first_name"');
     expect(html).toContain('name="terms"');
     expect(html).toContain('href="/nutzungsbedingungen"');
     expect(html).toContain('href="/datenschutz"');
-    expect(html).toContain("Salsa Kassel"); // suggested to join
+    expect(html).not.toContain("Ana Alves"); // no existing names offered to join
   });
 
   it("makes the sender an Organizer on submit, and the bot continues with the summary at once", async () => {
     const api = fakeApis();
     const link = await applyLink(api);
 
-    const res = await post(link, ...form(filled(await (await get(link)).text(), "Bachata Göttingen")));
+    const res = await post(link, ...form(filled(await (await get(link)).text(), "Ben Becker")));
 
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("Fertig! Zurück zum Chat");
     const summary = api.sent.at(-1)!;
     expect(summary.to).toBe(STRANGER);
-    expect(summary.text).toContain("Danke, Ben!");
+    expect(summary.text).toContain("Danke, Ben Becker!");
     expect(summary.text).toContain("Salsa Night");
     expect(summary.buttons.map((b) => b.title)).toEqual(["Veröffentlichen", "Ändern ✏️", "Verwerfen"]);
 
@@ -91,21 +92,22 @@ describe("an unregistered sender's Flyer", () => {
 
     const html = await feed();
     expect(html).toContain("Salsa Night");
-    expect(html).toContain("Bachata Göttingen");
+    expect(html).toContain("Ben Becker");
     expect(api.anthropicCalls).toHaveLength(1);
   });
 
-  it("joins an existing Display name, whatever its case", async () => {
+  it("keeps the name exactly as entered, even when another Organizer has the same one", async () => {
     const api = fakeApis();
     const link = await applyLink(api);
 
-    await post(link, ...form(filled(await (await get(link)).text(), "salsa kassel ")));
+    await post(link, ...form(filled(await (await get(link)).text(), " ana alves ")));
 
-    const row = await env.DB.prepare("SELECT display_name, first_name FROM organizer WHERE whatsapp_number = ?").bind(STRANGER).first();
-    expect(row).toEqual({ display_name: "Salsa Kassel", first_name: "Ben" });
+    const row = await env.DB.prepare("SELECT id, name FROM organizer WHERE whatsapp_number = ?").bind(STRANGER).first<{ id: number; name: string }>();
+    expect(row?.name).toBe("ana alves");
+    expect(row?.id).not.toBe(1);
   });
 
-  it("refuses the form without a Display name or the Terms checkbox", async () => {
+  it("refuses the form without a name or the Terms checkbox", async () => {
     const api = fakeApis();
     const link = await applyLink(api);
     const fields = filled(await (await get(link)).text(), "");
@@ -120,7 +122,7 @@ describe("an unregistered sender's Flyer", () => {
   it("works only once", async () => {
     const api = fakeApis();
     const link = await applyLink(api);
-    const fields = filled(await (await get(link)).text(), "Bachata Göttingen");
+    const fields = filled(await (await get(link)).text(), "Ben Becker");
     await post(link, ...form(fields));
 
     const again = await get(link);

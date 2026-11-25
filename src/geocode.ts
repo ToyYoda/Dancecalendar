@@ -23,7 +23,7 @@ const failed = (service: string) => (err: unknown) => {
   return null;
 };
 
-const headers = (env: Env) => ({ "user-agent": `DanceCalendar (${env.PUBLIC_URL})` });
+const headers = (env: Env) => ({ "user-agent": `Taktvoll (${env.PUBLIC_URL})` });
 
 async function photon(env: Env, query: string): Promise<Place | null> {
   if (!env.PHOTON_URL) return null;

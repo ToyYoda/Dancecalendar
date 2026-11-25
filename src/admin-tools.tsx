@@ -43,7 +43,7 @@ adminTools.get("/organizers", async (c) => {
     .bind(berlinDate(new Date()))
     .all<OrganizerRow>();
   return c.html(
-    <Layout title="Organizer – DanceCalendar">
+    <Layout title="Organizer – Taktvoll">
       <Back />
       <h1>Organizer</h1>
       {results.length === 0 && <p>Noch keine Organizer.</p>}
@@ -124,7 +124,7 @@ adminTools.get("/events", async (c) => {
     .bind(q, like, today)
     .all<EventRow>();
   return c.html(
-    <Layout title="Events – DanceCalendar">
+    <Layout title="Events – Taktvoll">
       <Back />
       <h1>Events</h1>
       <form method="get">
@@ -208,7 +208,7 @@ function EventPage(props: { e: EventRow; organizers: { id: number; name: string;
   const { e } = props;
   const today = berlinDate(new Date());
   return (
-    <Layout title={`${e.title} – DanceCalendar Admin`}>
+    <Layout title={`${e.title} – Taktvoll Admin`}>
       <p>
         <a href="/admin/events">← Events</a>
       </p>
@@ -278,7 +278,7 @@ adminTools.get("/series", async (c) => {
   const today = berlinDate(new Date());
   const series = await seriesEnding(c.env.DB, today, addDays(today, ENDING_WITHIN));
   return c.html(
-    <Layout title="Serien – DanceCalendar">
+    <Layout title="Serien – Taktvoll">
       <Back />
       <h1>Serien, die bald auslaufen</h1>
       <p>Serien laufen 12 Wochen nach dem letzten Lebenszeichen aus. Hier stehen die der nächsten 4 Wochen.</p>
@@ -323,7 +323,7 @@ adminTools.get("/venues", async (c) => {
     .bind(q, like)
     .all<VenueRow>();
   return c.html(
-    <Layout title="Orte – DanceCalendar">
+    <Layout title="Orte – Taktvoll">
       <Back />
       <h1>Orte</h1>
       <form method="get">
@@ -395,7 +395,7 @@ async function venueError(db: D1Database, id: number, form: VenueForm): Promise<
 function VenuePage(props: { id: number; form: VenueForm; found?: Place; error?: string; saved?: boolean }) {
   const f = props.form;
   return (
-    <Layout title={`${f.name || "Ort"} – DanceCalendar Admin`}>
+    <Layout title={`${f.name || "Ort"} – Taktvoll Admin`}>
       <p>
         <a href="/admin/venues">← Orte</a>
       </p>

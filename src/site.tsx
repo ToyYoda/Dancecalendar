@@ -13,7 +13,7 @@ const FONTS = `@font-face{font-family:"Outfit";font-weight:100 900;font-style:no
 
 export const SITE_CSS = `${FONTS}
   :root { color-scheme:light; --paper:#f7f9fa; --card:#fff; --ink:#1f3038; --mute:#5d6b72; --hair:#dfe5e8; --line:rgb(31 48 56 / .1); --wash:#ecf0f2;
-          --accent:#0d7480; --accent-ink:#0b5e68; --tint:#e3f1f2; --off:#a3271b; --off-tint:#fbe6e3; --warm:#7a4f00; --warm-tint:#fbefd6;
+          --accent:#d6006d; --accent-ink:#b0005a; --tint:#fce8f1; --off:#a3271b; --off-tint:#fbe6e3; --warm:#7a4f00; --warm-tint:#fbefd6;
           --r:16px; --r-sm:10px; --shadow:0 1px 2px rgb(31 48 56 / .06), 0 18px 44px -24px rgb(31 48 56 / .35);
           --sans:"Outfit", system-ui, sans-serif; --stick:0px; --g:16px; }
   html { background:var(--paper); scroll-padding-top:calc(var(--stick) + 12px); }
@@ -28,8 +28,10 @@ export const SITE_CSS = `${FONTS}
   /* the bar: the mark and the name, the ways to add an Event, the links on the right */
   .mast { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 12px; padding:14px var(--g); background:var(--card); border-bottom:1px solid var(--line); }
   .mast .home { display:flex; flex-direction:column; min-width:0; flex:1 1 15rem; } /* on a phone the links wrap below */
-  .mast .name { display:inline-flex; align-items:center; gap:8px; font:500 21px/1.1 var(--sans); letter-spacing:-.02em; }
-  .mast .logo { color:var(--accent); flex:none; }
+  .mast .name { display:inline-flex; align-items:flex-end; font:600 26px/.8 var(--sans); letter-spacing:-.03em; white-space:nowrap; }
+  .mast .bars { display:flex; gap:.09em; height:.72em; margin-left:.07em; }
+  .mast .bars i { width:.09em; background:var(--ink); }
+  .mast .bars i + i { width:.24em; background:var(--accent); }
   .mast .sub { display:block; margin-top:4px; font-size:13px; color:var(--mute); }
   .mast .meta { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; }
   .mast .lang { font-size:14px; font-weight:500; padding:6px 12px; border-radius:99px; border:1px solid var(--line); white-space:nowrap; transition:background .15s; }
@@ -64,8 +66,8 @@ const TelegramIcon = () => (
 );
 
 const T = {
-  de: { sub: "Paartanz in Kassel, Göttingen und drumherum", add: "Neues Event eintragen:", bot: "per Telegram an @DanceCalBot", or: "oder", web: "hier auf der Website" },
-  en: { sub: "Partner dance in and around Kassel and Göttingen", add: "Add an Event:", bot: "on Telegram via @DanceCalBot", or: "or", web: "here on the website" },
+  de: { sub: "wo heute getanzt wird", add: "Neues Event eintragen:", bot: "per Telegram an @DanceCalBot", or: "oder", web: "hier auf der Website" },
+  en: { sub: "where to dance tonight", add: "Add an Event:", bot: "on Telegram via @DanceCalBot", or: "or", web: "here on the website" },
 };
 
 // The bar on every page. `home` is where the name leads (the calendar keeps its filters), `children` the
@@ -75,11 +77,13 @@ export function Masthead(props: { lang?: "de" | "en"; home?: string; add?: boole
   return (
     <header class="mast">
       <a class="home" href={props.home ?? "/"}>
-        <span class="name">
-          <svg class="logo" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M2.5 21.5V12a9.5 9.5 0 0 1 19 0v9.5h-6V12a3.5 3.5 0 0 0-7 0v9.5z" fill="currentColor" />
-          </svg>
-          DanceCalendar
+        {/* The name with its last two letters set as a final barline: a thin stroke in ink, a thick one in magenta. */}
+        <span class="name" role="img" aria-label="Taktvoll">
+          <span aria-hidden="true">Taktvo</span>
+          <span class="bars" aria-hidden="true">
+            <i />
+            <i />
+          </span>
         </span>
         <span class="sub">{t.sub}</span>
       </a>
@@ -128,7 +132,7 @@ export const PAGE_CSS = `
   label.choice:has(input:checked) { box-shadow:0 0 0 2px var(--accent); background:var(--tint); }
   label.choice input { margin-top:4px; accent-color:var(--accent); }
   label.choice span { display:grid; } label.choice small { color:var(--mute); font-size:14px; }
-  .drop { position:relative; display:grid; place-items:center; align-content:center; gap:6px; min-height:140px; padding:20px; border:2px dashed rgb(13 116 128 / .35); border-radius:var(--r); background:var(--tint); text-align:center; color:var(--accent-ink); cursor:pointer; }
+  .drop { position:relative; display:grid; place-items:center; align-content:center; gap:6px; min-height:140px; padding:20px; border:2px dashed rgb(214 0 109 / .35); border-radius:var(--r); background:var(--tint); text-align:center; color:var(--accent-ink); cursor:pointer; }
   .drop:hover, .drop:focus-within { border-color:var(--accent); }
   .drop input { position:absolute; inset:0; opacity:0; cursor:pointer; }
   .drop b { font-size:17px; font-weight:500; } .drop small { color:var(--mute); font-size:14px; } .drop svg { color:var(--accent); }
@@ -162,7 +166,7 @@ const DROP_SCRIPT = `document.querySelectorAll(".drop input").forEach(function(i
 export function SitePage(props: { title: string; head?: Child; css?: string; nav?: Child; children: Child }) {
   return (
     <Layout
-      title={`${props.title} – DanceCalendar`}
+      title={`${props.title} – Taktvoll`}
       head={
         <>
           <link rel="preload" href="/fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="" />

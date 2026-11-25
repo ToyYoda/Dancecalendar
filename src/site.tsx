@@ -6,7 +6,7 @@ import { Layout } from "./layout";
 // teal, light cards on a pale ground. The bar on top names the two ways to add an Event: the Telegram
 // bot and the Organizer area here.
 
-export const BOT = "DanceCalBot"; // the Telegram bot's username
+export const BOT = "StepdateBot"; // the Telegram bot's username, set with @BotFather
 export const BOT_URL = `https://t.me/${BOT}`;
 
 const FONTS = `@font-face{font-family:"Outfit";font-weight:100 900;font-style:normal;font-display:swap;src:url(/fonts/outfit-latin-wght-normal.woff2) format("woff2");}`;
@@ -80,8 +80,8 @@ const TelegramIcon = () => (
 );
 
 const T = {
-  de: { sub: "wo heute getanzt wird", add: "Neues Event eintragen:", bot: "per Telegram an @DanceCalBot", or: "oder", web: "hier auf der Website" },
-  en: { sub: "where to dance tonight", add: "Add an Event:", bot: "on Telegram via @DanceCalBot", or: "or", web: "here on the website" },
+  de: { sub: "wo heute getanzt wird", add: "Neues Event eintragen:", bot: `per Telegram an @${BOT}`, or: "oder", web: "hier auf der Website" },
+  en: { sub: "where to dance tonight", add: "Add an Event:", bot: `on Telegram via @${BOT}`, or: "or", web: "here on the website" },
 };
 
 // The bar on every page. `home` is where the name leads (the calendar keeps its filters), `children` the

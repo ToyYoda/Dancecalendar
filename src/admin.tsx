@@ -88,7 +88,8 @@ admin.post("/email", async (c) => {
   const notes = {
     sent: "✅ E-Mail gesendet.",
     nothing: "Nichts zu melden, keine E-Mail gesendet.",
-    unconfigured: "Die E-Mail ist noch nicht eingerichtet (EMAIL, ADMIN_EMAIL, EMAIL_FROM).",
+    unconfigured: "Die E-Mail ist noch nicht eingerichtet (BREVO_API_KEY, ADMIN_EMAIL, EMAIL_FROM).",
+    failed: "❌ Die E-Mail konnte nicht gesendet werden. Details stehen im Worker-Log.",
   };
   return c.html(<Home note={notes[result]} />);
 });

@@ -275,7 +275,7 @@ describe("the daily email", () => {
   function mailbox() {
     const sent: EmailMessageBuilder[] = [];
     const EMAIL = { send: vi.fn(async (m: EmailMessageBuilder) => (sent.push(m), { messageId: "m1" })) } as unknown as SendEmail;
-    return { sent, env: { ...env, EMAIL, ADMIN_EMAIL: "admin@example.test", EMAIL_FROM: "bot@example.test" } };
+    return { sent, env: { ...env, EMAIL, BREVO_API_KEY: undefined, ADMIN_EMAIL: "admin@example.test", EMAIL_FROM: "bot@example.test" } };
   }
 
   async function runCron(e: Env, at: Date) {
@@ -288,6 +288,17 @@ describe("the daily email", () => {
     const box = mailbox();
     expect(await sendDailyEmail(box.env, new Date())).toBe("nothing");
     expect(box.sent).toEqual([]);
+  });
+
+  it("goes through Brevo when its key is set", async () => {
+    const api = fakeApis();
+    await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (3, '4917600000003', 'Carla Costa')").run();
+
+    expect(await sendDailyEmail({ ...env, ADMIN_EMAIL: "admin@example.test" }, new Date())).toBe("sent");
+
+    expect(api.mails).toHaveLength(1);
+    expect(api.mails[0]).toMatchObject({ to: "admin@example.test", from: "anmeldung@dancecalendar.test" });
+    expect(api.mails[0].text).toContain("Carla Costa");
   });
 
   it("lists Tips, free-text rules, new Organizers and Series ending within 7 days, each with its Admin link", async () => {

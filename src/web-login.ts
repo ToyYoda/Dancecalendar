@@ -9,6 +9,7 @@ import { randomToken } from "./publish";
 // - Telegram: the browser opens the bot with a one-time code, the bot asks "Warst du das?", a yes logs
 //   the browser in. The code is bound to a cookie of the browser that asked, and lasts 10 minutes.
 // - Google (only once GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set): see src/portal.tsx.
+// - Email (only once a mail service is set up, src/mail.ts): a link in an email, see src/email-login.ts.
 
 export const SESSION_COOKIE = "dc_session";
 export const LOGIN_COOKIE = "dc_login";
@@ -126,10 +127,11 @@ export async function handleTelegramLogin(env: Env, update: any): Promise<boolea
   return false;
 }
 
-// Cron: old sessions and unfinished logins go.
+// Cron: old sessions, unfinished logins and day-old email links go.
 export async function cleanUpLogins(env: Env) {
   await env.DB.batch([
     env.DB.prepare("DELETE FROM web_session WHERE expires_at <= datetime('now')"),
     env.DB.prepare(`DELETE FROM login_request WHERE NOT ${FRESH}`),
+    env.DB.prepare("DELETE FROM email_login WHERE created_at <= datetime('now', '-1 day')"), // src/email-login.ts
   ]);
 }

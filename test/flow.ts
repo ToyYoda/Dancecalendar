@@ -63,3 +63,27 @@ function attributes(tag: string): Record<string, string> {
 
 const decode = (s: string) =>
   s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+
+// A browser's cookies, kept across requests like a real one would.
+export class Browser {
+  jar = new Map<string, string>();
+  constructor(readonly base = "http://dancecalendar.test/veranstalter") {}
+  get cookie() {
+    return [...this.jar].map(([k, v]) => `${k}=${v}`).join("; ");
+  }
+  take(res: Response) {
+    for (const line of res.headers.getSetCookie()) {
+      const [pair, ...attrs] = line.split(";");
+      const [name, value] = [pair.slice(0, pair.indexOf("=")), pair.slice(pair.indexOf("=") + 1)];
+      if (!value || attrs.some((a) => /max-age=0\b/i.test(a.trim()))) this.jar.delete(name);
+      else this.jar.set(name, value);
+    }
+    return res;
+  }
+  async get(path: string) {
+    return this.take(await get(`${this.base}${path}`, { cookie: this.cookie }));
+  }
+  async post(path: string, body: BodyInit = "", headers: Record<string, string> = {}) {
+    return this.take(await post(`${this.base}${path}`, body, { cookie: this.cookie, ...headers }));
+  }
+}

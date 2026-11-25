@@ -3,9 +3,10 @@ import type { Extraction } from "./extraction/extract";
 import { addDays, ruleWords, type Rule } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 import { formatDate } from "./whatsapp/summary";
+import { mailReady, sendMail } from "./mail";
 
 // The Admin's daily email at 21:00 German time, sent through Cloudflare Email only when something is
-// pending: Tips and free-text Series rules to review, new Organizers with their first Event, and Series
+// pending (through Brevo or a send_email binding, src/mail.ts): Tips and free-text Series rules to review, new Organizers with their first Event, and Series
 // running out within 7 days. Each item links to its Admin page. Cron runs in UTC, so it fires at 19:00
 // and 20:00 UTC and only the run that is 21:00 in Berlin sends.
 // Decisions: .scratch/dance-calendar-mvp/issues/11-admin-view.md
@@ -17,16 +18,15 @@ export function digestDue(now: Date): boolean {
   return now.toLocaleString("en-GB", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" }) === "21";
 }
 
-// "sent", "nothing" when nothing is pending, "unconfigured" without the email binding and addresses.
-export async function sendDailyEmail(env: Env, now: Date): Promise<"sent" | "nothing" | "unconfigured"> {
+// "sent", "nothing" when nothing is pending, "unconfigured" without a mail service and addresses.
+export async function sendDailyEmail(env: Env, now: Date): Promise<"sent" | "nothing" | "unconfigured" | "failed"> {
   const digest = await composeDigest(env, now);
   if (!digest) return "nothing";
-  if (!env.EMAIL || !env.ADMIN_EMAIL || !env.EMAIL_FROM) {
-    console.warn("daily email not sent: EMAIL, ADMIN_EMAIL or EMAIL_FROM is missing");
+  if (!mailReady(env) || !env.ADMIN_EMAIL) {
+    console.warn("daily email not sent: BREVO_API_KEY (or EMAIL), ADMIN_EMAIL or EMAIL_FROM is missing");
     return "unconfigured";
   }
-  await env.EMAIL.send({ from: { name: "Stepdate", email: env.EMAIL_FROM }, to: env.ADMIN_EMAIL, subject: digest.subject, text: digest.text });
-  return "sent";
+  return sendMail(env, { to: env.ADMIN_EMAIL, ...digest });
 }
 
 async function composeDigest(env: Env, now: Date): Promise<{ subject: string; text: string } | null> {

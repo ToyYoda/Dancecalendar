@@ -45,11 +45,11 @@ const venues = [
   [9009, "Tanzschule Seitenwechsel", "Kassel-Wehlheiden", null, null], // no coordinates: listed under the map
 ];
 const organizers = [
-  [9001, "+49000000009001", "Salsa Nord Kassel"],
-  [9002, "+49000000009002", "Bachata Göttingen"],
-  [9003, "+49000000009003", "Kizomba Kollektiv Kassel"],
-  [9004, "+49000000009004", "WCS Nordhessen"],
-  [9005, "+49000000009005", "Latin Weekend Team"],
+  [9001, "+49000000009001", "Lena Hoffmann"],
+  [9002, "+49000000009002", "Marco Rossi"],
+  [9003, "+49000000009003", "Ayo Mensah"],
+  [9004, "+49000000009004", "Jule Brandt"],
+  [9005, "+49000000009005", "Sami Haddad"],
 ];
 
 const WD = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
@@ -150,7 +150,7 @@ const remover = [
 const sql = [...remover];
 if (!remove) {
   for (const [vid, name, address, lat, lng] of venues) sql.push(`INSERT INTO venue (id, name, address, lat, lng) VALUES (${q(vid)}, ${q(name)}, ${q(address)}, ${q(lat)}, ${q(lng)})`);
-  for (const [oid, number, name] of organizers) sql.push(`INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (${q(oid)}, ${q(number)}, ${q(name)})`);
+  for (const [oid, number, name] of organizers) sql.push(`INSERT INTO organizer (id, whatsapp_number, name) VALUES (${q(oid)}, ${q(number)}, ${q(name)})`);
   // generated_until far ahead, so the Series cron leaves the sample alone.
   sql.push(`INSERT INTO series (id, organizer_id, rule, template, registration_required, last_sign_of_life, generated_until) VALUES (9001, 9001, ${q(JSON.stringify({ freq: "weekly", anchor: dayOf(0, 4) }))}, '{}', 1, ${q(today)}, '2099-12-31')`);
   for (const e of events) {

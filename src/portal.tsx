@@ -25,10 +25,10 @@ import {
 type C = Context<{ Bindings: Env }>;
 export const portal = new Hono<{ Bindings: Env }>();
 
-type Organizer = { id: number; display_name: string; first_name: string | null; blocked_at: string | null };
+type Organizer = { id: number; name: string; blocked_at: string | null };
 
 const organizerOf = (db: D1Database, address: string) =>
-  db.prepare("SELECT id, display_name, first_name, blocked_at FROM organizer WHERE whatsapp_number = ?").bind(address).first<Organizer>();
+  db.prepare("SELECT id, name, blocked_at FROM organizer WHERE whatsapp_number = ?").bind(address).first<Organizer>();
 
 const google = (env: Env) => Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 
@@ -36,7 +36,7 @@ portal.get("/", async (c) => {
   const address = await sessionAddress(c);
   if (!address) return c.html(<LoginPage google={google(c.env)} expired={c.req.query("abgelaufen") !== undefined} />);
   const o = await organizerOf(c.env.DB, address);
-  if (!o) return c.html(<SignUp names={await displayNames(c.env.DB)} address={address} />);
+  if (!o) return c.html(<SignUp address={address} />);
   if (o.blocked_at) return c.html(<Blocked />);
   return c.html(<Dashboard o={o} address={address} data={await dashboard(c.env.DB, o.id)} google={google(c.env)} />);
 });
@@ -150,28 +150,16 @@ portal.post("/anmelden", async (c) => {
   const address = await sessionAddress(c);
   if (!address) return c.redirect("/veranstalter", 303);
   const form = await c.req.formData();
-  const typed = String(form.get("display_name") ?? "").replace(/\s+/g, " ").trim().slice(0, 60);
-  const firstName = String(form.get("first_name") ?? "").trim().slice(0, 60);
-  const names = await displayNames(c.env.DB);
-  if (!typed || !firstName || form.get("terms") !== "on") {
-    return c.html(<SignUp names={names} address={address} displayName={typed} firstName={firstName} error="Bitte Name, Vorname und das Häkchen ausfüllen." />, 422);
+  // The Organizer's own name, shown on their Events as entered (ADR 0003); nobody joins another's name.
+  const name = String(form.get("name") ?? "").trim().slice(0, 60);
+  if (!name || form.get("terms") !== "on") {
+    return c.html(<SignUp address={address} name={name} error="Bitte deinen Namen und das Häkchen ausfüllen." />, 422);
   }
-  // Typing an existing Display name joins it, in its existing spelling (as in src/application.tsx).
-  const displayName = names.find((n) => n.toLowerCase() === typed.toLowerCase()) ?? typed;
-  await c.env.DB.prepare(
-    "INSERT INTO organizer (whatsapp_number, display_name, first_name) VALUES (?, ?, ?) ON CONFLICT (whatsapp_number) DO NOTHING",
-  )
-    .bind(address, displayName, firstName)
+  await c.env.DB.prepare("INSERT INTO organizer (whatsapp_number, name) VALUES (?, ?) ON CONFLICT (whatsapp_number) DO NOTHING")
+    .bind(address, name)
     .run();
   return c.redirect("/veranstalter?willkommen", 303);
 });
-
-async function displayNames(db: D1Database): Promise<string[]> {
-  const { results } = await db
-    .prepare("SELECT DISTINCT display_name FROM organizer WHERE blocked_at IS NULL ORDER BY display_name")
-    .all<{ display_name: string }>();
-  return results.map((r) => r.display_name);
-}
 
 // ---- Adding a Flyer ----
 
@@ -344,24 +332,16 @@ function TelegramWait(props: { code: string; digits: string }) {
   );
 }
 
-function SignUp(props: { names: string[]; address: string; displayName?: string; firstName?: string; error?: string }) {
+function SignUp(props: { address: string; name?: string; error?: string }) {
   return (
     <SitePage title="Als Veranstalter*in anmelden" nav={<Nav loggedIn />}>
       <h1>Willkommen bei DanceCalendar</h1>
       <p class="lead">Einmal kurz, dann trägst du deine Events selbst ein, hier oder über den Bot.</p>
       {props.error && <p class="note bad">{props.error}</p>}
       <form method="post" action="/veranstalter/anmelden" class="panel">
-        <label for="display_name">Unter welchem Namen sollen deine Events erscheinen?</label>
-        <input id="display_name" name="display_name" list="names" value={props.displayName ?? ""} required maxlength={60} autocomplete="organization" />
-        <p class="hint">Öffentlich, z. B. „Salsa Kassel“. Gibt es den Namen schon, trittst du ihm bei.</p>
-        <datalist id="names">
-          {props.names.map((n) => (
-            <option value={n} />
-          ))}
-        </datalist>
-        <label for="first_name">Dein Vorname</label>
-        <input id="first_name" name="first_name" value={props.firstName ?? ""} required maxlength={60} autocomplete="given-name" />
-        <p class="hint">Nicht öffentlich, nur für den Admin.</p>
+        <label for="name">Dein Name</label>
+        <input id="name" name="name" value={props.name ?? ""} required maxlength={60} autocomplete="name" />
+        <p class="hint">Wird öffentlich bei deinen Events gezeigt, genau so, wie du ihn hier schreibst.</p>
         <label class="check">
           <input type="checkbox" name="terms" required />
           <span>
@@ -484,9 +464,9 @@ function Dashboard(props: { o: Organizer; address: string; data: Awaited<ReturnT
   });
   return (
     <SitePage title="Deine Events" nav={<Nav loggedIn />}>
-      <h1>Hallo{o.first_name ? ` ${o.first_name}` : ""}!</h1>
+      <h1>Hallo {o.name}!</h1>
       <p class="lead">
-        Deine Events erscheinen als <b>{o.display_name}</b>.
+        Deine Events erscheinen als <b>{o.name}</b>.
       </p>
 
       {waiting.length > 0 && (
@@ -525,7 +505,7 @@ function Dashboard(props: { o: Organizer; address: string; data: Awaited<ReturnT
               <input type="radio" name="kind" value="own" checked />
               <span>
                 Mein Event
-                <small>Erscheint als {o.display_name}. Du prüfst alles, bevor es online geht.</small>
+                <small>Erscheint als {o.name}. Du prüfst alles, bevor es online geht.</small>
               </span>
             </label>
             <label class="choice">

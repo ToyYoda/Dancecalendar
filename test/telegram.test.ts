@@ -96,7 +96,7 @@ describe("the Telegram webhook", () => {
 describe("an Organizer on Telegram", () => {
   beforeEach(async () => {
     await env.DB.batch([
-      env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')").bind(ADDRESS),
+      env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, ?, 'Ana Alves')").bind(ADDRESS),
       env.DB.prepare("INSERT INTO contact (whatsapp_number, greeted_at) VALUES (?, datetime('now'))").bind(ADDRESS),
     ]);
   });

@@ -77,7 +77,7 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 const organizer = () =>
-  env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')").bind(ADDRESS).run();
+  env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, ?, 'Ana Alves')").bind(ADDRESS).run();
 const event = (title: string, startsAt: string, organizerId = 1) =>
   env.DB.prepare("INSERT INTO event (title, type, starts_at, venue_id, organizer_id, edit_token) VALUES (?, 'party', ?, 1, ?, ?)")
     .bind(title, startsAt, organizerId, `tok-${title.replace(/\W/g, "")}`)
@@ -126,7 +126,8 @@ describe("logging in with Telegram", () => {
     expect(b.jar.has("dc_session")).toBe(true);
 
     const html = await (await b.get("/")).text();
-    expect(html).toContain("Hallo Ana!");
+    expect(html).toContain("Hallo Ana Alves!");
+    expect(html).toContain("Deine Events erscheinen als <b>Ana Alves</b>");
     expect(html).toContain("Salsa Night");
     expect(html).toContain('href="/e/tok-SalsaNight"');
   });
@@ -184,7 +185,7 @@ describe("the Organizer area", () => {
     await organizer();
     await event("Bald", "2099-02-01T20:00");
     await event("Vorbei", "2020-02-01T20:00");
-    await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (2, 'tg:7', 'Andere')").run();
+    await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (2, 'tg:7', 'Andere Person')").run();
     await event("Fremd", "2099-02-02T20:00", 2);
     await env.DB.prepare(
       "INSERT INTO submission (id, organizer_id, flyer_key, received_on, extraction, confirm_token, source) VALUES ('s1', 1, 'flyers/x.jpg', '2099-01-01', ?, 'conf1', 'whatsapp')",
@@ -208,15 +209,33 @@ describe("the Organizer area", () => {
     fakeApis();
     const b = new Browser();
     await logIn(b);
-    expect(await (await b.get("/")).text()).toContain("Unter welchem Namen");
+    const form = await (await b.get("/")).text();
+    expect(form).toContain("Dein Name");
+    expect(form).toContain('name="name"');
+    expect(form).toContain("öffentlich bei deinen Events");
+    expect(form).not.toContain('name="first_name"');
 
-    const res = await b.post("/anmelden", new URLSearchParams({ display_name: "Bachata Göttingen", first_name: "Ben", terms: "on" }), {
+    const res = await b.post("/anmelden", new URLSearchParams({ name: " ben becker ", terms: "on" }), {
       "content-type": "application/x-www-form-urlencoded",
     });
 
     expect(res.status).toBe(303);
-    const o = await env.DB.prepare("SELECT display_name, first_name FROM organizer WHERE whatsapp_number = ?").bind(ADDRESS).first();
-    expect(o).toEqual({ display_name: "Bachata Göttingen", first_name: "Ben" });
+    const o = await env.DB.prepare("SELECT name FROM organizer WHERE whatsapp_number = ?").bind(ADDRESS).first();
+    expect(o).toEqual({ name: "ben becker" });
+  });
+
+  it("never joins another Organizer's name, even the same one", async () => {
+    fakeApis();
+    await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (2, 'tg:7', 'Ben Becker')").run();
+    const b = new Browser();
+    await logIn(b);
+    expect(await (await b.get("/")).text()).not.toContain("Ben Becker");
+
+    await b.post("/anmelden", new URLSearchParams({ name: "Ben Becker", terms: "on" }), { "content-type": "application/x-www-form-urlencoded" });
+
+    const o = await env.DB.prepare("SELECT id, name FROM organizer WHERE whatsapp_number = ?").bind(ADDRESS).first<{ id: number; name: string }>();
+    expect(o?.name).toBe("Ben Becker");
+    expect(o?.id).not.toBe(2);
   });
 
   it("reads an uploaded Flyer for the Organizer, or holds it as a Tip for the Admin", async () => {

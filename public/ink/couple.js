@@ -44,7 +44,12 @@
     const add = host.querySelector(".add"), narrow = W < 700;
     let h, cx, bottom;
     if (narrow && add) { h = Math.max(60, add.offsetTop - 14); cx = W * .84; bottom = add.offsetTop - 8; }
-    else { h = H * .96; cx = W * .74; bottom = H - 2; }
+    else {
+      // on a wide screen the band's content is centred, so the couple stands just left of the links on the right
+      h = H * .96; bottom = H - 2;
+      const meta = host.querySelector(".meta"), half = MW * (h / MH) / 2;
+      cx = meta ? Math.min(W * .74, meta.offsetLeft - half - 24) : W * .74;
+    }
     sc = h / MH; ox = cx - MW * sc / 2; oy = bottom - h;
     N = Math.min(MP.n, narrow ? 3500 : 7000, Math.round(MW * sc * h / 2.6));
     X = new Float32Array(N); Y = new Float32Array(N); VX = new Float32Array(N); VY = new Float32Array(N);

@@ -21,7 +21,7 @@ import { telegramWebhook } from "./telegram/webhook";
 // Not strict: "/admin/upload/" finds the same page as "/admin/upload".
 const app = new Hono<{ Bindings: Env }>({ strict: false });
 
-// "Was ist Taktvoll?": the page about the calendar and how Organizers add Events (public/landing),
+// "Was ist Stepdate?": the page about the calendar and how Organizers add Events (public/landing),
 // linked from the calendar's header. The calendar itself is the start page; /kalender, its address for a
 // day in November 2026, leads back there.
 app.get("/ueber", async (c) => (await c.env.ASSETS.fetch(new URL("/landing/", c.req.url))) as unknown as Response);

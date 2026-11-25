@@ -55,7 +55,7 @@ tipReview.get("/", async (c) => {
      WHERE ended_at IS NULL AND json_extract(rule, '$.freq') = 'custom' ORDER BY created_at`,
   ).all<{ title: string; rule: string; edit_token: string }>();
   return c.html(
-    <Layout title="Tipps – Taktvoll">
+    <Layout title="Tipps – Stepdate">
       <p>
         <a href="/admin">← Admin</a>
       </p>

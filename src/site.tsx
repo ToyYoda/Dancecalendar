@@ -12,9 +12,9 @@ export const BOT_URL = `https://t.me/${BOT}`;
 const FONTS = `@font-face{font-family:"Outfit";font-weight:100 900;font-style:normal;font-display:swap;src:url(/fonts/outfit-latin-wght-normal.woff2) format("woff2");}`;
 
 export const SITE_CSS = `${FONTS}
-  :root { color-scheme:light; --paper:#f7f9fa; --card:#fff; --ink:#1f3038; --mute:#5d6b72; --hair:#dfe5e8; --line:rgb(31 48 56 / .1); --wash:#ecf0f2;
-          --accent:#d6006d; --accent-ink:#b0005a; --tint:#fce8f1; --off:#a3271b; --off-tint:#fbe6e3; --warm:#7a4f00; --warm-tint:#fbefd6;
-          --r:16px; --r-sm:10px; --shadow:0 1px 2px rgb(31 48 56 / .06), 0 18px 44px -24px rgb(31 48 56 / .35);
+  :root { color-scheme:light; --paper:#faf7f4; --card:#fff; --ink:#1f1426; --mute:#6a5f68; --hair:#e6dde1; --line:rgb(31 20 38 / .1); --wash:#f2ecee;
+          --accent:#7a1e3a; --accent-ink:#651830; --tint:#f2e4e8; --step:#f2a65a; --off:#a3271b; --off-tint:#fbe6e3; --warm:#7a4f00; --warm-tint:#fbefd6;
+          --r:16px; --r-sm:10px; --shadow:0 1px 2px rgb(31 20 38 / .06), 0 18px 44px -24px rgb(31 20 38 / .35);
           --sans:"Outfit", system-ui, sans-serif; --stick:0px; --g:16px; }
   html { background:var(--paper); scroll-padding-top:calc(var(--stick) + 12px); }
   body { max-width:none; margin:0; padding:0; background:var(--paper); color:var(--ink); font:400 16px/1.5 var(--sans);
@@ -28,10 +28,9 @@ export const SITE_CSS = `${FONTS}
   /* the bar: the mark and the name, the ways to add an Event, the links on the right */
   .mast { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 12px; padding:14px var(--g); background:var(--card); border-bottom:1px solid var(--line); }
   .mast .home { display:flex; flex-direction:column; min-width:0; flex:1 1 15rem; } /* on a phone the links wrap below */
-  .mast .name { display:inline-flex; align-items:flex-end; font:600 26px/.8 var(--sans); letter-spacing:-.03em; white-space:nowrap; }
-  .mast .bars { display:flex; gap:.09em; height:.72em; margin-left:.07em; }
-  .mast .bars i { width:.09em; background:var(--ink); }
-  .mast .bars i + i { width:.24em; background:var(--accent); }
+  .mast .name { display:inline-flex; align-items:center; gap:8px; font:600 26px/1 var(--sans); letter-spacing:-.035em; white-space:nowrap; }
+  .mast .name .mark { flex:none; }
+  .mast .name .d { color:var(--accent); }
   .mast .sub { display:block; margin-top:4px; font-size:13px; color:var(--mute); }
   .mast .meta { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; }
   .mast .lang { font-size:14px; font-weight:500; padding:6px 12px; border-radius:99px; border:1px solid var(--line); white-space:nowrap; transition:background .15s; }
@@ -43,7 +42,7 @@ export const SITE_CSS = `${FONTS}
   .mast .add svg { vertical-align:-3px; margin-right:4px; }
   @media (min-width:960px) { .mast { padding-top:16px; padding-bottom:16px; } }
 
-  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font:500 15px var(--sans); height:44px; padding:0 20px; border-radius:99px; border:1px solid rgb(31 48 56 / .2); background:var(--card); color:var(--ink); cursor:pointer; transition:background .15s, transform .15s; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font:500 15px var(--sans); height:44px; padding:0 20px; border-radius:99px; border:1px solid rgb(31 20 38 / .2); background:var(--card); color:var(--ink); cursor:pointer; transition:background .15s, transform .15s; }
   .btn:hover { background:var(--wash); }
   .btn:active { transform:scale(.97); }
   .btn.solid { background:var(--accent); border-color:var(--accent); color:#fff; }
@@ -77,12 +76,27 @@ export function Masthead(props: { lang?: "de" | "en"; home?: string; add?: boole
   return (
     <header class="mast">
       <a class="home" href={props.home ?? "/"}>
-        {/* The name with its last two letters set as a final barline: a thin stroke in ink, a thick one in magenta. */}
-        <span class="name" role="img" aria-label="Taktvoll">
-          <span aria-hidden="true">Taktvo</span>
-          <span class="bars" aria-hidden="true">
-            <i />
-            <i />
+        {/* The mark, a week grid in which three days light up diagonally like the steps of a dance diagram, then the
+            name in lower case: "step" in ink, "date" in bordeaux. */}
+        <span class="name" role="img" aria-label="Stepdate">
+          <svg class="mark" width="26" height="26" viewBox="0 0 30 30" aria-hidden="true">
+            <rect width="30" height="30" rx="8" fill="#1f1426" />
+            <g fill="#faf7f4" opacity=".35">
+              <rect x="5" y="5" width="5" height="5" rx="1.2" />
+              <rect x="12.5" y="5" width="5" height="5" rx="1.2" />
+              <rect x="5" y="12.5" width="5" height="5" rx="1.2" />
+              <rect x="20" y="12.5" width="5" height="5" rx="1.2" />
+              <rect x="12.5" y="20" width="5" height="5" rx="1.2" />
+              <rect x="20" y="20" width="5" height="5" rx="1.2" />
+            </g>
+            <g fill="#f2a65a">
+              <rect x="20" y="5" width="5" height="5" rx="1.2" />
+              <rect x="12.5" y="12.5" width="5" height="5" rx="1.2" />
+              <rect x="5" y="20" width="5" height="5" rx="1.2" />
+            </g>
+          </svg>
+          <span aria-hidden="true">
+            step<span class="d">date</span>
           </span>
         </span>
         <span class="sub">{t.sub}</span>
@@ -123,7 +137,7 @@ export const PAGE_CSS = `
   .back { display:inline-flex; align-items:center; gap:6px; margin:0 0 8px; font-size:15px; font-weight:500; color:var(--accent-ink); }
   .wrap form > label:not(.check):not(.choice):not(.drop) { display:block; margin:14px 0 4px; font-size:14px; font-weight:500; color:var(--mute); }
   .wrap input:not([type=checkbox]):not([type=radio]):not([type=file]), .wrap select, .wrap textarea { width:100%; box-sizing:border-box; height:44px; padding:0 12px;
-    border:1px solid rgb(31 48 56 / .18); border-radius:var(--r-sm); background:var(--card); color:var(--ink); font:400 16px var(--sans); }
+    border:1px solid rgb(31 20 38 / .18); border-radius:var(--r-sm); background:var(--card); color:var(--ink); font:400 16px var(--sans); }
   .wrap input:focus, .wrap select:focus { outline:2px solid var(--accent); outline-offset:0; border-color:transparent; }
   label.check { display:flex; gap:10px; align-items:flex-start; margin:16px 0; font-size:15px; }
   label.check input { margin-top:4px; width:18px; height:18px; accent-color:var(--accent); flex:none; }
@@ -132,7 +146,7 @@ export const PAGE_CSS = `
   label.choice:has(input:checked) { box-shadow:0 0 0 2px var(--accent); background:var(--tint); }
   label.choice input { margin-top:4px; accent-color:var(--accent); }
   label.choice span { display:grid; } label.choice small { color:var(--mute); font-size:14px; }
-  .drop { position:relative; display:grid; place-items:center; align-content:center; gap:6px; min-height:140px; padding:20px; border:2px dashed rgb(214 0 109 / .35); border-radius:var(--r); background:var(--tint); text-align:center; color:var(--accent-ink); cursor:pointer; }
+  .drop { position:relative; display:grid; place-items:center; align-content:center; gap:6px; min-height:140px; padding:20px; border:2px dashed rgb(122 30 58 / .35); border-radius:var(--r); background:var(--tint); text-align:center; color:var(--accent-ink); cursor:pointer; }
   .drop:hover, .drop:focus-within { border-color:var(--accent); }
   .drop input { position:absolute; inset:0; opacity:0; cursor:pointer; }
   .drop b { font-size:17px; font-weight:500; } .drop small { color:var(--mute); font-size:14px; } .drop svg { color:var(--accent); }
@@ -166,7 +180,7 @@ const DROP_SCRIPT = `document.querySelectorAll(".drop input").forEach(function(i
 export function SitePage(props: { title: string; head?: Child; css?: string; nav?: Child; children: Child }) {
   return (
     <Layout
-      title={`${props.title} – Taktvoll`}
+      title={`${props.title} – Stepdate`}
       head={
         <>
           <link rel="preload" href="/fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="" />

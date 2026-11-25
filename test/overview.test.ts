@@ -283,7 +283,7 @@ describe("the calendar subscription", () => {
 
     expect(res.headers.get("content-type")).toBe("text/calendar; charset=utf-8");
     expect(body.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
-    expect(body).toContain("X-WR-CALNAME:Taktvoll · Bachata");
+    expect(body).toContain("X-WR-CALNAME:Stepdate · Bachata");
     expect(body).toContain("TZID:Europe/Berlin");
     expect(body).toContain(`DTSTART;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T213000`);
     expect(body).toContain(`DTEND;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T235900`);
@@ -351,18 +351,19 @@ describe("Flyer images", () => {
 });
 
 describe("the brand", () => {
-  it("is called Taktvoll, with its claim and no place in it", async () => {
+  it("is called Stepdate, with its claim and no place in it", async () => {
     const html = await page();
-    expect(html).toContain("<title>Taktvoll</title>");
-    expect(html).toContain('aria-label="Taktvoll"');
+    expect(html).toContain("<title>Stepdate</title>");
+    expect(html).toContain('aria-label="Stepdate"');
     expect(html).toContain("wo heute getanzt wird");
+    expect(html).not.toContain("Taktvoll");
     expect(html).not.toContain("DanceCalendar");
     expect(html).not.toContain("Kassel, Göttingen und drumherum");
     expect(await page("?lang=en")).toContain("where to dance tonight");
   });
 
   it("names the page in the tab after the brand", async () => {
-    expect(await page("karte")).toMatch(/<title>[^<]+ – Taktvoll<\/title>/);
+    expect(await page("karte")).toMatch(/<title>[^<]+ – Stepdate<\/title>/);
   });
 
   it("serves its mark as the favicon on every page", async () => {
@@ -370,8 +371,17 @@ describe("the brand", () => {
     expect(await (await get("http://dancecalendar.test/impressum")).text()).toContain('href="/favicon.svg"');
   });
 
-  it("uses magenta as its accent", async () => {
-    expect(await page()).toContain("--accent:#d6006d");
+  it("uses the Abendkleid colours: bordeaux as accent on warm paper, apricot for days with Events", async () => {
+    const html = await page();
+    expect(html).toContain("--accent:#7a1e3a");
+    expect(html).toContain("--paper:#faf7f4");
+    expect(html).toContain("--step:#f2a65a");
+  });
+
+  it("shows its mark, a calendar grid with three steps, beside the name", async () => {
+    const html = await page();
+    expect(html).toContain('class="mark"');
+    expect(html).toMatch(/step<span class="d">date<\/span>/);
   });
 });
 

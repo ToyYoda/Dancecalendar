@@ -2,7 +2,7 @@
 // The Admin's daily email (src/admin-email.ts) needs all three; until then it's skipped with a warning.
 // The operator's name, address and email for the legal pages (src/legal-pages.tsx) stay out of the public repo.
 interface Env {
-  ASSETS: Fetcher; // public/, also the page about Taktvoll at /ueber
+  ASSETS: Fetcher; // public/, also the page about Stepdate at /ueber
   ANTHROPIC_API_KEY: string;
   TELEGRAM_BOT_TOKEN: string; // from @BotFather; the Telegram bot (src/telegram) is off without it
   GOOGLE_CLIENT_ID?: string; // "Mit Google anmelden" at /veranstalter (src/portal.tsx) shows only with both

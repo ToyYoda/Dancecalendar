@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Taktvoll – wo heute getanzt wird</title>
+<title>Stepdate – wo heute getanzt wird</title>
 <meta name="description" content="Salsa, Bachata, Kizomba und mehr rund um Kassel und Göttingen auf einer Seite, jedes Event mit dem ganzen Flyer, ohne Anmeldung.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Taktvoll – wo heute getanzt wird">
+<meta property="og:title" content="Stepdate – wo heute getanzt wird">
 <meta property="og:description" content="Partys, Workshops, Kurse und Festivals der Region, jedes Event mit seinem Flyer.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#f7f9fa">
+<meta name="theme-color" content="#faf7f4">
 <link rel="canonical" href="https://dancecalendar.dancecalendar.workers.dev/ueber">
 <meta name="site-kind" content="software">
 <meta name="page-type" content="software">
@@ -24,10 +24,10 @@
 <link rel="stylesheet" href="/landing/assets/icons/icon.css">
 <style>
 :root {
-  --p-bg: #f7f9fa; --p-surface: #ecf0f2; --p-ink: #1f3038; --p-muted: #5d6b72;
-  --p-accent: #d6006d; --p-accent-ink: #ffffff; --p-action: #d6006d; --p-action-ink: #ffffff;
-  --p-inv-bg: #1f3038; --p-inv-surface: #2c3c44; --p-inv-ink: #f7f9fa; --p-inv-muted: #9ea7ab;
-  --p-inv-accent: #f7f9fa; --p-inv-accent-ink: #1f3038; --p-inv-action: #f7f9fa; --p-inv-action-ink: #1f3038;
+  --p-bg: #faf7f4; --p-surface: #f2ecee; --p-ink: #1f1426; --p-muted: #6a5f68;
+  --p-accent: #7a1e3a; --p-accent-ink: #ffffff; --p-action: #7a1e3a; --p-action-ink: #ffffff;
+  --p-inv-bg: #1f1426; --p-inv-surface: #2c3c44; --p-inv-ink: #faf7f4; --p-inv-muted: #9ea7ab;
+  --p-inv-accent: #faf7f4; --p-inv-accent-ink: #1f1426; --p-inv-action: #faf7f4; --p-inv-action-ink: #1f1426;
   --font-display: "Outfit", system-ui, sans-serif;
   --font-text: "Outfit", system-ui, sans-serif;
   --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -44,48 +44,48 @@
 <script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
 <!-- page CSS: only what sits inside a visual -->
 <style>
-  /* the hero window: Taktvoll's day list (the collage recipe's window, drawn here) */
-  .d-win { background: #fff; color: #1f3038; border-radius: 12px; overflow: hidden; font: 400 14px/1.4 var(--font-text);
-    box-shadow: 0 0 0 1px rgb(31 48 56 / .08), 0 30px 70px -30px rgb(31 48 56 / .45); }
-  .d-win__bar { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-bottom: 1px solid rgb(31 48 56 / .08); font-size: 13px; color: #5d6b72; }
-  .d-win__dots { display: flex; gap: 6px; } .d-win__dots i { width: 10px; height: 10px; border-radius: 50%; background: #dfe5e8; }
+  /* the hero window: Stepdate's day list (the collage recipe's window, drawn here) */
+  .d-win { background: #fff; color: #1f1426; border-radius: 12px; overflow: hidden; font: 400 14px/1.4 var(--font-text);
+    box-shadow: 0 0 0 1px rgb(31 20 38 / .08), 0 30px 70px -30px rgb(31 20 38 / .45); }
+  .d-win__bar { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-bottom: 1px solid rgb(31 20 38 / .08); font-size: 13px; color: #6a5f68; }
+  .d-win__dots { display: flex; gap: 6px; } .d-win__dots i { width: 10px; height: 10px; border-radius: 50%; background: #e6dde1; }
   .d-win__body { display: grid; grid-template-columns: 156px 1fr; min-height: 420px; }
-  .d-side { padding: 14px 10px; border-right: 1px solid rgb(31 48 56 / .08); display: grid; align-content: start; gap: 2px; font-size: 13px; color: #4b5a61; }
+  .d-side { padding: 14px 10px; border-right: 1px solid rgb(31 20 38 / .08); display: grid; align-content: start; gap: 2px; font-size: 13px; color: #4b5a61; }
   .d-side > span { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border-radius: 7px; }
-  .d-side > span.is-on { background: rgb(214 0 109 / .09); color: #b0005a; font-weight: 500; }
+  .d-side > span.is-on { background: rgb(122 30 58 / .09); color: #651830; font-weight: 500; }
   .d-side svg { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; opacity: .6; }
   .d-side > span.is-on svg { opacity: 1; }
-  .d-side .d-side__label { color: #6b7a81; height: 24px; margin-top: 8px; font-size: 12px; }
-  .d-side .d-side__pick { height: 28px; border-radius: 99px; background: #fce8f1; color: #b0005a; font-weight: 500; padding: 0 10px; }
-  .d-box i { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid #b5c0c4; flex: none; box-sizing: border-box; }
-  .d-box.is-chk i { background: #d6006d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2.2 5.2 4.2 7.2 7.8 3' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / 10px no-repeat; border-color: #d6006d; }
-  .d-side .d-side__abo { margin-top: 12px; border-top: 1px solid rgb(31 48 56 / .08); border-radius: 0; padding-top: 10px; height: auto; color: #b0005a; font-weight: 500; }
-  .d-nav { display: flex; gap: 4px; } .d-nav i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(31 48 56 / .12); font-style: normal; color: #1f3038; }
-  .d-day { display: flex; align-items: baseline; gap: 6px; font-size: 13px; color: #6b7a81; } .d-day b { font-weight: 500; font-size: 14px; color: #1f3038; } .d-day span { margin-left: auto; }
+  .d-side .d-side__label { color: #6a5f68; height: 24px; margin-top: 8px; font-size: 12px; }
+  .d-side .d-side__pick { height: 28px; border-radius: 99px; background: #f2e4e8; color: #651830; font-weight: 500; padding: 0 10px; }
+  .d-box i { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid #c4b9bf; flex: none; box-sizing: border-box; }
+  .d-box.is-chk i { background: #7a1e3a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2.2 5.2 4.2 7.2 7.8 3' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / 10px no-repeat; border-color: #7a1e3a; }
+  .d-side .d-side__abo { margin-top: 12px; border-top: 1px solid rgb(31 20 38 / .08); border-radius: 0; padding-top: 10px; height: auto; color: #651830; font-weight: 500; }
+  .d-nav { display: flex; gap: 4px; } .d-nav i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(31 20 38 / .12); font-style: normal; color: #1f1426; }
+  .d-day { display: flex; align-items: baseline; gap: 6px; font-size: 13px; color: #6a5f68; } .d-day b { font-weight: 500; font-size: 14px; color: #1f1426; } .d-day span { margin-left: auto; }
   .d-main { padding: 16px 18px; display: grid; align-content: start; gap: 12px; min-width: 0; }
   .d-main__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
   .d-main__head .d-h { font: 500 15px/1.2 var(--font-text); letter-spacing: -0.01em; margin: 0; color: inherit; }
-  .d-main__head span { font-size: 13px; color: #6b7a81; }
-  .d-tabs { display: flex; gap: 4px; font-size: 13px; } .d-tabs span { padding: 4px 10px; border-radius: 99px; color: #5d6b72; } .d-tabs span.is-on { background: rgb(31 48 56 / .07); color: #1f3038; font-weight: 500; }
-  .d-rows { display: grid; border-top: 1px solid rgb(31 48 56 / .08); margin-top: -6px; }
-  .d-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 56px 92px; align-items: center; gap: 12px; padding: 8px 2px; border-bottom: 1px solid rgb(31 48 56 / .08); font-size: 13px; }
-  .d-row img { width: 40px; height: 52px; border-radius: 6px; object-fit: contain; background: #ecf0f2; }
-  .d-row b { display: block; font-weight: 500; color: #1f3038; }
-  .d-row small { color: #5d6b72; font-size: 13px; display: block; }
-  .d-row .num { text-align: right; font-variant-numeric: tabular-nums; color: #1f3038; }
-  .d-row.is-off b { text-decoration: line-through; color: #6b7a81; } .d-row.is-off img { filter: grayscale(1); opacity: .55; }
-  .d-chip { justify-self: end; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; font-size: 13px; font-weight: 500; background: #fce8f1; color: #b0005a; white-space: nowrap; }
+  .d-main__head span { font-size: 13px; color: #6a5f68; }
+  .d-tabs { display: flex; gap: 4px; font-size: 13px; } .d-tabs span { padding: 4px 10px; border-radius: 99px; color: #6a5f68; } .d-tabs span.is-on { background: rgb(31 20 38 / .07); color: #1f1426; font-weight: 500; }
+  .d-rows { display: grid; border-top: 1px solid rgb(31 20 38 / .08); margin-top: -6px; }
+  .d-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 56px 92px; align-items: center; gap: 12px; padding: 8px 2px; border-bottom: 1px solid rgb(31 20 38 / .08); font-size: 13px; }
+  .d-row img { width: 40px; height: 52px; border-radius: 6px; object-fit: contain; background: #f2ecee; }
+  .d-row b { display: block; font-weight: 500; color: #1f1426; }
+  .d-row small { color: #6a5f68; font-size: 13px; display: block; }
+  .d-row .num { text-align: right; font-variant-numeric: tabular-nums; color: #1f1426; }
+  .d-row.is-off b { text-decoration: line-through; color: #6a5f68; } .d-row.is-off img { filter: grayscale(1); opacity: .55; }
+  .d-chip { justify-self: end; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; font-size: 13px; font-weight: 500; background: #f2e4e8; color: #651830; white-space: nowrap; }
   .d-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .d-chip--ws { background: #fdf0dc; color: #8a5300; }
   .d-chip--off { background: #fbe6e3; color: #a3271b; }
-  .d-card { background: #fff; color: #1f3038; border-radius: 12px; padding: 14px 16px; font: 400 14px/1.4 var(--font-text);
-    box-shadow: 0 0 0 1px rgb(31 48 56 / .08), 0 24px 50px -24px rgb(31 48 56 / .5); }
+  .d-card { background: #fff; color: #1f1426; border-radius: 12px; padding: 14px 16px; font: 400 14px/1.4 var(--font-text);
+    box-shadow: 0 0 0 1px rgb(31 20 38 / .08), 0 24px 50px -24px rgb(31 20 38 / .5); }
   .d-card .d-card__h { margin: 0; font: 500 14px/1.3 var(--font-text); }
   .d-card__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 6px; }
   .hero__art > .ly-piece--note { left: var(--s-6); bottom: var(--s-6); width: 300px; z-index: 2; }
-  .d-note__line { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; color: #3e4f57; border-top: 1px solid rgb(31 48 56 / .07); }
-  .d-note__line i { width: 18px; height: 18px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #fce8f1; color: #b0005a; font-style: normal; font-size: 12px; font-weight: 500; }
-  .d-note__line b { font-weight: 500; color: #1f3038; }
+  .d-note__line { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; color: #3e4f57; border-top: 1px solid rgb(31 20 38 / .07); }
+  .d-note__line i { width: 18px; height: 18px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #f2e4e8; color: #651830; font-style: normal; font-size: 12px; font-weight: 500; }
+  .d-note__line b { font-weight: 500; color: #1f1426; }
   .hero__proof { font-size: var(--t-small); color: var(--muted); }
   .ly-piece--main .d-main { padding-right: var(--ly-cut-room); }
   @media (max-width: 639px) { .ly-piece--main .d-row { grid-template-columns: 40px minmax(0, 1fr) 92px; } .ly-piece--main .d-row .num { display: none; } .d-win__body { grid-template-columns: 1fr; } .d-side { display: none; } }
@@ -94,17 +94,17 @@
   .app.ui { display: grid; margin-top: var(--s-7); background: var(--u-bg); border: 1px solid var(--u-border); border-radius: var(--u-r); box-shadow: var(--u-shadow); }
   .app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
   .app > .app__pane::after { content: ""; position: absolute; inset: auto 0 0 0; height: 64px; background: linear-gradient(transparent, var(--u-bg)); pointer-events: none; }
-  .ev { padding: 24px 28px; font: 400 14px/1.5 var(--font-text); color: var(--u-ink, #1f3038); }
+  .ev { padding: 24px 28px; font: 400 14px/1.5 var(--font-text); color: var(--u-ink, #1f1426); }
   .ev__back { display: inline-flex; padding: 4px 12px 4px 10px; border-radius: 99px; box-shadow: 0 0 0 1px var(--u-line); font-weight: 500; font-size: 13px; }
   .ev .ev__title { margin: 14px 0 0; font: 500 30px/1.1 var(--font-display); letter-spacing: -0.03em; }
   .ev__when { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0 18px; } .ev__when b { font-weight: 500; }
-  .ev__type { display: inline-flex; height: 24px; align-items: center; gap: 5px; padding: 0 10px; border-radius: 99px; background: #fce8f1; color: #b0005a; font-size: 13px; font-weight: 500; }
+  .ev__type { display: inline-flex; height: 24px; align-items: center; gap: 5px; padding: 0 10px; border-radius: 99px; background: #f2e4e8; color: #651830; font-size: 13px; font-weight: 500; }
   .ev__type::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .ev__cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: 28px; align-items: start; }
   .ev__flyer { width: 100%; height: auto; border-radius: 12px; display: block; }
   .ev__facts { margin: 0; display: grid; grid-template-columns: auto 1fr; padding: 4px 18px; border-radius: 12px; box-shadow: 0 0 0 1px var(--u-line); }
   .ev__facts dt, .ev__facts dd { padding: 10px 0; border-bottom: 1px solid var(--u-line); }
-  .ev__facts dt { color: var(--u-muted, #5d6b72); font-size: 13px; padding-right: 14px; } .ev__facts dd { margin: 0; }
+  .ev__facts dt { color: var(--u-muted, #6a5f68); font-size: 13px; padding-right: 14px; } .ev__facts dd { margin: 0; }
   .ev__facts > :nth-last-child(-n+2) { border-bottom: 0; }
   @media (max-width: 639px) {
     .ev { padding: 16px; } .ev .ev__title { font-size: 24px; }
@@ -117,21 +117,21 @@
   @media (max-width: 639px) { #veranstalter .panel { --p-h: 220px; } }
   .ui-msg__flyer { display: block; width: 132px; border-radius: 8px; }
   .wa-btns { display: grid; gap: 4px; margin-top: 8px; }
-  .wa-btns span { display: block; text-align: center; padding: 6px 10px; border-radius: 8px; background: rgb(214 0 109 / .08); color: #b0005a; font-size: 13px; font-weight: 500; }
+  .wa-btns span { display: block; text-align: center; padding: 6px 10px; border-radius: 8px; background: rgb(122 30 58 / .08); color: #651830; font-size: 13px; font-weight: 500; }
 
   /* the filter strip as the calendar draws it */
-  .flt { font: 400 14px/1.4 var(--font-text); color: #1f3038; background: #fff; border-radius: 12px; padding: 20px; display: grid; gap: 18px; }
-  .flt__tabs { display: flex; gap: 18px; border-bottom: 1px solid rgb(31 48 56 / .1); font-size: 15px; }
-  .flt__tabs span { padding: 0 0 10px; color: #5d6b72; } .flt__tabs span.is-on { color: #1f3038; font-weight: 500; box-shadow: inset 0 -2px 0 #d6006d; }
-  .flt__label { font-size: 13px; color: #5d6b72; margin: 0 0 8px; }
+  .flt { font: 400 14px/1.4 var(--font-text); color: #1f1426; background: #fff; border-radius: 12px; padding: 20px; display: grid; gap: 18px; }
+  .flt__tabs { display: flex; gap: 18px; border-bottom: 1px solid rgb(31 20 38 / .1); font-size: 15px; }
+  .flt__tabs span { padding: 0 0 10px; color: #6a5f68; } .flt__tabs span.is-on { color: #1f1426; font-weight: 500; box-shadow: inset 0 -2px 0 #7a1e3a; }
+  .flt__label { font-size: 13px; color: #6a5f68; margin: 0 0 8px; }
   .flt__chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .flt__chips span { padding: 6px 12px; border-radius: 99px; border: 1px solid rgb(31 48 56 / .18); font-size: 14px; }
-  .flt__chips span.is-on { background: #1f3038; border-color: #1f3038; color: #fff; }
-  .flt__url { font: 400 13px/1.4 var(--font-mono); color: #b0005a; background: #fce8f1; border-radius: 8px; padding: 10px 12px; overflow-wrap: anywhere; }
+  .flt__chips span { padding: 6px 12px; border-radius: 99px; border: 1px solid rgb(31 20 38 / .18); font-size: 14px; }
+  .flt__chips span.is-on { background: #1f1426; border-color: #1f1426; color: #fff; }
+  .flt__url { font: 400 13px/1.4 var(--font-mono); color: #651830; background: #f2e4e8; border-radius: 8px; padding: 10px 12px; overflow-wrap: anywhere; }
   .flt__boxes { display: flex; flex-wrap: wrap; gap: 6px 18px; } .flt__boxes span { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
-  .flt__boxes i { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid #b5c0c4; box-sizing: border-box; }
-  .flt__boxes .is-chk i { background: #d6006d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2.2 5.2 4.2 7.2 7.8 3' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / 11px no-repeat; border-color: #d6006d; }
-  .flt__abo { display: flex; align-items: center; gap: 12px; } .flt__abo span { flex: none; padding: 8px 16px; border-radius: 99px; background: #d6006d; color: #fff; font-weight: 500; } .flt__abo small { font-size: 13px; color: #5d6b72; line-height: 1.35; }
+  .flt__boxes i { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid #c4b9bf; box-sizing: border-box; }
+  .flt__boxes .is-chk i { background: #7a1e3a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2.2 5.2 4.2 7.2 7.8 3' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / 11px no-repeat; border-color: #7a1e3a; }
+  .flt__abo { display: flex; align-items: center; gap: 12px; } .flt__abo span { flex: none; padding: 8px 16px; border-radius: 99px; background: #7a1e3a; color: #fff; font-weight: 500; } .flt__abo small { font-size: 13px; color: #6a5f68; line-height: 1.35; }
   #filter .frame { padding: 0; }
   @media (min-width: 1024px) and (max-width: 1279px) { #filter .frame--split { aspect-ratio: 1; } }
   /* the questions beside two whole Flyers; the split holds at the tablet, a phone shows three questions */
@@ -155,7 +155,7 @@
 </style>
 </head>
 <body>
-<!-- type: software (a free regional web calendar; Taktvoll)
+<!-- type: software (a free regional web calendar; Stepdate)
      deal: hero collage, nav nav-cards, close close-type, footer footer-dark, rhythm dark-band, buttons arrow, mark arc, ground sand;
            palette cool-white-slate (a frost-white ground for the Flyers' loud colours, one teal that points), type outfit, radius round
      effect: grain-gradient in the hero's art frame (the one effect)
@@ -165,7 +165,7 @@
 <header class="nav">
   <div class="wrap nav__bar">
     <a class="skip-link" href="#top">Zum Inhalt</a>
-    <a class="nav__logo" href="#top"><svg class="mark" width="22" height="22" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="96" fill="#111"/><rect x="170" y="100" width="56" height="312" fill="#fff"/><rect x="262" y="100" width="108" height="312" fill="#d6006d"/></svg>Taktvoll</a>
+    <a class="nav__logo" href="#top"><svg class="mark" width="22" height="22" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="#1f1426"/><g fill="#faf7f4" opacity=".35"><rect x="5" y="5" width="5" height="5" rx="1.2"/><rect x="12.5" y="5" width="5" height="5" rx="1.2"/><rect x="5" y="12.5" width="5" height="5" rx="1.2"/><rect x="20" y="12.5" width="5" height="5" rx="1.2"/><rect x="12.5" y="20" width="5" height="5" rx="1.2"/><rect x="20" y="20" width="5" height="5" rx="1.2"/></g><g fill="#f2a65a"><rect x="20" y="5" width="5" height="5" rx="1.2"/><rect x="12.5" y="12.5" width="5" height="5" rx="1.2"/><rect x="5" y="20" width="5" height="5" rx="1.2"/></g></svg>Stepdate</a>
     <nav class="nav__links" aria-label="Hauptmenü">
       <div class="nav__item"><a class="nav__link" href="#woche">Woche</a></div>
       <div class="nav__item">
@@ -211,9 +211,9 @@
         <div class="btn-row"><a class="btn btn--primary" href="/">Kalender öffnen<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a><a class="btn btn--secondary" href="#veranstalter">Event eintragen</a></div>
         <p class="hero__proof">Salsa, Bachata, Kizomba, Urban Kiz und West Coast Swing.</p>
       </div>
-      <div class="hero__art span-6 start-7" data-fx="grain-gradient" data-fx-seed="17" data-fx-params='{"calmX":0.3,"calmY":0.8}' role="img" aria-label="Der Taktvoll mit Salsa und Bachata im Umkreis von 25 Kilometern, die Events von Samstag, und ein Flyer, den der Bot gerade gelesen hat">
+      <div class="hero__art span-6 start-7" data-fx="grain-gradient" data-fx-seed="17" data-fx-params='{"calmX":0.3,"calmY":0.8}' role="img" aria-label="Der Stepdate mit Salsa und Bachata im Umkreis von 25 Kilometern, die Events von Samstag, und ein Flyer, den der Bot gerade gelesen hat">
         <div class="ly-piece ly-piece--main d-win" aria-hidden="true">
-          <div class="d-win__bar"><span class="d-win__dots"><i></i><i></i><i></i></span><span>Taktvoll</span></div>
+          <div class="d-win__bar"><span class="d-win__dots"><i></i><i></i><i></i></span><span>Stepdate</span></div>
           <div class="d-win__body">
             <div class="d-side">
               <span class="is-on"><svg viewBox="0 0 16 16"><path d="M2 3.5h12M2 8h12M2 12.5h12"/></svg>Liste</span><span><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>Monat</span><span><svg viewBox="0 0 16 16"><path d="M8 14.5s4.5-4.2 4.5-7.7a4.5 4.5 0 0 0-9 0c0 3.5 4.5 7.7 4.5 7.7z"/><circle cx="8" cy="6.8" r="1.2"/></svg>Karte</span>
@@ -252,7 +252,7 @@
         <h2 class="span-5" id="woche-h">Jedes Event mit seinem ganzen Flyer</h2>
         <p class="span-6 start-7">Die Liste zeigt die Woche nach Tag und Uhrzeit. Ein Tipp öffnet die Seite des Events: der Flyer unbeschnitten, daneben Ort, Eintritt und Tänze, so wie sie auf dem Flyer stehen. <a class="link" href="#filter">Filter ansehen</a></p>
       </div>
-      <div class="ui app fill" role="img" aria-label="Die Seite eines Events im Taktvoll: die Party Noche Caliente mit ihrem ganzen Flyer, daneben Ort, Veranstalter, Eintritt und Tänze" data-ui-pause-host>
+      <div class="ui app fill" role="img" aria-label="Die Seite eines Events im Stepdate: die Party Noche Caliente mit ihrem ganzen Flyer, daneben Ort, Veranstalter, Eintritt und Tänze" data-ui-pause-host>
         <div class="app__pane app__pane--open">
           <div class="ev" aria-hidden="true">
             <span class="ev__back">‹ Zurück</span>
@@ -287,7 +287,7 @@
           <div class="panel">
             <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:360px;--ax:max(24px, 50% - 180px);--ay:32px;--ay-sm:16px">
               <div class="ui ui-panel ui-chat" data-ui="chat">
-                <div class="ui-head"><img class="ui-agent" data-icon="si:telegram" src="/landing/assets/icons/telegram.svg" alt=""><div class="ui-title">Taktvoll</div><span class="ui-chat__online">Bot</span><span class="ui-spacer"></span></div>
+                <div class="ui-head"><img class="ui-agent" data-icon="si:telegram" src="/landing/assets/icons/telegram.svg" alt=""><div class="ui-title">Stepdate</div><span class="ui-chat__online">Bot</span><span class="ui-spacer"></span></div>
                 <div class="ui-chat__body">
                   <div class="ui-msg ui-msg--me"><span class="ui-msg__text"><img class="ui-msg__flyer" src="/landing/flyers/f10.svg" alt=""></span></div>
                   <div class="ui-msg ui-msg--bot"><span class="ui-agent ui-msg__av" aria-hidden="true"></span><span class="ui-msg__col"><span class="ui-chat__answer">Danke für den Flyer! Ist das deine Veranstaltung?</span><span class="wa-btns"><span>Ja, meine</span><span>Nein, ist ein Tipp</span></span></span></div>
@@ -304,7 +304,7 @@
           <div class="panel">
             <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:360px;--ax:max(24px, 50% - 180px);--ay:32px;--ay-sm:16px" data-ui-loop>
               <div class="ui ui-panel ui-chat" data-ui="chat" data-ui-opts='{"answer":"Noche Caliente – Salsa &amp; Bachata, Samstag 21:30 bis 2:00, Studio Movimiento, Kassel."}'>
-                <div class="ui-head"><img class="ui-agent" data-icon="si:telegram" src="/landing/assets/icons/telegram.svg" alt=""><div class="ui-title">Taktvoll</div><span class="ui-chat__online">Bot</span><span class="ui-spacer"></span></div>
+                <div class="ui-head"><img class="ui-agent" data-icon="si:telegram" src="/landing/assets/icons/telegram.svg" alt=""><div class="ui-title">Stepdate</div><span class="ui-chat__online">Bot</span><span class="ui-spacer"></span></div>
                 <div class="ui-chat__body">
                   <div class="ui-msg ui-msg--bot" data-chat-a><span class="ui-agent ui-msg__av" aria-hidden="true"></span><span class="ui-msg__col"><span class="ui-chat__typing" aria-hidden="true"><i></i><i></i><i></i></span><span class="ui-chat__answer"><b>Noche Caliente – Salsa &amp; Bachata</b>, Samstag 21:30 bis 2:00, Studio Movimiento, Kassel.</span><span class="wa-btns"><span>Veröffentlichen</span><span>Ändern</span><span>Verwerfen</span></span></span></div>
                 </div>
@@ -394,7 +394,7 @@
     <div class="closing__links">
       <div class="grid">
         <div class="span-4 stack-4">
-          <a class="nav__logo" href="#top"><svg class="mark" width="22" height="22" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="96" fill="#111"/><rect x="170" y="100" width="56" height="312" fill="#fff"/><rect x="262" y="100" width="108" height="312" fill="#d6006d"/></svg>Taktvoll</a>
+          <a class="nav__logo" href="#top"><svg class="mark" width="22" height="22" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="#1f1426"/><g fill="#faf7f4" opacity=".35"><rect x="5" y="5" width="5" height="5" rx="1.2"/><rect x="12.5" y="5" width="5" height="5" rx="1.2"/><rect x="5" y="12.5" width="5" height="5" rx="1.2"/><rect x="20" y="12.5" width="5" height="5" rx="1.2"/><rect x="12.5" y="20" width="5" height="5" rx="1.2"/><rect x="20" y="20" width="5" height="5" rx="1.2"/></g><g fill="#f2a65a"><rect x="20" y="5" width="5" height="5" rx="1.2"/><rect x="12.5" y="12.5" width="5" height="5" rx="1.2"/><rect x="5" y="20" width="5" height="5" rx="1.2"/></g></svg>Stepdate</a>
           <p class="footer__lede">Ein gemeinsamer Kalender für die Paartanz-Szene rund um Kassel und Göttingen.</p>
         </div>
         <div class="span-2 footer__col"><h3>Kalender</h3><ul><li><a href="#woche">Woche</a></li><li><a href="#filter">Filter</a></li></ul></div>
@@ -402,7 +402,7 @@
         <div class="span-4 footer__col"><h3>Kontakt</h3><ul><li><a href="/impressum">Kontakt im Impressum</a></li><li><a href="/impressum#melden">Event melden</a></li></ul></div>
       </div>
       <div class="footer__legal">
-        <span>&copy; 2026 Taktvoll &nbsp; <a href="/impressum">Impressum</a> &nbsp; <a href="/datenschutz">Datenschutz</a> &nbsp; <a href="/nutzungsbedingungen">Nutzungsbedingungen</a></span>
+        <span>&copy; 2026 Stepdate &nbsp; <a href="/impressum">Impressum</a> &nbsp; <a href="/datenschutz">Datenschutz</a> &nbsp; <a href="/nutzungsbedingungen">Nutzungsbedingungen</a></span>
         <div class="socials"></div>
         <span class="credits">Die gezeigten Flyer und Events sind erfundene Beispiele</span>
       </div>

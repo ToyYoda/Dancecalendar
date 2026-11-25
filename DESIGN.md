@@ -156,6 +156,8 @@ A monochrome print palette with a single saturated magenta; the Flyers supply al
 
 **The Mark.** A 3×3 week grid on Plum with rounded corners, in which three cells light up diagonally in Apricot like the footprints of a step diagram: calendar and dance step in one sign. Beside it the wordmark in Outfit 600, lower case, tight: "step" in ink, "date" in Bordeaux. The claim below is "wo heute getanzt wird" / "where to dance tonight", without a place. The mark alone is the favicon (`public/favicon.svg`) and the bot avatar.
 
+**The Night Band.** The bar at the top of every page is Plum, the one Plum surface: type light, "date" in Apricot, the mark outlined. On the calendar the ink couple dances in it: a couple traced in a few thousand particles from a silhouette (`public/ink/couple.png`, drawn by `public/ink/couple.js`), Bordeaux and Rosé in the shadows, Apricot where the lamp catches the outline. The lamp follows the pointer or finger and drifts on its own otherwise. With reduced motion the couple is drawn once and stands still; it pauses while the band is off screen. It stays in the band, so the Flyers below are still the loudest colour on the page; the Organizer's pages, being forms, get the band without the couple.
+
 ## Typography
 
 **Display Font:** Archivo (with system-ui, sans-serif), self-hosted at 400, 600, 800

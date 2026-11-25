@@ -371,6 +371,27 @@ describe("the brand", () => {
     expect(await (await get("http://dancecalendar.test/impressum")).text()).toContain('href="/favicon.svg"');
   });
 
+  it("opens the calendar under a night band in which the ink couple dances", async () => {
+    const html = await page();
+    expect(html).toMatch(/<header class="mast night">/);
+    expect(html).toContain('<canvas class="ink" data-ink="/ink/couple.png" aria-hidden="true"></canvas>');
+    expect(html).toContain('<script src="/ink/couple.js" defer=""></script>');
+  });
+
+  it("keeps the ink couple off the pages that are forms", async () => {
+    const html = await (await get("http://dancecalendar.test/veranstalter")).text();
+    expect(html).not.toContain('class="ink"');
+    expect(html).not.toContain("/ink/couple.js");
+  });
+
+  it("serves the ink couple's silhouette and its script", async () => {
+    const png = await env.ASSETS.fetch("http://dancecalendar.test/ink/couple.png");
+    expect(png.status).toBe(200);
+    expect(png.headers.get("content-type")).toContain("image/png");
+    const js = await (await env.ASSETS.fetch("http://dancecalendar.test/ink/couple.js")).text();
+    expect(js).toContain("prefers-reduced-motion");
+  });
+
   it("uses the Abendkleid colours: bordeaux as accent on warm paper, apricot for days with Events", async () => {
     const html = await page();
     expect(html).toContain("--accent:#7a1e3a");

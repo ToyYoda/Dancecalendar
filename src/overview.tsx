@@ -393,7 +393,7 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
   );
   return (
     <Layout title={props.title ? `${props.title} – Stepdate` : "Stepdate"} lang={props.f.lang} head={head}>
-      <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add>
+      <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add ink>
         <a class="about" href="/ueber" lang="de">{t.about}</a>
         <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
           {props.f.lang === "de" ? "English" : "Deutsch"}

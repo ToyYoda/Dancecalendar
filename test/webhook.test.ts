@@ -55,7 +55,7 @@ describe("the immediate reply to a Flyer", () => {
   beforeEach(async () => {
     await env.DB.batch([
       ...["organizer", "contact", "inbound_message"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
-      env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')").bind(ORGANIZER_NUMBER),
+      env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, ?, 'Ana Alves')").bind(ORGANIZER_NUMBER),
       env.DB.prepare("INSERT INTO contact (whatsapp_number, greeted_at, tip_at) VALUES (?, datetime('now'), datetime('now'))").bind(TIPPER),
     ]);
     vi.spyOn(env.JOBS, "send").mockResolvedValue(undefined as never);

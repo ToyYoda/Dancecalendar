@@ -10,7 +10,7 @@ import type { InboundMessage } from "./types";
 // Handles one inbound WhatsApp or Telegram message (queue consumer, see src/messenger.ts). The bot only
 // ever replies, so every WhatsApp message stays inside WhatsApp's free 24-hour service window.
 
-export type Organizer = { id: number; first_name: string | null };
+export type Organizer = { id: number; name: string };
 
 export async function handleMessage(env: Env, message: InboundMessage) {
   const from = message.from;
@@ -46,7 +46,7 @@ export async function handleMessage(env: Env, message: InboundMessage) {
     return sendText(env, from, "Ich gebe dem Admin Bescheid – er meldet sich bei dir.");
   }
 
-  const organizer = await env.DB.prepare("SELECT id, first_name, blocked_at FROM organizer WHERE whatsapp_number = ?")
+  const organizer = await env.DB.prepare("SELECT id, name, blocked_at FROM organizer WHERE whatsapp_number = ?")
     .bind(from)
     .first<Organizer & { blocked_at: string | null }>();
   if (organizer?.blocked_at) return sendText(env, from, "Du kannst hier keine Events mehr eintragen.");

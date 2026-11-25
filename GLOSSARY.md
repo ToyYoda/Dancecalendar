@@ -7,16 +7,12 @@ A shared calendar for the partner-dance community around Kassel and Göttingen, 
 ### People
 
 **Organizer**:
-An individual person registered to post Events.
-_Avoid_: Host, promoter, school (a school is not an Organizer; its people are)
+An individual person registered to post Events. Their Events are shown under the name they entered, exactly as entered; no one posts under someone else's name.
+_Avoid_: Host, promoter, school (a school is not an Organizer; its people are), Display name, Organizer group
 
 **Dancer**:
 Anyone who looks at the calendar; needs no registration.
 _Avoid_: User, visitor, attendee
-
-**Display name**:
-The name an Organizer's Events are shown under; may be a brand (e.g. "Salsa Kassel") and may be shared by several Organizers.
-_Avoid_: Organization, school name
 
 **Admin**:
 The person who reviews Tips, can remove Organizers, and can edit or remove any Event.

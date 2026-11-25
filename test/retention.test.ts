@@ -11,7 +11,7 @@ const TODAY = "2026-11-01"; // a fixed clock: Events before 2026-08-03 are past 
 beforeEach(async () => {
   await env.DB.batch([
     ...["event", "series", "submission", "inbound_message", "admin_request", "venue", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, '4917600000001', 'Salsa Kassel', 'Ana')"),
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, '4917600000001', 'Ana Alves')"),
     knownVenue(env.DB),
   ]);
 });

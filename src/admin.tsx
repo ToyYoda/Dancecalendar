@@ -137,12 +137,12 @@ admin.get("/upload/:token", (c) => waitForUpload(c, c.req.param("token"), null, 
 
 async function organizers(db: D1Database) {
   const { results } = await db
-    .prepare("SELECT id, display_name FROM organizer WHERE blocked_at IS NULL ORDER BY display_name")
-    .all<{ id: number; display_name: string }>();
+    .prepare("SELECT id, name FROM organizer WHERE blocked_at IS NULL ORDER BY name")
+    .all<{ id: number; name: string }>();
   return results;
 }
 
-function UploadForm(props: { organizers: { id: number; display_name: string }[]; error?: string }) {
+function UploadForm(props: { organizers: { id: number; name: string }[]; error?: string }) {
   return (
     <Layout title="Flyer hochladen – DanceCalendar">
       <h1>Flyer hochladen</h1>
@@ -164,7 +164,7 @@ function UploadForm(props: { organizers: { id: number; display_name: string }[];
               <br />
               <select name="organizer_id" required>
                 {props.organizers.map((o) => (
-                  <option value={String(o.id)}>{o.display_name}</option>
+                  <option value={String(o.id)}>{o.name}</option>
                 ))}
               </select>
             </label>

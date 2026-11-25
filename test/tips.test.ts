@@ -16,7 +16,7 @@ beforeEach(async () => {
     ...["event", "series", "submission", "application", "venue", "admin_request", "contact", "organizer"].map((t) =>
       env.DB.prepare(`DELETE FROM ${t}`),
     ),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')").bind(
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, ?, 'Ana Alves')").bind(
       ORGANIZER_NUMBER,
     ),
     knownVenue(env.DB),
@@ -85,7 +85,7 @@ describe("a Tip", () => {
   });
 
   it("that shows no dance Event is not held", async () => {
-    const api = fakeApis({ extraction: { is_event_flyer: false, flyer_language: "other", display_name_on_flyer: "", events: [] } });
+    const api = fakeApis({ extraction: { is_event_flyer: false, flyer_language: "other", organizer_name_on_flyer: "", events: [] } });
 
     await sendTip(api);
 

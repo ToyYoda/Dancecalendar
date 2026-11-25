@@ -7,7 +7,7 @@ import { get } from "./flow";
 beforeEach(async () => {
   await env.DB.batch([
     ...["event", "series", "venue", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name) VALUES (1, '+4915200000001', 'Salsa Kassel')"),
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, '+4915200000001', 'Ana Alves')"),
     env.DB.prepare(
       `INSERT INTO venue (id, name, address, lat, lng) VALUES
          (1, 'Kulturfabrik Salzmann', 'Sandershäuser Str. 34, 34123 Kassel', 51.31, 9.53),
@@ -73,7 +73,7 @@ describe("the Flyer feed", () => {
     expect(html).toContain("Göttingen Party");
     expect(html).toContain("Fulda Party");
     expect(html).toContain("Kulturfabrik Salzmann");
-    expect(html).toContain("Salsa Kassel");
+    expect(html).toContain("Ana Alves");
     expect(html).not.toContain("Gestern Party");
     expect(html).not.toContain("Ferne Party");
     expect(html).not.toMatch(/\d km/);

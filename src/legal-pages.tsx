@@ -205,7 +205,7 @@ function PrivacyDe(props: { op: Operator }) {
 
       <h2>6. Veranstalter*innen</h2>
       <p>
-        Bei der Anmeldung speichern wir deinen Anzeigenamen (öffentlich bei deinen Events), deinen Vornamen (nur für den Admin) und deine Telegram-Nutzer-ID (nie
+        Bei der Anmeldung speichern wir deinen Namen (wird mit deinen Events veröffentlicht, so wie du ihn angibst) und deine Telegram-Nutzer-ID (nie
         öffentlich). Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO. Die Daten bleiben, solange du angemeldet bist. Hörst du auf oder wirst du entfernt, löschen
         wir deine künftigen Events sofort und deine übrigen Daten spätestens nach 3 Monaten. Wird ein Konto wegen eines Verstoßes gesperrt, behalten wir nur
         seine Nutzer-ID, damit die Sperre wirkt (Art. 6 Abs. 1 lit. f DSGVO).
@@ -365,7 +365,7 @@ function PrivacyEn(props: { op: Operator }) {
 
       <h2>6. Organizers</h2>
       <p>
-        When you sign up we store your Display name (public on your Events), your first name (for the Admin only) and your Telegram user ID (never public). Legal
+        When you sign up we store your name (published with your Events, as you enter it) and your Telegram user ID (never public). Legal
         basis: Art. 6(1)(b) GDPR. The data is kept while you are registered. If you stop or are removed, we delete your future Events at once and the rest of
         your data within 3 months. If an account is blocked for a breach, we keep only its user ID so the block works (Art. 6(1)(f) GDPR).
       </p>
@@ -467,8 +467,8 @@ function TermsDe(props: { op: Operator }) {
 
       <h2>2. Veranstalter*innen</h2>
       <p>
-        Veranstalter*in wirst du über den Anmeldelink des Bots, indem du diese Bedingungen akzeptierst. Deine Angaben müssen stimmen. Mehrere Personen können
-        unter demselben Anzeigenamen eintragen.
+        Veranstalter*in wirst du über den Anmeldelink des Bots, indem du diese Bedingungen akzeptierst. Deine Angaben müssen stimmen. Du trägst unter deinem
+        eigenen Namen ein, nicht unter dem einer anderen Person oder einer Marke.
       </p>
 
       <h2>3. Was in den Kalender gehört</h2>
@@ -534,8 +534,8 @@ function TermsEn(props: { op: Operator }) {
 
       <h2>2. Organizers</h2>
       <p>
-        You become an Organizer through the bot's sign-up link by accepting these Terms. Your details must be correct. Several people can post under the same
-        Display name.
+        You become an Organizer through the bot's sign-up link by accepting these Terms. Your details must be correct. You post under your own
+        name, not someone else's or a brand's.
       </p>
 
       <h2>3. What belongs in the calendar</h2>

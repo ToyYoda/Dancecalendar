@@ -8,7 +8,7 @@ beforeEach(async () => {
   await env.DB.batch(
     ["event", "submission", "venue", "admin_request", "contact", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
   );
-  await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (1, ?, 'Salsa Kassel', 'Ana')")
+  await env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (1, ?, 'Ana Alves')")
     .bind(ORGANIZER_NUMBER)
     .run();
   await knownVenue(env.DB).run();

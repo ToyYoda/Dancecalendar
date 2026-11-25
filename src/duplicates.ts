@@ -65,7 +65,7 @@ async function overlapping(db: D1Database, slot: Slot): Promise<Overlap[]> {
   const tips = slot.tips === undefined ? null : slot.tips ? 1 : 0;
   const { results } = await db
     .prepare(
-      `SELECT e.id, e.title, e.starts_at, e.ends_at, COALESCE(o.display_name, e.shown_as) AS posted_by, v.name AS venue
+      `SELECT e.id, e.title, e.starts_at, e.ends_at, COALESCE(o.name, e.shown_as) AS posted_by, v.name AS venue
        FROM event e JOIN venue v ON v.id = e.venue_id LEFT JOIN organizer o ON o.id = e.organizer_id
        WHERE e.venue_id = ? AND e.cancelled = 0 AND e.id NOT IN (SELECT value FROM json_each(?)) AND (? IS NULL OR e.flyer_key IS NOT ?)
          AND (? IS NULL OR e.organizer_id IS NOT ?) AND (? IS NULL OR e.is_tip = ?)

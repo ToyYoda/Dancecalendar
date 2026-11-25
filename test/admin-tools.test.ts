@@ -19,8 +19,8 @@ const template = (title: string, flyerKey: string | null = null) =>
 beforeEach(async () => {
   await env.DB.batch([
     ...["event", "series", "submission", "application", "venue", "admin_request", "contact", "organizer"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name, created_at) VALUES (1, ?, 'Salsa Kassel', 'Ana', datetime('now', '-30 days'))").bind(ORGANIZER_NUMBER),
-    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name, created_at) VALUES (2, '4917600000002', 'Bachata Göttingen', 'Ben', datetime('now', '-20 days'))"),
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name, created_at) VALUES (1, ?, 'Ana Alves', datetime('now', '-30 days'))").bind(ORGANIZER_NUMBER),
+    env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name, created_at) VALUES (2, '4917600000002', 'Ben Becker', datetime('now', '-20 days'))"),
     knownVenue(env.DB),
   ]);
 });
@@ -66,7 +66,7 @@ describe("the Admin home", () => {
 describe("Organizers", () => {
   it("are listed newest first", async () => {
     const page = await html("/organizers");
-    expect(page.indexOf("Bachata Göttingen")).toBeLessThan(page.indexOf("Salsa Kassel"));
+    expect(page.indexOf("Ben Becker")).toBeLessThan(page.indexOf("Ana Alves"));
   });
 
   it("Entfernen blocks the number, deletes future Events, ends their Series and keeps past Events", async () => {
@@ -129,7 +129,7 @@ describe("Events", () => {
 
   it("finds Events by Organizer and Venue", async () => {
     await addEvent({ id: 1, title: "Party One", days: 2, organizer: 2 });
-    expect(await html("/events?q=bachata")).toContain("Party One");
+    expect(await html("/events?q=becker")).toContain("Party One");
     expect(await html("/events?q=salzmann")).toContain("Party One");
   });
 
@@ -297,8 +297,8 @@ describe("the daily email", () => {
         `INSERT INTO submission (id, organizer_id, flyer_key, received_on, extraction, confirm_token, source)
          VALUES ('t1', NULL, 'flyers/t.jpg', ?, ?, 'tip-token', 'tip')`,
       ).bind(today(), JSON.stringify({ events: [{ title: "Kizomba Tip", start_date: berlinDate(5) }] })),
-      env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (3, '4917600000003', 'Salsa Kassel', 'Carla')"),
-      env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, display_name, first_name) VALUES (4, '4917600000004', 'WCS Göttingen', 'Dana')"),
+      env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (3, '4917600000003', 'Carla Costa')"),
+      env.DB.prepare("INSERT INTO organizer (id, whatsapp_number, name) VALUES (4, '4917600000004', 'Dana Diaz')"),
     ]);
     await addEvent({ id: 1, title: "Carla's Party", days: 6, organizer: 3 });
     await addSeries({ id: 1, title: "Odd Friday", ago: 0, custom: true });
@@ -316,16 +316,14 @@ describe("the daily email", () => {
     expect(text).toContain("https://dancecalendar.test/admin/tips/tip-token");
     expect(text).toContain("jeden zweiten und vierten Freitag");
     expect(text).toContain("https://dancecalendar.test/s/series-1");
-    expect(text).toContain("Salsa Kassel (Carla)");
-    expect(text).toContain("Carla's Party");
-    expect(text).toContain("tritt dem bestehenden Display name „Salsa Kassel“ bei");
-    expect(text).toContain("WCS Göttingen (Dana)");
+    expect(text).toContain("- Carla Costa – erstes Event: Carla's Party");
+    expect(text).toContain("- Dana Diaz – noch kein Event");
     expect(text).toContain("noch kein Event");
     expect(text).toContain("https://dancecalendar.test/admin/organizers");
     expect(text).toContain("Ends In 5 Days");
     expect(text).toContain("https://dancecalendar.test/admin/series");
     expect(text).not.toContain("Ends In 2 Weeks");
-    expect(text).not.toContain("Bachata Göttingen"); // joined 20 days ago, not new
+    expect(text).not.toContain("Ben Becker"); // joined 20 days ago, not new
   });
 
   it("is sent by the cron only at 21:00 German time", async () => {

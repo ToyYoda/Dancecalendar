@@ -41,7 +41,7 @@ Yes. The household exemption (Art. 2(2)(c) GDPR, "purely personal or household a
 
 | Data | People | Legal basis (Art. 6(1)) | Suggested retention |
 |---|---|---|---|
-| WhatsApp number, WhatsApp profile name, Display name, chat messages | Organizers | (b) performing the user relationship under the Terms of Use they accept when applying or using an invite | While registered, plus up to 3 months after leaving or being removed |
+| WhatsApp number, WhatsApp profile name, the Organizer's name (public on their Events), chat messages | Organizers | (b) performing the user relationship under the Terms of Use they accept when applying or using an invite | While registered, plus up to 3 months after leaving or being removed |
 | WhatsApp number, messages, the answer to "Is this your event?" | Tippers and other unregistered senders | (f) legitimate interest in running the calendar and processing the Tip | Delete Tip-related messages and the number after the Tip is reviewed, at most 30 days. Keep the remembered "No" answer only as a hash, or delete it after 6–12 months of inactivity |
 | Flyer images and text, extracted Event data (may include names and photos of teachers/DJs) | People named or shown on Flyers | (f) legitimate interest in publishing publicly announced events. The Organizer has already chosen to make the info public | While the Event is shown, plus a short archive period (e.g. 3 months after the Event). Original uploads that are not published: delete after extraction or review |
 | Server and access logs (IP, user agent) | Dancers (website visitors) | (f) security and operation | 7–14 days |

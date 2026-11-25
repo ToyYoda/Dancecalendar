@@ -105,7 +105,7 @@ tipReview.get("/:token", async (c) => {
   const s = await loadTip(c.env.DB, c.req.param("token"));
   if (!s) return c.notFound();
   if (s.status !== "pending") return c.html(<AlreadyDone />);
-  const shownAs = (JSON.parse(s.extraction) as Extraction).display_name_on_flyer;
+  const shownAs = (JSON.parse(s.extraction) as Extraction).organizer_name_on_flyer;
   return c.html(<ConfirmPage {...await openCards(c.env, s)} tip={{ shownAs }} />);
 });
 

@@ -26,7 +26,7 @@ type Held = {
   received_on: string;
   extraction: string;
   awaiting: string | null;
-  first_name: string | null;
+  name: string;
 };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -313,7 +313,7 @@ async function sendSummary(env: Env, to: string, s: Held, events: ExtractedEvent
     return sendText(env, to, "Alles weggelassen – ich trage nichts ein.");
   }
   const dropped = events.filter((e) => e.dropped).map((e) => e.title);
-  const text = summary(shown, s.received_on, s.first_name) + (dropped.length ? `\n\nWeggelassen: ${dropped.join(", ")}` : "");
+  const text = summary(shown, s.received_on, s.name) + (dropped.length ? `\n\nWeggelassen: ${dropped.join(", ")}` : "");
   // Without a publishable Event there's nothing to publish as is, but a missing date can be fixed on the confirm page.
   const buttons = [
     ...(shown.some((e) => publishable(e, s.received_on)) ? [{ id: `publish:${s.id}`, title: "Veröffentlichen" }] : []),
@@ -326,7 +326,7 @@ async function sendSummary(env: Env, to: string, s: Held, events: ExtractedEvent
 async function load(db: D1Database, id: string) {
   return db
     .prepare(
-      `SELECT s.id, s.organizer_id, s.flyer_key, s.received_on, s.extraction, s.awaiting, o.first_name
+      `SELECT s.id, s.organizer_id, s.flyer_key, s.received_on, s.extraction, s.awaiting, o.name
        FROM submission s JOIN organizer o ON o.id = s.organizer_id WHERE s.id = ? AND s.status = 'pending'`,
     )
     .bind(id)

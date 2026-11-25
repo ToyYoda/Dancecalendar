@@ -42,8 +42,7 @@ async function composeDigest(env: Env, now: Date): Promise<{ subject: string; te
        WHERE ended_at IS NULL AND json_extract(rule, '$.freq') = 'custom' ORDER BY created_at`,
     ),
     db.prepare(
-      `SELECT o.display_name, o.first_name,
-              EXISTS (SELECT 1 FROM organizer p WHERE p.display_name = o.display_name AND p.id < o.id) AS joined,
+      `SELECT o.name,
               (SELECT title || '|' || starts_at FROM event e WHERE e.organizer_id = o.id ORDER BY e.created_at, e.id LIMIT 1) AS first_event
        FROM organizer o WHERE o.blocked_at IS NULL AND o.created_at > datetime(?, '${NEW_SINCE}') ORDER BY o.created_at, o.id`,
     ).bind(nowSql),
@@ -69,17 +68,12 @@ async function composeDigest(env: Env, now: Date): Promise<{ subject: string; te
       lines: ruleRows.map((r) => `- ${r.title}: ${ruleWords(JSON.parse(r.rule) as Rule)}\n  ${url}/s/${r.edit_token}`),
     });
   }
-  const organizerRows = organizers.results as { display_name: string; first_name: string | null; joined: number; first_event: string | null }[];
+  const organizerRows = organizers.results as { name: string; first_event: string | null }[];
   if (organizerRows.length) {
     const lines = organizerRows.map((o) => {
-      const notes = [o.joined ? `tritt dem bestehenden Display name „${o.display_name}“ bei` : ""];
-      if (o.first_event) {
-        const [title, startsAt] = [o.first_event.slice(0, o.first_event.lastIndexOf("|")), o.first_event.slice(o.first_event.lastIndexOf("|") + 1)];
-        notes.push(`erstes Event: ${title}, ${formatDate(startsAt.slice(0, 10), today)}`);
-      } else {
-        notes.push("noch kein Event");
-      }
-      return `- ${o.display_name} (${o.first_name ?? "?"}) – ${notes.filter(Boolean).join("; ")}`;
+      if (!o.first_event) return `- ${o.name} – noch kein Event`;
+      const [title, startsAt] = [o.first_event.slice(0, o.first_event.lastIndexOf("|")), o.first_event.slice(o.first_event.lastIndexOf("|") + 1)];
+      return `- ${o.name} – erstes Event: ${title}, ${formatDate(startsAt.slice(0, 10), today)}`;
     });
     sections.push({ heading: `Neue Organizer (${organizerRows.length})`, lines: [...lines, `  ${url}/admin/organizers`] });
   }

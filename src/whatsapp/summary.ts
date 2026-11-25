@@ -43,9 +43,9 @@ export function blocker(e: ExtractedEvent, receivedOn: string): string | null {
 
 export const publishable = (e: ExtractedEvent, receivedOn: string) => blocker(e, receivedOn) === null;
 
-export function summary(events: ExtractedEvent[], receivedOn: string, firstName: string | null): string {
+export function summary(events: ExtractedEvent[], receivedOn: string, name: string | null): string {
   const count = events.length === 1 ? "1 Event" : `${events.length} Events`;
-  const hello = firstName ? `Danke, ${firstName}!` : "Danke!";
+  const hello = name ? `Danke, ${name}!` : "Danke!";
   const leads = seriesLeads(events);
   const blocks = events.map((e, i) => eventBlock(e, receivedOn, seriesLine(events, leads, i, receivedOn)));
   return [`${hello} Ich habe ${count} auf dem Flyer erkannt:`, ...blocks].join("\n\n");

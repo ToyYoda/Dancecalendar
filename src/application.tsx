@@ -88,7 +88,7 @@ async function resume(env: Env, id: string) {
     .bind(id)
     .first<Application>();
   if (!app) return;
-  const organizer = await env.DB.prepare("SELECT id, first_name FROM organizer WHERE whatsapp_number = ? AND blocked_at IS NULL")
+  const organizer = await env.DB.prepare("SELECT id, name FROM organizer WHERE whatsapp_number = ? AND blocked_at IS NULL")
     .bind(app.whatsapp_number)
     .first<Organizer>();
   if (!organizer) return;
@@ -112,7 +112,7 @@ applyPage.get("/:token", async (c) => {
   const app = await load(c.env.DB, c.req.param("token"));
   if (!app) return c.notFound();
   if (!app.valid || app.completed_at) return c.html(<Expired />);
-  return c.html(<ApplyForm names={await displayNames(c.env.DB)} />);
+  return c.html(<ApplyForm />);
 });
 
 applyPage.post("/:token", async (c) => {
@@ -121,24 +121,20 @@ applyPage.post("/:token", async (c) => {
   if (!app.valid || app.completed_at) return c.html(<Expired />, 410);
 
   const form = await c.req.formData();
-  const typed = String(form.get("display_name") ?? "").replace(/\s+/g, " ").trim().slice(0, 60);
-  const firstName = String(form.get("first_name") ?? "").trim().slice(0, 60);
-  const names = await displayNames(c.env.DB);
-  if (!typed || !firstName || form.get("terms") !== "on") {
-    const error = "Bitte Name, Vorname und das Häkchen ausfüllen.";
-    return c.html(<ApplyForm names={names} displayName={typed} firstName={firstName} error={error} />, 422);
+  // The Organizer's own name, shown on their Events as entered (ADR 0003); nobody joins another's name.
+  const name = String(form.get("name") ?? "").trim().slice(0, 60);
+  if (!name || form.get("terms") !== "on") {
+    return c.html(<ApplyForm name={name} error="Bitte deinen Namen und das Häkchen ausfüllen." />, 422);
   }
-  // Typing an existing Display name joins it, in its existing spelling.
-  const displayName = names.find((n) => n.toLowerCase() === typed.toLowerCase()) ?? typed;
 
   const { meta } = await c.env.DB.prepare("UPDATE application SET completed_at = datetime('now') WHERE id = ? AND completed_at IS NULL")
     .bind(app.id)
     .run();
   if (meta.changes !== 1) return c.html(<Expired />, 410);
   await c.env.DB.prepare(
-    "INSERT INTO organizer (whatsapp_number, display_name, first_name) VALUES (?, ?, ?) ON CONFLICT (whatsapp_number) DO NOTHING",
+    "INSERT INTO organizer (whatsapp_number, name) VALUES (?, ?) ON CONFLICT (whatsapp_number) DO NOTHING",
   )
-    .bind(app.whatsapp_number, displayName, firstName)
+    .bind(app.whatsapp_number, name)
     .run();
   // The page says "Fertig" even if the messenger fails; the Organizer can just send the Flyer again.
   await resume(c.env, app.id).catch((err) => console.error("resuming the held Flyer failed", err));
@@ -152,31 +148,16 @@ async function load(db: D1Database, token: string) {
     .first<{ id: string; whatsapp_number: string; completed_at: string | null; valid: number }>();
 }
 
-async function displayNames(db: D1Database): Promise<string[]> {
-  const { results } = await db
-    .prepare("SELECT DISTINCT display_name FROM organizer WHERE blocked_at IS NULL ORDER BY display_name")
-    .all<{ display_name: string }>();
-  return results.map((r) => r.display_name);
-}
-
-function ApplyForm(props: { names: string[]; displayName?: string; firstName?: string; error?: string }) {
+function ApplyForm(props: { name?: string; error?: string }) {
   return (
     <Layout title="Anmelden – DanceCalendar" head={<style>{CSS}</style>}>
       <h1>Als Veranstalter*in anmelden</h1>
       <p>Einmal kurz, dann trägst du deine Flyer selbst über den Bot ein.</p>
       {props.error && <p class="error">{props.error}</p>}
       <form method="post">
-        <label for="display_name">Unter welchem Namen sollen deine Events erscheinen?</label>
-        <input id="display_name" name="display_name" list="names" value={props.displayName ?? ""} required maxlength={60} autocomplete="off" />
-        <div class="hint">Öffentlich, z. B. „Salsa Kassel“. Gibt es den Namen schon, trittst du ihm bei.</div>
-        <datalist id="names">
-          {props.names.map((n) => (
-            <option value={n} />
-          ))}
-        </datalist>
-        <label for="first_name">Dein Vorname</label>
-        <input id="first_name" name="first_name" value={props.firstName ?? ""} required maxlength={60} autocomplete="given-name" />
-        <div class="hint">Nicht öffentlich, nur für den Admin.</div>
+        <label for="name">Dein Name</label>
+        <input id="name" name="name" value={props.name ?? ""} required maxlength={60} autocomplete="name" />
+        <div class="hint">Wird öffentlich bei deinen Events gezeigt, genau so, wie du ihn hier schreibst.</div>
         <label class="check">
           <input type="checkbox" name="terms" required /> Ich akzeptiere die{" "}
           <a href="/nutzungsbedingungen" target="_blank">

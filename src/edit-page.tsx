@@ -31,7 +31,7 @@ type Row = {
   venue: string;
   address: string | null;
   organizer_id: number | null;
-  display_name: string | null;
+  organizer_name: string | null;
   series_id: number | null;
   series_token: string | null;
 };
@@ -78,7 +78,7 @@ editPage.get("/:token/flyer", async (c) => {
 
 editPage.get("/:token/upload", async (c) => {
   const e = await load(c.env.DB, c.req.param("token"));
-  return e?.organizer_id ? c.html(<UploadForm token={c.req.param("token")} displayName={e.display_name!} />) : c.notFound();
+  return e?.organizer_id ? c.html(<UploadForm token={c.req.param("token")} organizerName={e.organizer_name!} />) : c.notFound();
 });
 
 editPage.post("/:token/upload", async (c) => {
@@ -86,7 +86,7 @@ editPage.post("/:token/upload", async (c) => {
   const e = await load(c.env.DB, token);
   if (!e?.organizer_id) return c.notFound();
   const confirm = await queueUpload(c.env, (await c.req.parseBody()).flyer, e.organizer_id, "web");
-  if (!confirm) return c.html(<UploadForm token={token} displayName={e.display_name!} error="Bitte ein Bild wählen (JPEG, PNG oder WebP)." />, 400);
+  if (!confirm) return c.html(<UploadForm token={token} organizerName={e.organizer_name!} error="Bitte ein Bild wählen (JPEG, PNG oder WebP)." />, 400);
   return c.redirect(`/e/${token}/upload/${confirm}`, 303);
 });
 
@@ -102,7 +102,7 @@ async function load(db: D1Database, token: string) {
   return db
     .prepare(
       `SELECT e.id, e.title, e.type, e.styles, e.starts_at, e.ends_at, e.intro_class_at, e.level, e.price, e.description,
-              e.flyer_key, e.cancelled, v.name AS venue, v.address, e.organizer_id, o.display_name, e.series_id, s.edit_token AS series_token
+              e.flyer_key, e.cancelled, v.name AS venue, v.address, e.organizer_id, o.name AS organizer_name, e.series_id, s.edit_token AS series_token
        FROM event e JOIN venue v ON v.id = e.venue_id LEFT JOIN organizer o ON o.id = e.organizer_id LEFT JOIN series s ON s.id = e.series_id
        WHERE e.edit_token = ? AND o.blocked_at IS NULL`,
     )
@@ -215,7 +215,7 @@ function EditPage(props: {
   );
 }
 
-function UploadForm(props: { token: string; displayName: string; error?: string }) {
+function UploadForm(props: { token: string; organizerName: string; error?: string }) {
   return (
     <SitePage title="Flyer hochladen">
       <a class="back" href={`/e/${props.token}`}>
@@ -224,7 +224,7 @@ function UploadForm(props: { token: string; displayName: string; error?: string 
       <h1>Flyer hochladen</h1>
       {props.error && <p class="note bad">{props.error}</p>}
       <p class="lead">
-        DanceCalendar liest den Flyer aus, du prüfst alles, und es erscheint als <b>{props.displayName}</b>.
+        DanceCalendar liest den Flyer aus, du prüfst alles, und es erscheint als <b>{props.organizerName}</b>.
       </p>
       <form method="post" enctype="multipart/form-data" class="stack">
         <label class="drop">

@@ -98,7 +98,7 @@ export function flyer(events: Partial<FlyerEvent>[] = [{}]) {
   return {
     is_event_flyer: true,
     flyer_language: "de",
-    display_name_on_flyer: "Salsa Kassel",
+    organizer_name_on_flyer: "Salsa Kassel",
     events: events.map((e) => ({ ...flyerEvent(), ...e })),
   };
 }

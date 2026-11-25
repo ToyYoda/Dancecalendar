@@ -1,14 +1,14 @@
 import { exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
-// "Was ist Taktvoll?" at /ueber, from public/landing; the calendar stays the start page.
+// "Was ist Stepdate?" at /ueber, from public/landing; the calendar stays the start page.
 
-describe("the page about Taktvoll", () => {
+describe("the page about Stepdate", () => {
   it("is linked from the calendar's header", async () => {
     const html = await (await exports.default.fetch("http://dancecalendar.test/")).text();
 
     expect(html).toContain('href="/ueber"');
-    expect(html).toContain("Was ist Taktvoll?");
+    expect(html).toContain("Was ist Stepdate?");
   });
 
   it("shows what the calendar is, with the way back to it and to @DanceCalBot", async () => {

@@ -4,7 +4,7 @@ import { Masthead, SITE_CSS } from "./site";
 import { addDays, ruleWords, type Rule } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 
-// The Dancer overview at "/" (what Taktvoll is: /ueber): the Events of a span of days as a list by day
+// The Dancer overview at "/" (what Stepdate is: /ueber): the Events of a span of days as a list by day
 // (the default: today and the next 7 days) or on a map (?view=map). Above both, a small month calendar shows
 // which days have something on and picks the span (a first and a last day, or Von/Bis); beside them one
 // sidebar of filters. All of it stays in the URL (and is subscribable at /kalender.ics), so a link shows the same view on
@@ -47,7 +47,7 @@ const T = {
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
     series: "Serie", link: "Link", styles: "Tanz", day: "Tag", feed: "Liste", back: "Zurück",
     from: "Von", to: "Bis", show: "Zeigen", span: "Zeitraum", nextDays: "Nächste 7 Tage", pickHint: "Tippe den ersten und den letzten Tag.", pickEnd: "Jetzt den letzten Tag tippen.", busy: "Events",
-    today: "Heute", sub: "wo heute getanzt wird", about: "Was ist Taktvoll?",
+    today: "Heute", sub: "wo heute getanzt wird", about: "Was ist Stepdate?",
     filters: "Filter", week: "KW", prev: "Früher", next: "Später", view: "Ansicht", mapView: "Karte", unplaced: "Nicht auf der Karte", noCoords: "Diese Orte haben noch keine Koordinaten.",
     subscribe: "Abonnieren", subHint: "Die Events mit diesen Filtern erscheinen in deiner Kalender-App und bleiben dort von selbst aktuell.",
     openApp: "In Kalender-App öffnen", copy: "Link kopieren", copied: "Link kopiert",
@@ -62,7 +62,7 @@ const T = {
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
     series: "Series", link: "Link", styles: "Style", day: "Day", feed: "List", back: "Back",
     from: "From", to: "To", show: "Show", span: "Dates", nextDays: "Next 7 days", pickHint: "Tap the first and the last day.", pickEnd: "Now tap the last day.", busy: "events",
-    today: "Today", sub: "where to dance tonight", about: "What is Taktvoll?",
+    today: "Today", sub: "where to dance tonight", about: "What is Stepdate?",
     filters: "Filters", week: "Week", prev: "Earlier", next: "Later", view: "View", mapView: "Map", unplaced: "Not on the map", noCoords: "These places have no coordinates yet.",
     subscribe: "Subscribe", subHint: "The Events for these filters show up in your calendar app and stay up to date there on their own.",
     openApp: "Open in calendar app", copy: "Copy link", copied: "Link copied",
@@ -168,12 +168,12 @@ function calendar(events: Shown[], f: Filters, origin: string): string {
     ...STYLES.filter(([k]) => f.styles.includes(k)).map(([, n]) => n),
     ...(f.type ? [t[PLURAL[f.type as keyof typeof PLURAL]]] : []),
   ];
-  const name = ["Taktvoll", ...(picked.length ? [picked.join(", ")] : [])].join(" · ");
+  const name = ["Stepdate", ...(picked.length ? [picked.join(", ")] : [])].join(" · ");
   const local = (iso: string) => iso.replace(/[-:]/g, "") + "00";
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Taktvoll//Kalender//DE",
+    "PRODID:-//Stepdate//Kalender//DE",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${text(name)}`,
@@ -392,7 +392,7 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
     </>
   );
   return (
-    <Layout title={props.title ? `${props.title} – Taktvoll` : "Taktvoll"} lang={props.f.lang} head={head}>
+    <Layout title={props.title ? `${props.title} – Stepdate` : "Stepdate"} lang={props.f.lang} head={head}>
       <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add>
         <a class="about" href="/ueber" lang="de">{t.about}</a>
         <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
@@ -894,7 +894,7 @@ const MAP_SCRIPT = `(() => {
   let marker, picked;
   map.on("click", (ev) => {
     picked = ev.lngLat;
-    marker = marker || new maplibregl.Marker({ color: "#d6006d" }).setLngLat(picked).addTo(map);
+    marker = marker || new maplibregl.Marker({ color: "#7a1e3a" }).setLngLat(picked).addTo(map);
     marker.setLngLat(picked);
     use.disabled = false;
   });
@@ -1047,9 +1047,9 @@ const CSS = `${SITE_CSS}
   /* the calendar: sidebar and pane; on a phone the sidebar is a sticky bar of menus */
   .app { margin:0; }
   aside.side { position:sticky; top:0; z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px var(--g); background:var(--paper); border-bottom:1px solid var(--line); }
-  .side .views { order:1; display:flex; padding:3px; border-radius:99px; background:rgb(31 48 56 / .06); }
+  .side .views { order:1; display:flex; padding:3px; border-radius:99px; background:rgb(31 20 38 / .06); }
   .side .views a { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:99px; font-size:14px; color:var(--mute); }
-  .side .views a.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:0 1px 3px rgb(31 48 56 / .15); }
+  .side .views a.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:0 1px 3px rgb(31 20 38 / .15); }
   .side .pick.abo { order:2; margin-left:auto; }
   @media (max-width:479px) { .side .pick.abo summary { padding:7px 10px; } .abo-t { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; } }
   .side .br { order:3; flex-basis:100%; height:0; }
@@ -1058,13 +1058,13 @@ const CSS = `${SITE_CSS}
   .side .grp > .lbl, .side .styles-open { display:none; }
   .pick summary { box-sizing:border-box; list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:500; font-size:15px; padding:7px 14px;
     border-radius:99px; border:1px solid var(--line); background:var(--card); white-space:nowrap; transition:border-color .15s, background .15s; }
-  .pick summary:hover { border-color:rgb(31 48 56 / .3); }
+  .pick summary:hover { border-color:rgb(31 20 38 / .3); }
   .pick summary::-webkit-details-marker { display:none; }
   .pick summary.set { color:var(--accent-ink); background:var(--tint); border-color:transparent; }
   .pick .chev { transition:transform .2s cubic-bezier(.2,.7,.2,1); }
   .pick[open] .chev { transform:rotate(180deg); }
   .pick .menu { position:absolute; left:var(--g); right:var(--g); top:100%; max-width:440px; margin-top:6px; padding:16px; background:var(--card);
-    border-radius:var(--r); box-shadow:0 0 0 1px var(--line), 0 24px 50px -20px rgb(31 48 56 / .35); z-index:6; }
+    border-radius:var(--r); box-shadow:0 0 0 1px var(--line), 0 24px 50px -20px rgb(31 20 38 / .35); z-index:6; }
   .pick.abo .menu { left:auto; }
   .pick .menu .hint { margin:0 0 12px; font-size:14px; line-height:1.5; color:var(--mute); }
   .pick.abo .menu { display:grid; gap:8px; max-width:320px; }
@@ -1072,12 +1072,12 @@ const CSS = `${SITE_CSS}
   .opts { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
   .opts + .opts { margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
   .opts .lbl { margin-right:4px; }
-  .opt { display:inline-block; padding:6px 12px; border-radius:99px; border:1px solid rgb(31 48 56 / .18); font-size:14px; line-height:1.3; white-space:nowrap; transition:background .15s; }
+  .opt { display:inline-block; padding:6px 12px; border-radius:99px; border:1px solid rgb(31 20 38 / .18); font-size:14px; line-height:1.3; white-space:nowrap; transition:background .15s; }
   .opt:hover { background:var(--wash); }
   .opt.on { background:var(--ink); border-color:var(--ink); color:#fff; }
   .box { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:8px; font-size:15px; transition:background .15s; }
   .box:hover { background:var(--wash); }
-  .box i { flex:none; width:16px; height:16px; border-radius:4px; border:1.5px solid #b5c0c4; background:var(--card); display:grid; place-items:center; }
+  .box i { flex:none; width:16px; height:16px; border-radius:4px; border:1.5px solid #c4b9bf; background:var(--card); display:grid; place-items:center; }
   .box.on i { background:var(--accent); border-color:var(--accent); }
   .box.on i::after { content:""; width:4px; height:8px; margin-top:-2px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
   .pane { padding:16px var(--g) 32px; min-width:0; }
@@ -1087,7 +1087,7 @@ const CSS = `${SITE_CSS}
     aside.side { top:0; display:block; align-self:start; padding:16px 12px 20px; background:none; border-bottom:0; }
     .side .views { display:grid; gap:2px; padding:0; background:none; border-radius:0; }
     .side .views a { gap:10px; padding:8px 10px; border-radius:8px; font-size:15px; color:var(--ink); }
-    .side .views a svg { color:#8b989e; }
+    .side .views a svg { color:#978b93; }
     .side .views a:hover { background:var(--wash); }
     .side .views a.on { background:var(--tint); color:var(--accent-ink); box-shadow:none; }
     .side .views a.on svg { color:var(--accent); }
@@ -1112,11 +1112,11 @@ const CSS = `${SITE_CSS}
   .mgrid .dow { padding:2px 0 4px; text-align:center; font-size:11px; font-weight:500; color:var(--mute); }
   .mgrid .c { position:relative; display:grid; place-items:center; height:32px; font-size:13px; font-variant-numeric:tabular-nums; border-radius:8px; transition:background .12s; }
   .mgrid .c:hover { background:var(--wash); }
-  .mgrid .c.out { color:#a3aeb3; }
-  .mgrid .c.past { color:#8b989e; }
+  .mgrid .c.out { color:#b0a6ac; }
+  .mgrid .c.past { color:#978b93; }
   .mgrid .c.today { font-weight:600; color:var(--accent-ink); }
-  .mgrid .c.busy::after { content:""; position:absolute; bottom:3px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:var(--accent); }
-  .mgrid .c.past.busy::after, .mgrid .c.out.busy::after { background:#a3aeb3; }
+  .mgrid .c.busy::after { content:""; position:absolute; bottom:3px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:1px; background:var(--step); }
+  .mgrid .c.past.busy::after, .mgrid .c.out.busy::after { background:#b0a6ac; }
   .mgrid .c.in { background:var(--tint); border-radius:0; }
   .mgrid .c.first { border-radius:8px 0 0 8px; } .mgrid .c.last { border-radius:0 8px 8px 0; } .mgrid .c.first.last { border-radius:8px; }
   .mgrid .c.first, .mgrid .c.last { background:var(--accent); color:#fff; font-weight:500; }
@@ -1126,7 +1126,7 @@ const CSS = `${SITE_CSS}
   .mini .hint { margin:8px 0 0; font-size:13px; color:var(--mute); }
   .dates { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px 12px; }
   .dates label { display:grid; gap:4px; font-size:13px; font-weight:500; color:var(--mute); }
-  .dates input { height:38px; padding:0 10px; border:1px solid rgb(31 48 56 / .18); border-radius:10px; background:var(--card); color:var(--ink); font:400 15px var(--sans); }
+  .dates input { height:38px; padding:0 10px; border:1px solid rgb(31 20 38 / .18); border-radius:10px; background:var(--card); color:var(--ink); font:400 15px var(--sans); }
   .dates .btn { height:38px; }
   .dates .reset { flex-basis:100%; font-size:14px; font-weight:500; color:var(--accent-ink); text-decoration:underline; text-underline-offset:3px; }
   .dates.auto .btn { display:none; }
@@ -1148,7 +1148,7 @@ const CSS = `${SITE_CSS}
   .types::-webkit-scrollbar { display:none; }
   .types a { flex:none; padding:6px 13px; border-radius:99px; font-size:15px; color:var(--mute); transition:background .15s, color .15s; }
   .types a:hover { color:var(--ink); background:var(--wash); }
-  .types a.on { color:var(--ink); font-weight:500; background:rgb(31 48 56 / .08); }
+  .types a.on { color:var(--ink); font-weight:500; background:rgb(31 20 38 / .08); }
 
   .day { margin-top:24px; }
   .dayhead { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding-bottom:8px; border-bottom:1px solid var(--line); }
@@ -1164,19 +1164,19 @@ const CSS = `${SITE_CSS}
   .what { min-width:0; }
   .what h3 { margin:0; font:500 18px/1.3 var(--sans); }
   .where { margin:2px 0 0; font-size:15px; color:var(--mute); }
-  .what .notes { margin:4px 0 0; font-size:14px; color:#6b7a81; }
+  .what .notes { margin:4px 0 0; font-size:14px; color:#6a5f68; }
   .what .marks { margin:6px 0 0; }
   .time { font-size:16px; text-align:right; white-space:nowrap; }
   .tag { justify-self:end; }
   .kind { display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 10px; border-radius:99px; background:var(--tint); color:var(--accent-ink); font-size:13px; font-weight:500; white-space:nowrap; }
   .kind::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
   .kind.k-workshop { background:var(--warm-tint); color:var(--warm); }
-  .kind.k-course { background:#e8edf0; color:var(--ink); }
+  .kind.k-course { background:#eee6ea; color:var(--ink); }
   .kind.off { background:var(--off-tint); color:var(--off); }
   .marks { margin:10px 0 0; display:flex; flex-wrap:wrap; gap:6px; }
   .mark { display:inline-flex; align-items:center; height:22px; padding:0 9px; border-radius:99px; font-size:12px; font-weight:500; }
   .mark.cancel { background:var(--off-tint); color:var(--off); }
-  .mark.reg { box-shadow:inset 0 0 0 1px rgb(31 48 56 / .25); }
+  .mark.reg { box-shadow:inset 0 0 0 1px rgb(31 20 38 / .25); }
   .mark.tip { padding:0; height:auto; font-weight:400; font-style:italic; color:var(--mute); }
   .cancelled h3, .detail.cancelled h1 { text-decoration:line-through; text-decoration-thickness:1.5px; color:var(--mute); }
   .cancelled .thumb { filter:grayscale(1); opacity:.5; }
@@ -1193,13 +1193,13 @@ const CSS = `${SITE_CSS}
   /* the map */
   .evmap { height:min(64vh, 620px); min-height:360px; margin-top:16px; border-radius:var(--r-sm); overflow:hidden; box-shadow:0 0 0 1px var(--line); background:var(--wash); }
   .pin { min-width:30px; height:30px; padding:0 9px; border-radius:99px; border:2px solid #fff; background:var(--accent); color:#fff; font:600 14px/1 var(--sans);
-    box-shadow:0 2px 10px rgb(31 48 56 / .3); cursor:pointer; transition:transform .15s; }
+    box-shadow:0 2px 10px rgb(31 20 38 / .3); cursor:pointer; transition:transform .15s; }
   .pin:hover { transform:scale(1.08); }
-  .pin.off { background:#8b989e; }
-  .pin.group { min-width:38px; height:38px; font-size:15px; background:var(--ink); box-shadow:0 0 0 5px rgb(214 0 109 / .25), 0 2px 10px rgb(31 48 56 / .3); }
+  .pin.off { background:#978b93; }
+  .pin.group { min-width:38px; height:38px; font-size:15px; background:var(--ink); box-shadow:0 0 0 5px rgb(122 30 58 / .25), 0 2px 10px rgb(31 20 38 / .3); }
   .pop .venue + .venue { margin-top:10px; padding-top:8px; border-top:2px solid var(--line); }
-  .here { width:12px; height:12px; border-radius:50%; background:var(--ink); border:3px solid #fff; box-shadow:0 0 0 6px rgb(31 48 56 / .15); }
-  .maplibregl-popup-content { font-family:var(--sans); border-radius:12px; padding:12px 14px; box-shadow:0 18px 40px -16px rgb(31 48 56 / .45); }
+  .here { width:12px; height:12px; border-radius:50%; background:var(--ink); border:3px solid #fff; box-shadow:0 0 0 6px rgb(31 20 38 / .15); }
+  .maplibregl-popup-content { font-family:var(--sans); border-radius:12px; padding:12px 14px; box-shadow:0 18px 40px -16px rgb(31 20 38 / .45); }
   .pop .venue b { display:block; margin:0 18px 4px 0; font-size:15px; font-weight:500; }
   .pop .venue a { display:grid; padding:7px 0; border-top:1px solid var(--line); color:var(--ink); }
   .pop a:hover strong { color:var(--accent-ink); }
@@ -1241,7 +1241,7 @@ const CSS = `${SITE_CSS}
   .page .hint { margin:8px 0 14px; color:var(--mute); }
   #map { height:62vh; border-radius:var(--r); overflow:hidden; box-shadow:0 0 0 1px var(--line); }
   .maprow { display:flex; justify-content:space-between; gap:8px; margin-top:12px; }
-  .btn { font:500 15px var(--sans); height:44px; padding:0 20px; border-radius:99px; border:1px solid rgb(31 48 56 / .2); background:var(--card); color:var(--ink); cursor:pointer; transition:background .15s, transform .15s; }
+  .btn { font:500 15px var(--sans); height:44px; padding:0 20px; border-radius:99px; border:1px solid rgb(31 20 38 / .2); background:var(--card); color:var(--ink); cursor:pointer; transition:background .15s, transform .15s; }
   .btn:hover { background:var(--wash); }
   .btn:active { transform:scale(.97); }
   .btn.solid { background:var(--accent); border-color:var(--accent); color:#fff; }

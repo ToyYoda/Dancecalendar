@@ -1,5 +1,5 @@
 ---
-name: Taktvoll
+name: Stepdate
 description: The regional partner-dance week, set as a city magazine's "Termine" listings around each Organizer's whole Flyer.
 colors:
   ink: "#111111"
@@ -116,7 +116,7 @@ components:
     padding: "14px"
 ---
 
-# Design System: Taktvoll
+# Design System: Stepdate
 
 ## Overview
 
@@ -152,9 +152,9 @@ A monochrome print palette with a single saturated magenta; the Flyers supply al
 - **Proof Wash** (#f3f3f1): hover fill for chips, index days and month cells; placeholder behind a loading Flyer.
 
 ### Named Rules
-**The Accent Rule.** Magenta (#d6006d, text form #b0005a, tint #fce8f1) is the one accent and the brand colour (ADR 0004). It marks the thick barline of the Taktvoll wordmark, today, each Event's type, picked filters, links, the solid button and focus. It never fills a page surface and never tints a Flyer frame, so the Flyers keep all other colour.
+**The Accent Rule.** The palette is "Abendkleid" (ADR 0005): warm Paper (#faf7f4), Plum ink (#1f1426), Bordeaux (#7a1e3a, hover and small text #651830) as the one accent, Rosé (#f2e4e8) as its tint, Grey (#6a5f68) for secondary text, and Apricot (#f2a65a) only for the step cells of the mark and the event dots in the month grid. Bordeaux marks "date" in the wordmark, today, picked days and filters, each Event's type, links, the solid button and focus. No colour fills a page surface or tints a Flyer frame, so the Flyers stay the loudest colour on the page. The live tokens are in `src/site.tsx`.
 
-**The Mark.** The wordmark sets the last two letters of "Taktvoll" as a final barline: a thin ink bar and a thick magenta bar. The claim below it is "wo heute getanzt wird" / "where to dance tonight", without a place. The barline on ink is the favicon (`public/favicon.svg`) and the bot avatar.
+**The Mark.** A 3×3 week grid on Plum with rounded corners, in which three cells light up diagonally in Apricot like the footprints of a step diagram: calendar and dance step in one sign. Beside it the wordmark in Outfit 600, lower case, tight: "step" in ink, "date" in Bordeaux. The claim below is "wo heute getanzt wird" / "where to dance tonight", without a place. The mark alone is the favicon (`public/favicon.svg`) and the bot avatar.
 
 ## Typography
 

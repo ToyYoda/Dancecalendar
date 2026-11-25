@@ -17,7 +17,7 @@ export const admin = new Hono<{ Bindings: Env }>();
 
 admin.use("*", async (c, next) => {
   if (!c.env.ADMIN_SECRET) return c.text("Admin ist noch nicht eingerichtet.", 503);
-  return basicAuth({ username: "admin", password: c.env.ADMIN_SECRET, realm: "Taktvoll Admin" })(c, next);
+  return basicAuth({ username: "admin", password: c.env.ADMIN_SECRET, realm: "Stepdate Admin" })(c, next);
 });
 
 admin.route("/tips", tipReview);
@@ -53,7 +53,7 @@ function TelegramPage(props: {
   lastError?: string;
 }) {
   return (
-    <Layout title="Telegram – Taktvoll">
+    <Layout title="Telegram – Stepdate">
       <p>
         <a href="/admin">← Admin</a>
       </p>
@@ -104,7 +104,7 @@ function Home(props: { note?: string }) {
     ["/admin/telegram", "Telegram-Bot"],
   ];
   return (
-    <Layout title="Admin – Taktvoll">
+    <Layout title="Admin – Stepdate">
       <h1>Admin</h1>
       {props.note && <p>{props.note}</p>}
       <ul>
@@ -144,7 +144,7 @@ async function organizers(db: D1Database) {
 
 function UploadForm(props: { organizers: { id: number; name: string }[]; error?: string }) {
   return (
-    <Layout title="Flyer hochladen – Taktvoll">
+    <Layout title="Flyer hochladen – Stepdate">
       <h1>Flyer hochladen</h1>
       {props.error && <p style="color:#a30000">{props.error}</p>}
       {props.organizers.length === 0 ? (

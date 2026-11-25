@@ -335,7 +335,7 @@ function TelegramWait(props: { code: string; digits: string }) {
 function SignUp(props: { address: string; name?: string; error?: string }) {
   return (
     <SitePage title="Als Veranstalter*in anmelden" nav={<Nav loggedIn />}>
-      <h1>Willkommen bei Taktvoll</h1>
+      <h1>Willkommen bei Stepdate</h1>
       <p class="lead">Einmal kurz, dann trägst du deine Events selbst ein, hier oder über den Bot.</p>
       {props.error && <p class="note bad">{props.error}</p>}
       <form method="post" action="/veranstalter/anmelden" class="panel">
@@ -349,7 +349,7 @@ function SignUp(props: { address: string; name?: string; error?: string }) {
             <a class="about" href="/nutzungsbedingungen" target="_blank">
               Nutzungsbedingungen
             </a>{" "}
-            und erlaube Taktvoll, meine Flyer und Events öffentlich zu zeigen. Ich habe die Rechte daran. Wie wir mit deinen Daten umgehen, steht im{" "}
+            und erlaube Stepdate, meine Flyer und Events öffentlich zu zeigen. Ich habe die Rechte daran. Wie wir mit deinen Daten umgehen, steht im{" "}
             <a class="about" href="/datenschutz" target="_blank">
               Datenschutz
             </a>
@@ -498,7 +498,7 @@ function Dashboard(props: { o: Organizer; address: string; data: Awaited<ReturnT
               <path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             <b>Flyer wählen</b>
-            <small>Foto oder Screenshot. Den Rest liest Taktvoll heraus.</small>
+            <small>Foto oder Screenshot. Den Rest liest Stepdate heraus.</small>
           </label>
           <div class="choices" role="radiogroup" aria-label="Wessen Event?">
             <label class="choice">

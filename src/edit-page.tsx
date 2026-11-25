@@ -224,7 +224,7 @@ function UploadForm(props: { token: string; organizerName: string; error?: strin
       <h1>Flyer hochladen</h1>
       {props.error && <p class="note bad">{props.error}</p>}
       <p class="lead">
-        Taktvoll liest den Flyer aus, du prüfst alles, und es erscheint als <b>{props.organizerName}</b>.
+        Stepdate liest den Flyer aus, du prüfst alles, und es erscheint als <b>{props.organizerName}</b>.
       </p>
       <form method="post" enctype="multipart/form-data" class="stack">
         <label class="drop">

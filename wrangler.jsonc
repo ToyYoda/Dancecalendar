@@ -7,8 +7,9 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "rules": [{ "type": "Text", "globs": ["**/*.md"], "fallthrough": true }],
-  // Static files served before the Worker: MapLibre for the map at /karte (copied from node_modules/maplibre-gl/dist).
-  "assets": { "directory": "./public" },
+  // Static files served before the Worker: MapLibre for the map at /karte (copied from node_modules/maplibre-gl/dist),
+  // and the page about DanceCalendar in public/landing, which the Worker serves at /ueber (src/index.tsx).
+  "assets": { "directory": "./public", "binding": "ASSETS" },
   "vars": {
     "PUBLIC_URL": "https://dancecalendar.dancecalendar.workers.dev",
     // Geocoders for new Venues (src/geocode.ts); "" switches one off.

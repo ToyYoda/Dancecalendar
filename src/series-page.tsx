@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { Card, CARD_CSS, fromForm, missing, RuleSelect } from "./event-card";
 import type { ExtractedEvent } from "./extraction/extract";
-import { Layout } from "./layout";
+import { SitePage } from "./site";
 import { columns, findVenue, venueQuery } from "./publish";
 import {
   addDays,
@@ -143,17 +143,17 @@ function SeriesPage(props: {
   const { token, s, event, today } = props;
   if (s.ended_at) {
     return (
-      <Layout title={`${event.title} – DanceCalendar`}>
+      <SitePage title={event.title}>
         <h1>{event.title}</h1>
-        <p class="ended">Diese Serie ist beendet. Für neue Termine schick einfach wieder einen Flyer.</p>
-      </Layout>
+        <p class="note warn">Diese Serie ist beendet. Für neue Termine schick einfach wieder einen Flyer.</p>
+      </SitePage>
     );
   }
   const until = addDays(s.last_sign_of_life, HORIZON_DAYS);
   return (
-    <Layout title={`${event.title} – DanceCalendar`} head={<style>{CARD_CSS + CSS}</style>}>
+    <SitePage title={event.title} css={CARD_CSS + CSS}>
       <h1>Serie bearbeiten</h1>
-      {props.saved && <p class="saved">✅ Gespeichert – gilt für alle kommenden Termine außer einzeln geänderten.</p>}
+      {props.saved && <p class="note">Gespeichert. Gilt für alle kommenden Termine außer einzeln geänderten.</p>}
       {s.registration_required ? <p>Kurs mit Anmeldung.</p> : null}
       <form method="post">
         <Card
@@ -188,18 +188,18 @@ function SeriesPage(props: {
       <p class="hint">Einen Termin einzeln ändern oder absagen: antippen.</p>
 
       <form method="post" action={`/s/${token}/end`} onsubmit="return confirm('Serie wirklich beenden? Alle kommenden Termine werden gelöscht.')">
-        <button type="submit" class="secondary">
+        <button type="submit" class="btn danger wide" style="margin-top:20px">
           Serie beenden
         </button>
       </form>
       <p class="hint">Dieser Link ist privat – nicht weiterleiten.</p>
-    </Layout>
+    </SitePage>
   );
 }
 
 const CSS = `
-  .saved { background: #e6f4ea; border-radius: 6px; padding: .5rem; }
-  .dates { padding-left: 1.2rem; }
-  .dates li { margin: .3rem 0; }
-  .secondary { width: 100%; margin-top: 1.5rem; padding: .6rem; font: inherit; border: 1px solid #e4dfd8; border-radius: 8px; background: #fff; }
+  .dates { list-style:none; margin:0; padding:0; background:var(--card); border-radius:var(--r); box-shadow:0 0 0 1px var(--line); }
+  .dates li { padding:12px 16px; border-bottom:1px solid var(--line); }
+  .dates li:last-child { border-bottom:0; }
+  .dates a { font-weight:500; color:var(--accent-ink); text-decoration:underline; text-underline-offset:3px; }
 `;

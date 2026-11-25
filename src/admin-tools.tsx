@@ -4,6 +4,7 @@ import { Layout } from "./layout";
 import { normalize } from "./publish";
 import { deleteUnusedFlyers } from "./retention";
 import { addDays, endSeries, HORIZON_DAYS, signOfLife } from "./series";
+import { showAddress } from "./messenger";
 import { berlinDate } from "./whatsapp/bot";
 import { formatDate } from "./whatsapp/summary";
 
@@ -52,7 +53,7 @@ adminTools.get("/organizers", async (c) => {
       <ul>
         {results.map((o) => (
           <li>
-            <strong>{o.display_name}</strong> ({o.first_name ?? "?"}) · +{o.whatsapp_number.replace(/^\+/, "")}
+            <strong>{o.display_name}</strong> ({o.first_name ?? "?"}) · {showAddress(o.whatsapp_number)}
             <br />
             <small>
               seit {o.created_at.slice(0, 10)} · {o.upcoming} kommende Events

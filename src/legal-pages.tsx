@@ -141,7 +141,7 @@ function PrivacyDe(props: { op: Operator }) {
   return (
     <>
       <p>
-        DanceCalendar zeigt Partnertanz-Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz …) rund um Kassel und Göttingen. Hier steht, welche
+        DanceCalendar zeigt Paartanz-Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz …) rund um Kassel und Göttingen. Hier steht, welche
         personenbezogenen Daten dabei verarbeitet werden, warum und wie lange.
       </p>
 
@@ -154,11 +154,12 @@ function PrivacyDe(props: { op: Operator }) {
       <h2>2. Kurz gesagt</h2>
       <ul>
         <li>
-          Keine Cookies, kein Tracking, keine Analyse- oder Werbedienste. Darum gibt es kein Cookie-Banner. Inhalte Dritter lädt nur die Karte zum
-          Ortwählen, und erst, wenn du sie öffnest (Abschnitt 3).
+          Kein Tracking, keine Analyse- oder Werbedienste. Ein Cookie gibt es nur, wenn du dich als Veranstalter*in auf der Website anmeldest (Abschnitt 6);
+          es ist technisch nötig und braucht darum kein Cookie-Banner. Inhalte Dritter laden nur die Karten (die
+          Kartenansicht und die Karte zum Ortwählen), und erst, wenn du sie öffnest (Abschnitt 3).
         </li>
         <li>Tänzer*innen brauchen kein Konto. Filter stehen nur in der Adresse (URL) der Seite.</li>
-        <li>Telefonnummern und wer einen Tipp geschickt hat, erscheinen nie öffentlich.</li>
+        <li>Telegram-Konten und wer einen Tipp geschickt hat, erscheinen nie öffentlich.</li>
       </ul>
 
       <h2>3. Website besuchen</h2>
@@ -173,40 +174,49 @@ function PrivacyDe(props: { op: Operator }) {
         gespeichert. Ohne Freigabe siehst du alle Events ohne Entfernungen.
       </p>
       <p>
-        Öffnest du „Auf Karte wählen“, lädt dein Browser Kartenbilder von OpenFreeMap (openfreemap.org). Dabei erhält OpenFreeMap deine IP-Adresse und die
+        Öffnest du die Ansicht „Karte“ oder „Auf Karte wählen“, lädt dein Browser Kartenbilder von OpenFreeMap (openfreemap.org). Dabei erhält OpenFreeMap deine IP-Adresse und die
         Kartenausschnitte, die du ansiehst. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (die von dir gewählte Karte anzeigen). Ohne Öffnen der Karte wird
         nichts dorthin übertragen.
       </p>
 
-      <h2>4. Der WhatsApp-Bot</h2>
+      <h2>4. Der Telegram-Bot</h2>
       <p>
-        Wenn du dem Bot schreibst, verarbeiten wir deine Telefonnummer, deine Nachrichten und die Flyer, die du schickst, um daraus Events zu machen und dir zu
+        Wenn du dem Bot schreibst, verarbeiten wir deine Telegram-Nutzer-ID (eine Zahl, nicht deine Telefonnummer), deine Nachrichten und die Flyer, die du schickst, um daraus Events zu machen und dir zu
         antworten. Rechtsgrundlage für Veranstalter*innen ist Art. 6 Abs. 1 lit. b DSGVO (Nutzung nach den <a href="/nutzungsbedingungen">Nutzungsbedingungen</a>
         ), für alle anderen Art. 6 Abs. 1 lit. f DSGVO (unser Interesse, den Kalender zu betreiben und Tipps anzunehmen).
       </p>
       <p>
-        Die Nachrichten laufen über WhatsApp Ireland Limited (Meta), das sie für uns als Auftragsverarbeiter überträgt. Einige Daten (z. B. Metadaten deiner
-        Nutzung) verarbeitet WhatsApp in eigener Verantwortung, siehe die{" "}
-        <a href="https://www.whatsapp.com/legal/privacy-policy-eea">Datenschutzrichtlinie von WhatsApp</a>.
+        Die Nachrichten laufen über Telegram. Telegram (Telegram Group Inc. und Konzerngesellschaften, Britische Jungferninseln und Dubai) verarbeitet sie als
+        eigener Verantwortlicher, nicht in unserem Auftrag; Chats mit Bots sind nicht Ende-zu-Ende-verschlüsselt. Mehr dazu, auch zu Telegrams EU-Vertreter, in
+        der <a href="https://telegram.org/privacy/de">Datenschutzerklärung von Telegram</a>. Den Namen und Benutzernamen, die Telegram mitschickt, speichern
+        wir nicht.
       </p>
       <p>
-        Schreibst du „Admin“, speichern wir deine Nummer, damit sich der Admin bei dir meldet. Mit <strong>STOP</strong> bekommst du keine Nachrichten mehr;
+        Schreibst du „Admin“, speichern wir deine Nutzer-ID, damit sich der Admin bei dir meldet. Mit <strong>STOP</strong> bekommst du keine Nachrichten mehr;
         dass du STOP geschrieben hast, merken wir uns, damit es dabei bleibt.
       </p>
 
       <h2>5. Flyer lesen mit KI</h2>
       <p>
-        Den Flyer liest ein KI-Modell von Anthropic aus (Titel, Datum, Uhrzeit, Ort, Stil). Dafür geht das Bild an Anthropic. Anthropic nutzt die Daten nicht
+        Den Flyer liest ein KI-Modell von Anthropic aus (Titel, Datum, Uhrzeit, Ort, Tanz). Dafür geht das Bild an Anthropic. Anthropic nutzt die Daten nicht
         zum Training seiner Modelle und löscht sie nach kurzer Zeit. Das Ergebnis prüfst du (oder bei Tipps der Admin), bevor es veröffentlicht wird. Es gibt
         keine automatisierte Entscheidung im Sinne von Art. 22 DSGVO.
       </p>
 
       <h2>6. Veranstalter*innen</h2>
       <p>
-        Bei der Anmeldung speichern wir deinen Anzeigenamen (öffentlich bei deinen Events), deinen Vornamen (nur für den Admin) und deine WhatsApp-Nummer (nie
+        Bei der Anmeldung speichern wir deinen Anzeigenamen (öffentlich bei deinen Events), deinen Vornamen (nur für den Admin) und deine Telegram-Nutzer-ID (nie
         öffentlich). Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO. Die Daten bleiben, solange du angemeldet bist. Hörst du auf oder wirst du entfernt, löschen
-        wir deine künftigen Events sofort und deine übrigen Daten spätestens nach 3 Monaten. Wird eine Nummer wegen eines Verstoßes gesperrt, behalten wir nur
-        die Nummer, damit die Sperre wirkt (Art. 6 Abs. 1 lit. f DSGVO).
+        wir deine künftigen Events sofort und deine übrigen Daten spätestens nach 3 Monaten. Wird ein Konto wegen eines Verstoßes gesperrt, behalten wir nur
+        seine Nutzer-ID, damit die Sperre wirkt (Art. 6 Abs. 1 lit. f DSGVO).
+      </p>
+      <p>
+        <strong>Anmelden auf der Website</strong> (/veranstalter): Meldest du dich mit Telegram an, schickt dir der Bot eine Rückfrage, und erst dein „Ja“ meldet
+        den Browser an. Meldest du dich mit Google an, bekommen wir von Google eine Kennung deines Google-Kontos und deine E-Mail-Adresse; beides sehen nur
+        du und der Admin, nie die Öffentlichkeit. Google (Google Ireland Ltd.) ist dabei selbst verantwortlich. Danach hält ein Cookie („dc_session“) dich
+        angemeldet, bis du dich abmeldest, höchstens 90 Tage. Während der Anmeldung setzen wir für 10 Minuten ein zweites Cookie, damit nur dein Browser die
+        Anmeldung abschließen kann. Die Cookies enthalten nur Zufallswerte; wir speichern davon nur eine Prüfsumme. Rechtsgrundlage: Art. 6 Abs. 1 lit. b
+        DSGVO und § 25 Abs. 2 Nr. 2 TDDDG.
       </p>
 
       <h2>7. Tipps</h2>
@@ -247,9 +257,14 @@ function PrivacyDe(props: { op: Operator }) {
           <td>Auftragsverarbeitungsvertrag mit EU-Standardvertragsklauseln</td>
         </tr>
         <tr>
-          <td>WhatsApp Ireland Limited (Irland)</td>
+          <td>Telegram (Britische Jungferninseln, Dubai)</td>
           <td>Nachrichten des Bots</td>
-          <td>WhatsApp Business Data Processing Terms; für Unterauftragnehmer in den USA Data Privacy Framework bzw. Standardvertragsklauseln</td>
+          <td>Kein Auftragsverarbeiter: Telegram ist selbst verantwortlich, die Übermittlung geschieht, weil du den Bot über Telegram nutzt</td>
+        </tr>
+        <tr>
+          <td>Google Ireland Ltd. (Irland)</td>
+          <td>Nur wenn du „Mit Google anmelden“ wählst: Anmeldung</td>
+          <td>Kein Auftragsverarbeiter: Google ist selbst verantwortlich, du meldest dich dort an</td>
         </tr>
       </table>
 
@@ -278,7 +293,7 @@ function PrivacyDe(props: { op: Operator }) {
       <p>Du kannst dich bei einer Datenschutz-Aufsichtsbehörde beschweren, zum Beispiel bei: {HBDI}.</p>
 
       <h2>13. Pflicht zur Angabe</h2>
-      <p>Du musst uns keine Daten geben. Ohne deine Telefonnummer kannst du den Bot aber nicht nutzen; den Kalender ansehen kannst du immer.</p>
+      <p>Du musst uns keine Daten geben. Ohne Telegram-Konto kannst du den Bot aber nicht nutzen; den Kalender ansehen kannst du immer.</p>
     </>
   );
 }
@@ -301,11 +316,12 @@ function PrivacyEn(props: { op: Operator }) {
       <h2>2. In short</h2>
       <ul>
         <li>
-          No cookies, no tracking, no analytics or advertising services. That's why there is no cookie banner. Only the map for picking a place loads
-          third-party content, and only once you open it (section 3).
+          No tracking, no analytics or advertising services. There is a cookie only when you log in on the website as an Organizer (section 6); it is
+          strictly necessary, so there is no cookie banner. Only the maps (the map view and the map for
+          picking a place) load third-party content, and only once you open them (section 3).
         </li>
         <li>Dancers need no account. Filters live only in the page address (URL).</li>
-        <li>Phone numbers, and who sent a Tip, are never shown publicly.</li>
+        <li>Telegram accounts, and who sent a Tip, are never shown publicly.</li>
       </ul>
 
       <h2>3. Visiting the website</h2>
@@ -320,37 +336,45 @@ function PrivacyEn(props: { op: Operator }) {
         see every Event, without distances.
       </p>
       <p>
-        If you open "Pick on map", your browser loads map images from OpenFreeMap (openfreemap.org), which receives your IP address and the map areas you view.
+        If you open the "Map" view or "Pick on map", your browser loads map images from OpenFreeMap (openfreemap.org), which receives your IP address and the map areas you view.
         Legal basis: Art. 6(1)(f) GDPR (showing the map you chose). Nothing is sent there unless you open the map.
       </p>
 
-      <h2>4. The WhatsApp bot</h2>
+      <h2>4. The Telegram bot</h2>
       <p>
-        When you message the bot, we process your phone number, your messages and the Flyers you send, to turn them into Events and to reply. For Organizers the
+        When you message the bot, we process your Telegram user ID (a number, not your phone number), your messages and the Flyers you send, to turn them into Events and to reply. For Organizers the
         legal basis is Art. 6(1)(b) GDPR (use under the <a href="/nutzungsbedingungen?lang=en">Terms of Use</a>); for everyone else Art. 6(1)(f) GDPR (our
         interest in running the calendar and accepting Tips).
       </p>
       <p>
-        Messages are carried by WhatsApp Ireland Limited (Meta) as our processor. WhatsApp processes some data (such as metadata about your use) as an independent
-        controller; see <a href="https://www.whatsapp.com/legal/privacy-policy-eea">WhatsApp's privacy policy</a>.
+        Messages are carried by Telegram. Telegram (Telegram Group Inc. and group companies, British Virgin Islands and Dubai) processes them as an independent
+        controller, not on our behalf; chats with bots are not end-to-end encrypted. See <a href="https://telegram.org/privacy">Telegram's privacy policy</a>,
+        which also names its EU representative. We don't store the name and username Telegram sends along.
       </p>
       <p>
-        If you write "Admin", we store your number so the Admin can get back to you. Send <strong>STOP</strong> and you get no more messages; we remember that
+        If you write "Admin", we store your user ID so the Admin can get back to you. Send <strong>STOP</strong> and you get no more messages; we remember that
         you sent STOP so that it stays that way.
       </p>
 
       <h2>5. Reading Flyers with AI</h2>
       <p>
-        An AI model by Anthropic reads the Flyer (title, date, time, Venue, style), so the image is sent to Anthropic. Anthropic does not use the data to train
+        An AI model by Anthropic reads the Flyer (title, date, time, Venue, dance), so the image is sent to Anthropic. Anthropic does not use the data to train
         its models and deletes it after a short time. You (or, for Tips, the Admin) check the result before it is published. There is no automated decision
         within the meaning of Art. 22 GDPR.
       </p>
 
       <h2>6. Organizers</h2>
       <p>
-        When you sign up we store your Display name (public on your Events), your first name (for the Admin only) and your WhatsApp number (never public). Legal
+        When you sign up we store your Display name (public on your Events), your first name (for the Admin only) and your Telegram user ID (never public). Legal
         basis: Art. 6(1)(b) GDPR. The data is kept while you are registered. If you stop or are removed, we delete your future Events at once and the rest of
-        your data within 3 months. If a number is blocked for a breach, we keep only the number so the block works (Art. 6(1)(f) GDPR).
+        your data within 3 months. If an account is blocked for a breach, we keep only its user ID so the block works (Art. 6(1)(f) GDPR).
+      </p>
+      <p>
+        <strong>Logging in on the website</strong> (/veranstalter): with Telegram, the bot asks you first, and only your "yes" logs the browser in. With Google,
+        Google gives us an ID of your Google account and your email address; only you and the Admin see them, never the public. Google (Google Ireland Ltd.)
+        is a controller itself here. A cookie ("dc_session") then keeps you logged in until you log out, for at most 90 days. While you log in, a second
+        cookie lasts 10 minutes so that only your browser can finish the login. The cookies hold only random values, of which we store only a checksum. Legal
+        basis: Art. 6(1)(b) GDPR and Section 25(2) no. 2 TDDDG.
       </p>
 
       <h2>7. Tips</h2>
@@ -390,9 +414,14 @@ function PrivacyEn(props: { op: Operator }) {
           <td>Data processing agreement with EU Standard Contractual Clauses</td>
         </tr>
         <tr>
-          <td>WhatsApp Ireland Limited (Ireland)</td>
+          <td>Telegram (British Virgin Islands, Dubai)</td>
           <td>The bot's messages</td>
-          <td>WhatsApp Business Data Processing Terms; for sub-processors in the USA the Data Privacy Framework or Standard Contractual Clauses</td>
+          <td>Not a processor: Telegram is a controller itself; the transfer happens because you use the bot through Telegram</td>
+        </tr>
+        <tr>
+          <td>Google Ireland Ltd. (Ireland)</td>
+          <td>Only if you choose "Log in with Google": the login</td>
+          <td>Not a processor: Google is a controller itself; you log in there</td>
         </tr>
       </table>
 
@@ -420,7 +449,7 @@ function PrivacyEn(props: { op: Operator }) {
       <p>You can complain to a data protection supervisory authority, for example: {HBDI}.</p>
 
       <h2>13. Do you have to give us data?</h2>
-      <p>No. Without your phone number you can't use the bot, but you can always browse the calendar.</p>
+      <p>No. Without a Telegram account you can't use the bot, but you can always browse the calendar.</p>
     </>
   );
 }
@@ -568,8 +597,8 @@ function DeletionDe(props: { op: Operator }) {
         <Mail op={props.op} />.
       </p>
       <p>
-        Möchtest du, dass wir deine Daten löschen (Telefonnummer, Nachrichten, Flyer und deine Events), schreib an <Mail op={props.op} />, am besten mit der
-        Telefonnummer, um die es geht. Wir löschen innerhalb eines Monats und bestätigen dir die Löschung. Aus den wöchentlichen Sicherungen verschwinden die
+        Möchtest du, dass wir deine Daten löschen (Telegram-Nutzer-ID, Nachrichten, Flyer und deine Events), schreib an <Mail op={props.op} />, am besten mit
+        deinem Telegram-Namen, damit wir dich finden. Wir löschen innerhalb eines Monats und bestätigen dir die Löschung. Aus den wöchentlichen Sicherungen verschwinden die
         Daten spätestens nach 8 Wochen.
       </p>
       <p>
@@ -590,7 +619,7 @@ function DeletionEn(props: { op: Operator }) {
         <Mail op={props.op} />.
       </p>
       <p>
-        If you want us to delete your data (phone number, messages, Flyers and your Events), email <Mail op={props.op} />, ideally with the phone number concerned.
+        If you want us to delete your data (Telegram user ID, messages, Flyers and your Events), email <Mail op={props.op} />, ideally with your Telegram name so we can find you.
         We delete within one month and confirm the deletion to you. The data disappears from the weekly backups after 8 weeks at the latest.
       </p>
       <p>

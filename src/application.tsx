@@ -3,7 +3,7 @@ import { extractFlyer, type Extraction } from "./extraction/extract";
 import { Layout } from "./layout";
 import { randomToken } from "./publish";
 import { holdTip } from "./tips";
-import { sendButtons, sendText } from "./whatsapp/graph";
+import { sendButtons, sendText } from "./messenger";
 import { offerFlyer, storeFlyer, type Organizer } from "./whatsapp/bot";
 import type { InboundMessage } from "./whatsapp/types";
 
@@ -140,7 +140,7 @@ applyPage.post("/:token", async (c) => {
   )
     .bind(app.whatsapp_number, displayName, firstName)
     .run();
-  // The page says "Fertig" even if WhatsApp fails; the Organizer can just send the Flyer again.
+  // The page says "Fertig" even if the messenger fails; the Organizer can just send the Flyer again.
   await resume(c.env, app.id).catch((err) => console.error("resuming the held Flyer failed", err));
   return c.html(<Done />);
 });
@@ -163,7 +163,7 @@ function ApplyForm(props: { names: string[]; displayName?: string; firstName?: s
   return (
     <Layout title="Anmelden – DanceCalendar" head={<style>{CSS}</style>}>
       <h1>Als Veranstalter*in anmelden</h1>
-      <p>Einmal kurz, dann trägst du deine Flyer selbst per WhatsApp ein.</p>
+      <p>Einmal kurz, dann trägst du deine Flyer selbst über den Bot ein.</p>
       {props.error && <p class="error">{props.error}</p>}
       <form method="post">
         <label for="display_name">Unter welchem Namen sollen deine Events erscheinen?</label>
@@ -197,7 +197,7 @@ function ApplyForm(props: { names: string[]; displayName?: string; firstName?: s
 function Done() {
   return (
     <Layout title="Fertig – DanceCalendar">
-      <h1>Fertig! Zurück zu WhatsApp</h1>
+      <h1>Fertig! Zurück zum Chat</h1>
       <p>Dort geht's direkt mit deinem Flyer weiter. Ab jetzt schickst du Flyer einfach an den Bot.</p>
     </Layout>
   );

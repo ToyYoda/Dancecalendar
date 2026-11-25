@@ -184,16 +184,25 @@ describe("the Flyer feed", () => {
     expect(html).toContain("Salsa Freunde");
   });
 
-  it("pages by week, keeping the filters", async () => {
+  it("shows the days from von to bis, keeping the filters", async () => {
+    await add({ title: "Bald Party", day: 2 });
     await add({ title: "Später Party", day: 12 });
 
-    const html = await page("?styles=salsa");
-    const next = html.match(/href="(\/\?[^"]*w=\d{4}-\d{2}-\d{2}[^"]*)"[^>]*aria-label="Später"/)![1].replace(/&amp;/g, "&");
+    const html = await page(`?styles=salsa&von=${berlinDate(10)}&bis=${berlinDate(14)}`);
 
-    expect(next).toContain("styles=salsa");
-    const later = await page(next.slice(1));
-    const w = new URLSearchParams(next.slice(2)).get("w")!;
-    if (berlinDate(12) <= plusDays(w, 6)) expect(later).toContain("Später Party");
+    expect(html).toContain("Später Party");
+    expect(html).not.toContain("Bald Party");
+    // Von and Bis keep the other filters when they change the span.
+    expect(html).toContain('<input type="hidden" name="styles" value="salsa"/>');
+    expect(html).toContain(`name="von" value="${berlinDate(10)}"`);
+    expect(html).toContain(`name="bis" value="${berlinDate(14)}"`);
+  });
+
+  it("opens an older week or day link as that span", async () => {
+    await add({ title: "Später Party", day: 12 });
+
+    expect(await page(`?w=${berlinDate(12)}`)).toContain("Später Party");
+    expect(await page(`?view=cal&d=${berlinDate(12)}`)).toContain("Später Party");
   });
 
   it("is in English with lang=en", async () => {
@@ -205,18 +214,92 @@ describe("the Flyer feed", () => {
   });
 });
 
-describe("the calendar view", () => {
-  it("shows the month with the selected day's Events, and keeps the filters", async () => {
+describe("the small calendar", () => {
+  it("marks the days with something on and the shown span, and a tap on a day shows that day", async () => {
     await add({ title: "Kassel Salsa", day: 2 });
-    await add({ title: "Göttingen Salsa", day: 2, venue: 2 });
+    await add({ title: "Göttingen Salsa", day: 3, venue: 2 });
 
-    const html = await page(`?view=cal&c=51.31,9.48&r=25&d=${berlinDate(2)}`);
+    const html = await page("?c=51.31,9.48&r=25");
 
-    expect(html).toContain("Kassel Salsa");
-    expect(html).not.toContain("Göttingen Salsa");
-    expect(html).toMatch(/class="cell[^"]*sel/);
-    // Switching back to the feed keeps the place.
-    expect(html).toMatch(/href="\/\?c=51.31,9.48&amp;r=25"/);
+    const cell = (d: string) => html.match(new RegExp(`<a class="([^"]*)" href="([^"]*)" data-day="${d}"`))!;
+    expect(cell(berlinDate(2))[1]).toContain("busy");
+    expect(cell(berlinDate(3))[1]).not.toContain("busy"); // only Events that match the filters
+    expect(cell(berlinDate(0))[1]).toMatch(/\bin\b.*\bfirst\b/);
+    expect(cell(berlinDate(2))[2]).toBe(`/?c=51.31,9.48&amp;r=25&amp;von=${berlinDate(2)}`);
+  });
+
+  it("stays above the map, and the span stays when switching between list and map", async () => {
+    const html = await page(`?view=map&von=${berlinDate(1)}&bis=${berlinDate(3)}`);
+
+    expect(html).toContain('data-mini');
+    expect(html).toContain(`href="/?von=${berlinDate(1)}&amp;bis=${berlinDate(3)}"`);
+  });
+});
+
+describe("the map view", () => {
+  it("pins the week's matching Events by Venue, lists the ones without coordinates, and keeps the filters", async () => {
+    await add({ title: "Kassel Bachata", styles: ["bachata"], venue: 1 });
+    await add({ title: "Pelzer Bachata", styles: ["bachata"], venue: 4 });
+    await add({ title: "Kassel Salsa", styles: ["salsa"], venue: 1 });
+
+    const html = await page("?view=map&styles=bachata");
+    const data = JSON.parse(html.match(/<script type="application\/json" id="evmap-data">(.*?)<\/script>/)![1]);
+
+    expect(html).toContain('src="/vendor/maplibre-gl.js"');
+    expect(data.style).toContain("tiles.openfreemap.org");
+    expect(data.pins).toHaveLength(1);
+    expect(data.pins[0].name).toBe("Kulturfabrik Salzmann");
+    expect(data.pins[0].events.map((e: any) => e.title)).toEqual(["Kassel Bachata"]);
+    expect(data.pins[0].events[0].href).toMatch(/^\/events\/\d+\?view=map&styles=bachata$/);
+    expect(html).toContain("Nicht auf der Karte");
+    expect(html).toContain("Pelzer Bachata");
+    expect(html).not.toContain("Kassel Salsa");
+    expect(html).toContain('href="/?view=map&amp;styles=bachata"'); // the sidebar's Karte link
+  });
+
+  it("never lets a title become markup", async () => {
+    await add({ title: "</script><b>Party</b>" });
+    const html = await page("?view=map");
+    expect(html).not.toContain("</script><b>");
+  });
+});
+
+describe("the calendar subscription", () => {
+  const ics = async (query = "") => get(`http://dancecalendar.test/kalender.ics${query}`);
+
+  it("is linked from the sidebar with the current filters", async () => {
+    const html = await page("?styles=bachata&type=party&w=2026-11-16");
+    expect(html).toContain('href="/kalender.ics?styles=bachata&amp;type=party"'); // no week or view in the feed
+  });
+
+  it("serves the matching Events as an iCalendar feed in Berlin time", async () => {
+    await add({ title: "Bachata Kassel", styles: ["bachata"], time: "21:30", ends: `${berlinDate(1)}T23:59` });
+    await add({ title: "Salsa Kassel Party", styles: ["salsa"] });
+    await add({ title: "Abgesagte Bachata", styles: ["bachata"], cancelled: 1 });
+    await add({ title: "Bachata in Fulda", styles: ["bachata"], venue: 3 });
+
+    const res = await ics("?styles=bachata&c=51.31,9.53&r=25");
+    const body = await res.text();
+
+    expect(res.headers.get("content-type")).toBe("text/calendar; charset=utf-8");
+    expect(body.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
+    expect(body).toContain("X-WR-CALNAME:DanceCalendar · Bachata");
+    expect(body).toContain("TZID:Europe/Berlin");
+    expect(body).toContain(`DTSTART;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T213000`);
+    expect(body).toContain(`DTEND;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T235900`);
+    expect(body).toContain("SUMMARY:Bachata Kassel");
+    expect(body).toContain("LOCATION:Kulturfabrik Salzmann\\, Sandershäuser Str. 34\\, 34123 Kassel");
+    expect(body).toContain("SUMMARY:Abgesagt: Abgesagte Bachata");
+    expect(body).toContain("STATUS:CANCELLED");
+    expect(body).not.toContain("Salsa Kassel Party");
+    expect(body).not.toContain("Bachata in Fulda"); // outside 25 km
+  });
+
+  it("keeps every line within 75 octets", async () => {
+    await add({ title: "Bachata ".repeat(20).trim(), styles: ["bachata"] });
+    const body = await (await ics()).text();
+    for (const line of body.split("\r\n")) expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+    expect(body).toContain("\r\n "); // folded
   });
 });
 

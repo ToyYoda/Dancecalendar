@@ -2,7 +2,7 @@
 
 const GRAPH = "https://graph.facebook.com/v26.0";
 
-export type Button = { id: string; title: string }; // title max 20 characters, at most 3 buttons
+import type { Button } from "../messenger";
 
 export async function sendText(env: Env, to: string, text: string) {
   await post(env, { to, type: "text", text: { body: text, preview_url: false } });

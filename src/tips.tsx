@@ -4,7 +4,7 @@ import type { Extraction } from "./extraction/extract";
 import { Layout } from "./layout";
 import { publishSubmission, randomToken } from "./publish";
 import { ruleWords, type Rule } from "./series";
-import { sendText } from "./whatsapp/graph";
+import { sendText } from "./messenger";
 import { formatDate } from "./whatsapp/summary";
 
 // Tips: a Flyer from someone who isn't its Organizer ("Nein, ist ein Tipp", remembered per number).

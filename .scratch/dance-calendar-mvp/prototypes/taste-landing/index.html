@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="de" data-type="software" data-radius="round" data-ground="sand" data-buttons="arrow" data-motion>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DanceCalendar: Partnertanz-Kalender für Kassel und Göttingen</title>
+<meta name="description" content="Salsa, Bachata, Kizomba und mehr rund um Kassel und Göttingen auf einer Seite, jedes Event mit dem ganzen Flyer, ohne Anmeldung.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="DanceCalendar: Partnertanz in Kassel und Göttingen">
+<meta property="og:description" content="Partys, Workshops, Kurse und Festivals der Region, jedes Event mit seinem Flyer.">
+<meta property="og:image" content="share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#f7f9fa">
+<!-- <link rel="canonical" href="https://[the client's domain]/"> -->
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/ui/cards.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/backgrounds/backgrounds.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
+<link rel="stylesheet" href="assets/icons/icon.css">
+<style>
+:root {
+  --p-bg: #f7f9fa; --p-surface: #ecf0f2; --p-ink: #1f3038; --p-muted: #5d6b72;
+  --p-accent: #0d7480; --p-accent-ink: #ffffff; --p-action: #0d7480; --p-action-ink: #ffffff;
+  --p-inv-bg: #1f3038; --p-inv-surface: #2c3c44; --p-inv-ink: #f7f9fa; --p-inv-muted: #9ea7ab;
+  --p-inv-accent: #f7f9fa; --p-inv-accent-ink: #1f3038; --p-inv-action: #f7f9fa; --p-inv-action-ink: #1f3038;
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-text: "Outfit", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.03em;
+  --display-tracking-xl: -0.04em;
+}
+</style>
+<link rel="stylesheet" href="assets/ui/base.css">
+<link rel="stylesheet" href="assets/ui/chat/fragment.css">
+<link rel="stylesheet" href="assets/ui/notify/fragment.css">
+<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+<script src="assets/backgrounds/backgrounds.js"></script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="assets/moments/moments.js">
+<link rel="modulepreload" href="assets/moments/lib.js">
+<link rel="modulepreload" href="assets/moments/letters-assemble/moment.js">
+<!-- page CSS: only what sits inside a visual -->
+<style>
+  /* the hero window: DanceCalendar's day list (the collage recipe's window, drawn here) */
+  .d-win { background: #fff; color: #1f3038; border-radius: 12px; overflow: hidden; font: 400 14px/1.4 var(--font-text);
+    box-shadow: 0 0 0 1px rgb(31 48 56 / .08), 0 30px 70px -30px rgb(31 48 56 / .45); }
+  .d-win__bar { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-bottom: 1px solid rgb(31 48 56 / .08); font-size: 13px; color: #5d6b72; }
+  .d-win__dots { display: flex; gap: 6px; } .d-win__dots i { width: 10px; height: 10px; border-radius: 50%; background: #dfe5e8; }
+  .d-win__body { display: grid; grid-template-columns: 156px 1fr; min-height: 420px; }
+  .d-side { padding: 14px 10px; border-right: 1px solid rgb(31 48 56 / .08); display: grid; align-content: start; gap: 2px; font-size: 13px; color: #4b5a61; }
+  .d-side > span { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border-radius: 7px; }
+  .d-side > span.is-on { background: rgb(13 116 128 / .09); color: #0b5e68; font-weight: 500; }
+  .d-side svg { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; opacity: .6; }
+  .d-side > span.is-on svg { opacity: 1; }
+  .d-side .d-side__label { color: #6b7a81; height: 24px; margin-top: 8px; font-size: 12px; }
+  .d-side .d-side__pick { height: 28px; border-radius: 99px; background: #e3f1f2; color: #0b5e68; font-weight: 500; padding: 0 10px; }
+  .d-box i { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid #b5c0c4; flex: none; box-sizing: border-box; }
+  .d-box.is-chk i { background: #0d7480 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2.2 5.2 4.2 7.2 7.8 3' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / 10px no-repeat; border-color: #0d7480; }
+  .d-side .d-side__abo { margin-top: 12px; border-top: 1px solid rgb(31 48 56 / .08); border-radius: 0; padding-top: 10px; height: auto; color: #0b5e68; font-weight: 500; }
+  .d-nav { display: flex; gap: 4px; } .d-nav i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(31 48 56 / .12); font-style: normal; color: #1f3038; }
+  .d-day { display: flex; align-items: baseline; gap: 6px; font-size: 13px; color: #6b7a81; } .d-day b { font-weight: 500; font-size: 14px; color: #1f3038; } .d-day span { margin-left: auto; }
+  .d-main { padding: 16px 18px; display: grid; align-content: start; gap: 12px; min-width: 0; }
+  .d-main__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .d-main__head .d-h { font: 500 15px/1.2 var(--font-text); letter-spacing: -0.01em; margin: 0; color: inherit; }
+  .d-main__head span { font-size: 13px; color: #6b7a81; }
+  .d-tabs { display: flex; gap: 4px; font-size: 13px; } .d-tabs span { padding: 4px 10px; border-radius: 99px; color: #5d6b72; } .d-tabs span.is-on { background: rgb(31 48 56 / .07); color: #1f3038; font-weight: 500; }
+  .d-rows { display: grid; border-top: 1px solid rgb(31 48 56 / .08); margin-top: -6px; }
+  .d-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 56px 92px; align-items: center; gap: 12px; padding: 8px 2px; border-bottom: 1px solid rgb(31 48 56 / .08); font-size: 13px; }
+  .d-row img { width: 40px; height: 52px; border-radius: 6px; object-fit: contain; background: #ecf0f2; }
+  .d-row b { display: block; font-weight: 500; color: #1f3038; }
+  .d-row small { color: #5d6b72; font-size: 13px; display: block; }
+  .d-row .num { text-align: right; font-variant-numeric: tabular-nums; color: #1f3038; }
+  .d-row.is-off b { text-decoration: line-through; color: #6b7a81; } .d-row.is-off img { filter: grayscale(1); opacity: .55; }
+  .d-chip { justify-self: end; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; font-size: 13px; font-weight: 500; background: #e3f1f2; color: #0b5e68; white-space: nowrap; }
+  .d-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .d-chip--ws { background: #fdf0dc; color: #8a5300; }
+  .d-chip--off { background: #fbe6e3; color: #a3271b; }
+  .d-card { background: #fff; color: #1f3038; border-radius: 12px; padding: 14px 16px; font: 400 14px/1.4 var(--font-text);
+    box-shadow: 0 0 0 1px rgb(31 48 56 / .08), 0 24px 50px -24px rgb(31 48 56 / .5); }
+  .d-card .d-card__h { margin: 0; font: 500 14px/1.3 var(--font-text); }
+  .d-card__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 6px; }
+  .hero__art > .ly-piece--note { left: var(--s-6); bottom: var(--s-6); width: 300px; z-index: 2; }
+  .d-note__line { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; color: #3e4f57; border-top: 1px solid rgb(31 48 56 / .07); }
+  .d-note__line i { width: 18px; height: 18px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #e3f1f2; color: #0b5e68; font-style: normal; font-size: 12px; font-weight: 500; }
+  .d-note__line b { font-weight: 500; color: #1f3038; }
+  .hero__proof { font-size: var(--t-small); color: var(--muted); }
+  .ly-piece--main .d-main { padding-right: var(--ly-cut-room); }
+  @media (max-width: 639px) { .ly-piece--main .d-row { grid-template-columns: 40px minmax(0, 1fr) 92px; } .ly-piece--main .d-row .num { display: none; } .d-win__body { grid-template-columns: 1fr; } .d-side { display: none; } }
+
+  /* app-frame (sections-library.md): an Event's page as the calendar draws it */
+  .app.ui { display: grid; margin-top: var(--s-7); background: var(--u-bg); border: 1px solid var(--u-border); border-radius: var(--u-r); box-shadow: var(--u-shadow); }
+  .app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+  .app > .app__pane::after { content: ""; position: absolute; inset: auto 0 0 0; height: 64px; background: linear-gradient(transparent, var(--u-bg)); pointer-events: none; }
+  .ev { padding: 24px 28px; font: 400 14px/1.5 var(--font-text); color: var(--u-ink, #1f3038); }
+  .ev__back { display: inline-flex; padding: 4px 12px 4px 10px; border-radius: 99px; box-shadow: 0 0 0 1px var(--u-line); font-weight: 500; font-size: 13px; }
+  .ev .ev__title { margin: 14px 0 0; font: 500 30px/1.1 var(--font-display); letter-spacing: -0.03em; }
+  .ev__when { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0 18px; } .ev__when b { font-weight: 500; }
+  .ev__type { display: inline-flex; height: 24px; align-items: center; gap: 5px; padding: 0 10px; border-radius: 99px; background: #e3f1f2; color: #0b5e68; font-size: 13px; font-weight: 500; }
+  .ev__type::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .ev__cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: 28px; align-items: start; }
+  .ev__flyer { width: 100%; height: auto; border-radius: 12px; display: block; }
+  .ev__facts { margin: 0; display: grid; grid-template-columns: auto 1fr; padding: 4px 18px; border-radius: 12px; box-shadow: 0 0 0 1px var(--u-line); }
+  .ev__facts dt, .ev__facts dd { padding: 10px 0; border-bottom: 1px solid var(--u-line); }
+  .ev__facts dt { color: var(--u-muted, #5d6b72); font-size: 13px; padding-right: 14px; } .ev__facts dd { margin: 0; }
+  .ev__facts > :nth-last-child(-n+2) { border-bottom: 0; }
+  @media (max-width: 639px) {
+    .ev { padding: 16px; } .ev .ev__title { font-size: 24px; }
+    .ev__cols { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .d-day span { display: none; }
+  }
+
+  /* the steps: Telegram with the DanceCalendar bot */
+  #veranstalter .panel { --p-h: 336px; }
+  @media (max-width: 639px) { #veranstalter .panel { --p-h: 220px; } }
+  .ui-msg__flyer { display: block; width: 132px; border-radius: 8px; }
+  .wa-btns { display: grid; gap: 4px; margin-top: 8px; }
+  .wa-btns span { display: block; text-align: center; padding: 6px 10px; border-radius: 8px; background: rgb(13 116 128 / .08); color: #0b5e68; font-size: 13px; font-weight: 500; }
+
+  /* the filter strip as the calendar draws it */
+  .flt { font: 400 14px/1.4 var(--font-text); color: #1f3038; background: #fff; border-radius: 12px; padding: 20px; display: grid; gap: 18px; }
+  .flt__tabs { display: flex; gap: 18px; border-bottom: 1px solid rgb(31 48 56 / .1); font-size: 15px; }
+  .flt__tabs span { padding: 0 0 10px; color: #5d6b72; } .flt__tabs span.is-on { color: #1f3038; font-weight: 500; box-shadow: inset 0 -2px 0 #0d7480; }
+  .flt__label { font-size: 13px; color: #5d6b72; margin: 0 0 8px; }
+  .flt__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .flt__chips span { padding: 6px 12px; border-radius: 99px; border: 1px solid rgb(31 48 56 / .18); font-size: 14px; }
+  .flt__chips span.is-on { background: #1f3038; border-color: #1f3038; color: #fff; }
+  .flt__url { font: 400 13px/1.4 var(--font-mono); color: #0b5e68; background: #e3f1f2; border-radius: 8px; padding: 10px 12px; overflow-wrap: anywhere; }
+  .flt__boxes { display: flex; flex-wrap: wrap; gap: 6px 18px; } .flt__boxes span { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+  .flt__boxes i { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid #b5c0c4; box-sizing: border-box; }
+  .flt__boxes .is-chk i { background: #0d7480 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2.2 5.2 4.2 7.2 7.8 3' fill='none' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / 11px no-repeat; border-color: #0d7480; }
+  .flt__abo { display: flex; align-items: center; gap: 12px; } .flt__abo span { flex: none; padding: 8px 16px; border-radius: 99px; background: #0d7480; color: #fff; font-weight: 500; } .flt__abo small { font-size: 13px; color: #5d6b72; line-height: 1.35; }
+  #filter .frame { padding: 0; }
+  @media (min-width: 1024px) and (max-width: 1279px) { #filter .frame--split { aspect-ratio: 1; } }
+  /* the questions beside two whole Flyers; the split holds at the tablet, a phone shows three questions */
+  .faq-flyers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5); margin-top: var(--s-6); align-items: start; }
+  .faq-flyers img { width: 100%; height: auto; border-radius: var(--r-md); display: block; }
+  @media (min-width: 640px) and (max-width: 1023px) {
+    #fragen .grid--top > .span-5 { grid-column: 1 / span 5; } #fragen .grid--top > .faq { grid-column: 6 / span 7; }
+    #fragen .grid--top { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    .faq-flyers { grid-template-columns: minmax(0, 1fr); } .faq-flyers img + img { display: none; }
+  }
+  @media (max-width: 639px) { #fragen .faq-flyers, #fragen .faq__item--desk { display: none; } }
+  #flyer .mo-la__sub { color: var(--ink); }
+  @media (max-width: 1279px) { .ly-piece--main .d-row:nth-child(n+5) { display: none; } }
+  @media (max-width: 639px) { .flt__url, .flt__tabs span:nth-child(5) { display: none; } .flt__tabs { gap: 14px; } }
+  @media (max-width: 639px) { #filter .flt-facts { display: none; } }
+  @media (max-width: 1023px) { #veranstalter { --h: 2; } }
+  @media (min-width: 1024px) and (max-width: 1279px) { #veranstalter { --h: 2; } }
+  /* below 1024 the statement shows what it says: three whole Flyers under it */
+  .flyer-row { display: none; }
+  @media (max-width: 1023px) {
+    .flyer-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); margin-top: var(--s-7); align-items: start; }
+    .flyer-row img { width: 100%; height: auto; border-radius: var(--r-md); display: block; }
+  }
+  @media (max-width: 639px) { .flyer-row { gap: var(--s-3); margin-top: var(--s-6); } }
+  #filter .stage > .flt { position: absolute; left: var(--s-8); top: var(--s-8); width: min(520px, calc(100% - var(--s-8))); }
+  @media (max-width: 1023px) { #filter .frame--split { aspect-ratio: auto; height: auto; display: block; } #filter .frame--split > .stage { position: relative; inset: auto; width: 100%; height: auto; padding: var(--s-8); } #filter .stage > .flt { position: relative; left: auto; top: auto; width: 100%; } }
+  @media (max-width: 639px) { #filter .frame--split > .stage { padding: var(--s-4); } #filter .stage > .flt { padding: 16px; gap: 14px; } #filter .flt__styles { display: none; } }
+  @media (min-width: 640px) and (max-width: 1023px) { .closing__links .grid > .span-4:first-child { grid-column: 1 / -1; } .closing__links .grid > .footer__col { grid-column: span 4; } }
+</style>
+</head>
+<body>
+<!-- type: software (a free regional web calendar; DanceCalendar)
+     deal: hero collage, nav nav-cards, close close-type, footer footer-dark, rhythm dark-band, buttons arrow, mark arc, ground sand;
+           palette cool-white-slate (a frost-white ground for the Flyers' loud colours, one teal that points), type outfit, radius round
+     effect: grain-gradient in the hero's art frame (the one effect)
+     moments: letters-assemble in #flyer (the statement: every Flyer stays whole)
+     Plan (1440 screens): hero 1 · #woche app-frame 1 · #veranstalter steps 1 (2 at 1024 and the tablet) · #flyer statement 1 · #filter split on the dark band 1 · #fragen faq 1 · footer.closing 1 -->
+
+<header class="nav">
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#top">Zum Inhalt</a>
+    <a class="nav__logo" href="#top"><span class="mark" data-mark="arc" aria-hidden="true"></span>DanceCalendar</a>
+    <nav class="nav__links" aria-label="Hauptmenü">
+      <div class="nav__item"><a class="nav__link" href="#woche">Woche</a></div>
+      <div class="nav__item">
+        <a class="nav__link" href="#veranstalter">Veranstalter <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="nav__menu">
+          <div class="wrap grid">
+            <a class="menu-card span-4" href="#veranstalter">
+              <div class="panel"><img class="frame__img" src="flyers/f10-720.jpg" alt="Flyer der Sabakizz-Party in Kassel" loading="lazy" data-source="client" data-subject="an Organizer's Flyer"></div>
+              <span class="t-card">Flyer weiterleiten</span>
+              <span class="t-small muted">Ein Bild an den Bot, und das Event steht drin</span>
+            </a>
+            <a class="menu-card span-4" href="#fragen">
+              <div class="panel"><img class="frame__img" src="flyers/f14-720.jpg" alt="Flyer des Latin Afternoon am Bahnhof Wilhelmshöhe" loading="lazy" data-source="client" data-subject="an Organizer's Flyer"></div>
+              <span class="t-card">Tipp einreichen</span>
+              <span class="t-small muted">Ein fremdes Event melden, der Admin prüft es</span>
+            </a>
+            <a class="menu-card span-4" href="#fragen">
+              <div class="panel"><img class="frame__img" src="flyers/f06-720.jpg" alt="Flyer der Salsa Disco im Kulturzentrum Schlachthof" loading="lazy" data-source="client" data-subject="an Organizer's Flyer"></div>
+              <span class="t-card">Event absagen</span>
+              <span class="t-small muted">Über deinen Link, das Event bleibt sichtbar</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="nav__item"><a class="nav__link" href="#filter">Filter</a></div>
+      <div class="nav__item"><a class="nav__link" href="#fragen">Fragen</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="btn btn--primary" href="http://localhost:8788/">Kalender öffnen</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menü">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero hero--collage" data-enter aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text grid hero__grid">
+      <div class="hero__text span-5">
+        <h1 id="hero-h">Partnertanz-Kalender für Kassel und Göttingen</h1>
+        <p class="hero__lead">Partys, Workshops, Kurse und Festivals der Region auf einer Seite, jedes Event mit dem Flyer des Veranstalters. Heute und die nächsten 7 Tage, ohne Anmeldung.</p>
+        <div class="btn-row"><a class="btn btn--primary" href="http://localhost:8788/">Kalender öffnen<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a><a class="btn btn--secondary" href="#veranstalter">Event eintragen</a></div>
+        <p class="hero__proof">Salsa, Bachata, Kizomba, Urban Kiz und West Coast Swing.</p>
+      </div>
+      <div class="hero__art span-6 start-7" data-fx="grain-gradient" data-fx-seed="17" data-fx-params='{"calmX":0.3,"calmY":0.8}' role="img" aria-label="Der DanceCalendar mit Salsa und Bachata im Umkreis von 25 Kilometern, die Events von Samstag, und ein Flyer, den der Bot gerade gelesen hat">
+        <div class="ly-piece ly-piece--main d-win" aria-hidden="true">
+          <div class="d-win__bar"><span class="d-win__dots"><i></i><i></i><i></i></span><span>DanceCalendar</span></div>
+          <div class="d-win__body">
+            <div class="d-side">
+              <span class="is-on"><svg viewBox="0 0 16 16"><path d="M2 3.5h12M2 8h12M2 12.5h12"/></svg>Liste</span><span><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>Monat</span><span><svg viewBox="0 0 16 16"><path d="M8 14.5s4.5-4.2 4.5-7.7a4.5 4.5 0 0 0-9 0c0 3.5 4.5 7.7 4.5 7.7z"/><circle cx="8" cy="6.8" r="1.2"/></svg>Karte</span>
+              <span class="d-side__label">Ort</span><span class="d-side__pick">Ab hier · 25 km</span>
+              <span class="d-side__label">Tanzstil</span><span class="d-box is-chk"><i></i>Salsa</span><span class="d-box is-chk"><i></i>Bachata</span><span class="d-box"><i></i>Kizomba</span>
+              <span class="d-side__abo"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M8 8.5v3.5M6.2 10.3 8 12.1l1.8-1.8"/></svg>Abonnieren</span>
+            </div>
+            <div class="d-main">
+              <div class="d-main__head"><p class="d-h">Mo., 12. Okt. – So., 18. Okt.</p><span class="d-nav"><i>‹</i><i>›</i></span></div>
+              <div class="d-tabs"><span class="is-on">Alle</span><span>Partys</span><span>Workshops</span><span>Kurse</span><span>Festivals</span></div>
+              <div class="d-day"><b>Samstag</b> 17. Oktober<span>6 Events</span></div>
+              <div class="d-rows">
+                <div class="d-row"><img src="flyers/f14-96.jpg" alt=""><div><b>Latin Afternoon</b><small>Bahnhof Wilhelmshöhe</small></div><span class="num">16:00</span><span class="d-chip d-chip--ws">Workshop</span></div>
+                <div class="d-row"><img src="flyers/f12-96.jpg" alt=""><div><b>Latin Social</b><small>Kulturzentrum Färberei</small></div><span class="num">20:30</span><span class="d-chip">Party</span></div>
+                <div class="d-row"><img src="flyers/f06-96.jpg" alt=""><div><b>Salsa Disco</b><small>Schlachthof</small></div><span class="num">21:30</span><span class="d-chip">Party</span></div>
+                <div class="d-row"><img src="flyers/f10-96.jpg" alt=""><div><b>Sabakizz</b><small>Tanzschule Tango Zero</small></div><span class="num">21:30</span><span class="d-chip">Party</span></div>
+                <div class="d-row is-off"><img src="flyers/f01-96.jpg" alt=""><div><b>Está pa Latin Party</b><small>Startup Bar</small></div><span class="num">22:00</span><span class="d-chip d-chip--off">Abgesagt</span></div>
+                <div class="d-row"><img src="flyers/f05-96.jpg" alt=""><div><b>Latin Musicality Festival</b><small>Schlachthof</small></div><span class="num">Tag 2/3</span><span class="d-chip">Festival</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ly-piece ly-piece--note d-card" aria-hidden="true" data-ly-steps="700">
+          <div class="d-card__row"><p class="d-card__h">Flyer gelesen</p><span class="d-chip" data-step data-step-at="4">Im Kalender</span></div>
+          <div class="d-note__line" data-step><i>✓</i><span><b>Sabakizz</b>, Party mit Gast-DJ</span></div>
+          <div class="d-note__line" data-step><i>✓</i><span>Samstag, <b>21:30 bis 2:00</b></span></div>
+          <div class="d-note__line" data-step><i>✓</i><span>Tanzschule Tango Zero, Kassel</span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="section" id="woche" aria-labelledby="woche-h">
+    <div class="wrap">
+      <div class="grid">
+        <h2 class="span-5" id="woche-h">Jedes Event mit seinem ganzen Flyer</h2>
+        <p class="span-6 start-7">Die Liste zeigt die Woche nach Tag und Uhrzeit. Ein Tipp öffnet die Seite des Events: der Flyer unbeschnitten, daneben Ort, Eintritt und Tanzstile, so wie sie auf dem Flyer stehen. <a class="link" href="#filter">Filter ansehen</a></p>
+      </div>
+      <div class="ui app fill" role="img" aria-label="Die Seite eines Events im DanceCalendar: die Sabakizz-Party mit ihrem ganzen Flyer, daneben Ort, Veranstalter, Eintritt und Tanzstile" data-ui-pause-host>
+        <div class="app__pane app__pane--open">
+          <div class="ev" aria-hidden="true">
+            <span class="ev__back">‹ Zurück</span>
+            <p class="ev__title">Sabakizz – Ritmo de la noche</p>
+            <p class="ev__when"><b>Samstag, 17. Oktober, 21:30–02:00</b><span class="ev__type">Party</span></p>
+            <div class="ev__cols">
+              <img class="ev__flyer" src="flyers/f10-720.jpg" alt="" loading="lazy">
+              <dl class="ev__facts">
+                <dt>Ort</dt><dd>Tanzschule Tango Zero, Kassel</dd>
+                <dt>Einsteigerkurs</dt><dd>20:30</dd>
+                <dt>Veranstaltet von</dt><dd>Sabakizz Kassel</dd>
+                <dt>Eintritt</dt><dd>10 €, ermäßigt 5 €</dd>
+                <dt>Tanzstil</dt><dd>Salsa, Bachata, Kizomba</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="veranstalter" style="--hm: 2" aria-labelledby="veranstalter-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="veranstalter-h">Ein Event eintragen in 3 Schritten. <span class="muted">Alles im Telegram-Chat.</span></h2>
+      </div>
+      <div class="grid">
+        <article class="card card--row card--open span-4">
+          <span class="step-num">1</span>
+          <h3>Flyer an den Bot schicken</h3>
+          <p>Leite den Flyer aus der Gruppe weiter, als Foto oder Screenshot.</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:360px;--ax:max(24px, 50% - 180px);--ay:32px;--ay-sm:16px">
+              <div class="ui ui-panel ui-chat" data-ui="chat">
+                <div class="ui-head"><img class="ui-agent" data-icon="si:whatsapp" src="assets/icons/whatsapp.svg" alt=""><div class="ui-title">DanceCalendar</div><span class="ui-chat__online">Bot</span><span class="ui-spacer"></span></div>
+                <div class="ui-chat__body">
+                  <div class="ui-msg ui-msg--me"><span class="ui-msg__text"><img class="ui-msg__flyer" src="flyers/f10-96.jpg" alt=""></span></div>
+                  <div class="ui-msg ui-msg--bot"><span class="ui-agent ui-msg__av" aria-hidden="true"></span><span class="ui-msg__col"><span class="ui-chat__answer">Danke für den Flyer! Ist das deine Veranstaltung?</span><span class="wa-btns"><span>Ja, meine</span><span>Nein, ist ein Tipp</span></span></span></div>
+                </div>
+                <div class="ui-chat__input"><span class="ui-chat__ph">Nachricht</span><span class="ui-chat__send" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 13V3.5M3.8 7.5 8 3.3l4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-4">
+          <span class="step-num">2</span>
+          <h3>Die Angaben vom Flyer prüfen</h3>
+          <p>Titel, Tag, Uhrzeit und Ort kommen vom Flyer. Fehlt etwas, fragt der Bot nach.</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:360px;--ax:max(24px, 50% - 180px);--ay:32px;--ay-sm:16px" data-ui-loop>
+              <div class="ui ui-panel ui-chat" data-ui="chat" data-ui-opts='{"answer":"Sabakizz – Ritmo de la noche, Samstag 21:30 bis 2:00, Tanzschule Tango Zero, Kassel."}'>
+                <div class="ui-head"><img class="ui-agent" data-icon="si:whatsapp" src="assets/icons/whatsapp.svg" alt=""><div class="ui-title">DanceCalendar</div><span class="ui-chat__online">Bot</span><span class="ui-spacer"></span></div>
+                <div class="ui-chat__body">
+                  <div class="ui-msg ui-msg--bot" data-chat-a><span class="ui-agent ui-msg__av" aria-hidden="true"></span><span class="ui-msg__col"><span class="ui-chat__typing" aria-hidden="true"><i></i><i></i><i></i></span><span class="ui-chat__answer"><b>Sabakizz – Ritmo de la noche</b>, Samstag 21:30 bis 2:00, Tanzschule Tango Zero, Kassel.</span><span class="wa-btns"><span>Veröffentlichen</span><span>Ändern</span><span>Verwerfen</span></span></span></div>
+                </div>
+                <div class="ui-chat__input"><span class="ui-chat__ph">Nachricht</span><span class="ui-chat__send" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 13V3.5M3.8 7.5 8 3.3l4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-4">
+          <span class="step-num">3</span>
+          <h3>Das Event später ändern</h3>
+          <p>Das Event steht sofort im Kalender. Über deinen Link änderst oder sagst du es ab.</p>
+          <div class="panel">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:360px;--ax:max(24px, 50% - 180px);--ay:calc(100% - 180px);--ay-sm:calc(100% - 180px)">
+              <div class="ui ui-notify" data-ui="notify">
+                <ul class="ui-notify__list" data-notify-list>
+                  <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Sabakizz steht im Kalender<time>jetzt</time></span><span class="ui-note__body">Samstag, 21:30</span></span><span class="ui-btn ui-btn--sm ui-note__btn">Ansehen</span></li>
+                  <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M3 12.5 12 3.5M9 3.5h3v3"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Dein Link zum Bearbeiten<time>jetzt</time></span><span class="ui-note__body">Ändern oder absagen, ohne Passwort</span></span></li>
+                  <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Salsa Disco steht im Kalender<time>2 T.</time></span><span class="ui-note__body">Jeden 2. Samstag</span></span></li>
+                </ul>
+              </div>
+            </div></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="flyer" data-moment="letters-assemble" data-moment-opts='{"from": 1, "to": 0.05}' aria-labelledby="flyer-h">
+    <div class="wrap">
+      <h2 class="mo-la__type" id="flyer-h">Jeder Flyer bleibt ganz</h2>
+      <p class="mo-la__sub">Der Kalender zeigt den Flyer so, wie der Veranstalter ihn gemacht hat: nicht beschnitten, nichts darüber gelegt. Fällt ein Event aus, bleibt es sichtbar und ist als abgesagt markiert.</p>
+      <div class="flyer-row">
+        <img src="flyers/f07-720.jpg" alt="Flyer von La Clave in der Tanzschule Seyler, ganz gezeigt" loading="lazy" data-source="client" data-subject="an Organizer's Flyer">
+        <img src="flyers/f17-720.jpg" alt="Flyer von La Noche de la Salsa in der Gaststätte AC Theke, ganz gezeigt" loading="lazy" data-source="client" data-subject="an Organizer's Flyer">
+        <img src="flyers/f09-720.jpg" alt="Flyer von Latin Dance After Work in der Startup Bar, ganz gezeigt" loading="lazy" data-source="client" data-subject="an Organizer's Flyer">
+      </div>
+    </div>
+  </section>
+
+  <section class="section ground-inverse" id="filter" aria-labelledby="filter-h">
+    <div class="wrap">
+      <div class="grid">
+        <div class="span-5 stack-6">
+          <h2 id="filter-h">Filter nach Ort, Tanzstil und Art</h2>
+          <p class="t-lead">Wähle deinen Standort oder tippe einen Ort auf der Karte, dazu die Stile, die du tanzt. Jede Auswahl steht in der Adresse: Link in die Gruppe, und alle sehen dieselbe Liste. Oder abonniere sie in deiner Kalender-App.</p>
+          <p class="flt-facts">Party, Workshop, Kurs oder Festival.<br>Als Liste, als Monat, auf der Karte oder als Kalender-Abo.<br>Auf Deutsch, oder auf Englisch mit ?lang=en.</p>
+          <a class="link" href="#fragen">Fragen zum Kalender lesen</a>
+        </div>
+        <div class="frame frame--split span-6 start-7">
+          <div class="stage stage--fade-br">
+            <div class="flt" role="img" aria-label="Die Filter des Kalenders: Partys, ab dem gewählten Ort im Umkreis von 25 Kilometern, Salsa und Bachata, die Adresse, in der die Auswahl steht, und das Abo für die Kalender-App">
+              <div class="flt__tabs" aria-hidden="true"><span>Alle</span><span class="is-on">Partys</span><span>Workshops</span><span>Kurse</span><span>Festivals</span></div>
+              <div aria-hidden="true"><p class="flt__label">Umkreis ab hier</p><div class="flt__chips"><span>10 km</span><span class="is-on">25 km</span><span>50 km</span><span>100 km</span><span>überall</span></div></div>
+              <div class="flt__styles" aria-hidden="true"><p class="flt__label">Tanzstil</p><div class="flt__boxes"><span class="is-chk"><i></i>Salsa</span><span class="is-chk"><i></i>Bachata</span><span><i></i>Kizomba</span><span><i></i>Urban Kiz</span><span><i></i>West Coast Swing</span></div></div>
+              <div class="flt__url" aria-hidden="true">/?c=51.31,9.48&amp;r=25&amp;styles=salsa,bachata&amp;type=party</div>
+              <div class="flt__abo" aria-hidden="true"><span>Abonnieren</span><small>Dieselbe Auswahl als Kalender-Abo, das sich von selbst aktualisiert</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="fragen" aria-labelledby="fragen-h">
+    <div class="wrap">
+      <div class="grid grid--top">
+        <div class="span-5 stack-4">
+          <h2 id="fragen-h">Fragen zum Kalender</h2>
+          <p class="muted">Was Tänzer und Veranstalter am häufigsten wissen wollen.</p>
+          <a class="link" href="#contact">Schreib uns</a>
+          <div class="faq-flyers">
+            <img src="flyers/f15-720.jpg" alt="Flyer von „Kirche und Salsa – geht das?“, ein Tipp aus der Community" loading="lazy" data-source="client" data-subject="an Organizer's Flyer">
+            <img src="flyers/f13-720.jpg" alt="Flyer der infinito Bachata-Party" loading="lazy" data-source="client" data-subject="an Organizer's Flyer">
+          </div>
+        </div>
+        <div class="faq span-6 start-7">
+          <div class="faq__item"><h3>Brauche ich ein Konto?</h3><p>Nein. Der Kalender ist ohne Anmeldung offen, und deine Filter stehen in der Adresse.</p></div>
+          <div class="faq__item"><h3>Kann ich ein Event melden, das nicht meins ist?</h3><p>Ja. Schick den Flyer an den Bot und tippe „Nein, ist ein Tipp“. Nach der Prüfung steht er mit „von der Community hinzugefügt“ im Kalender.</p></div>
+          <div class="faq__item faq__item--desk"><h3>Welche Orte deckt der Kalender ab?</h3><p>Kassel, Göttingen und die Orte drumherum. Mit dem Umkreis wählst du, wie weit du fahren willst.</p></div>
+          <div class="faq__item faq__item--desk"><h3>Was, wenn ein Event ausfällt?</h3><p>Der Veranstalter sagt es über seinen Link ab. Es bleibt im Kalender und ist als abgesagt markiert.</p></div>
+          <div class="faq__item"><h3>Werde ich getrackt?</h3><p>Nein. Die Seite hat kein Tracking und keinen Cookie-Banner.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer closing footer--dark ground-inverse g2m" id="contact" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta close--type">
+      <div class="section-head">
+        <h2 id="close-h">Die Events von heute Abend</h2>
+        <p class="t-small muted">Heute und die nächsten 7 Tage, ohne Anmeldung.</p>
+      </div>
+      <a class="btn btn--primary btn--xl btn--wide" href="http://localhost:8788/">Kalender öffnen<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="nav__logo" href="#top"><span class="mark" data-mark="arc" aria-hidden="true"></span>DanceCalendar</a>
+          <p class="footer__lede">Ein gemeinsamer Kalender für die Partnertanz-Szene rund um Kassel und Göttingen.</p>
+        </div>
+        <div class="span-2 footer__col"><h3>Kalender</h3><ul><li><a href="#woche">Woche</a></li><li><a href="#filter">Filter</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Veranstalter</h3><ul><li><a href="#veranstalter">Event eintragen</a></li><li><a href="#fragen">Fragen</a></li></ul></div>
+        <div class="span-4 footer__col"><h3>Kontakt</h3><ul><li><a href="mailto:hallo@dancecalendar.example">E-Mail schreiben</a></li><li><a href="http://localhost:8788/impressum#melden">Event melden</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 DanceCalendar &nbsp; <a href="http://localhost:8788/impressum">Impressum</a> &nbsp; <a href="http://localhost:8788/datenschutz">Datenschutz</a> &nbsp; <a href="http://localhost:8788/nutzungsbedingungen">Nutzungsbedingungen</a></span>
+        <div class="socials"></div>
+        <span class="credits">Flyer von den Veranstaltern der gezeigten Events</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<nav class="actionbar" aria-label="Schnellzugriff">
+  <a class="btn btn--primary" href="http://localhost:8788/">Kalender öffnen</a>
+</nav>
+
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/motion/motion.js"></script>
+<script type="module" src="assets/layout/layout.js"></script>
+</body>
+</html>

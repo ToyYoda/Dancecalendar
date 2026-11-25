@@ -1,27 +1,28 @@
 import type { Context } from "hono";
 import { extractFlyer } from "./extraction/extract";
-import { Layout } from "./layout";
 import { randomToken } from "./publish";
+import { SitePage } from "./site";
 import { berlinDate } from "./whatsapp/bot";
 
-// A Flyer uploaded on the web, by the Admin at /admin/upload or by an Organizer from an edit page:
-// it goes through the same queue and extraction as a WhatsApp Flyer, into the same confirm page, and
-// is published under the given Organizer. Nobody gets a WhatsApp reply.
+// A Flyer uploaded on the web, by the Admin at /admin/upload or by an Organizer from an edit page or the
+// Organizer area (/veranstalter): it goes through the same queue and extraction as a messenger Flyer,
+// into the same confirm page, and is published under the given Organizer. A Tip from the Organizer area
+// ("source: tip", no Organizer) goes to the Admin's review instead. Nobody gets a chat reply.
 
 export type FlyerUpload = {
   type: "flyer_upload";
-  source: "admin" | "web";
+  source: "admin" | "web" | "tip";
   token: string; // the confirm page's token, known before the extraction is done
   flyerKey: string;
   mimeType: string;
-  organizerId: number;
+  organizerId: number | null; // null for a Tip
   receivedOn: string;
 };
 
 const IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 // Stores the Flyer and queues its extraction. Returns the confirm page's token, or null if `file` is no image.
-export async function queueUpload(env: Env, file: unknown, organizerId: number, source: FlyerUpload["source"]): Promise<string | null> {
+export async function queueUpload(env: Env, file: unknown, organizerId: number | null, source: FlyerUpload["source"]): Promise<string | null> {
   if (!(file instanceof File) || !IMAGE_TYPES[file.type]) return null;
   const token = randomToken();
   const flyerKey = `flyers/${randomToken()}.${IMAGE_TYPES[file.type]}`;
@@ -42,33 +43,40 @@ export async function waitForUpload(c: Context<{ Bindings: Env }>, token: string
   const error = s && (JSON.parse(s.extraction) as { error?: string }).error;
   if (error) {
     return c.html(
-      <Layout title="Fehler – DanceCalendar">
+      <SitePage title="Fehler">
         <h1>Auslesen fehlgeschlagen</h1>
-        <p>Der Flyer konnte nicht ausgelesen werden:</p>
-        <pre style="white-space: pre-wrap">{error}</pre>
+        <p class="note bad">Der Flyer konnte nicht ausgelesen werden. Versuch es bitte nochmal, oft klappt es beim zweiten Mal.</p>
+        <details class="more">
+          <summary>Technische Details</summary>
+          <pre style="white-space:pre-wrap">{error}</pre>
+        </details>
         <p>
-          <a href={again}>Nochmal hochladen</a>
+          <a class="btn solid" href={again}>Nochmal hochladen</a>
         </p>
-      </Layout>,
+      </SitePage>,
     );
   }
   if (s?.status === "discarded") {
     return c.html(
-      <Layout title="Kein Flyer – DanceCalendar">
+      <SitePage title="Kein Flyer">
         <h1>Keine Tanzveranstaltung erkannt</h1>
-        <p>Auf dem Bild habe ich keine Tanzveranstaltung erkannt.</p>
+        <p class="lead">Auf dem Bild habe ich keine Tanzveranstaltung gefunden. Am besten klappt es mit dem Flyer selbst, als Foto oder Screenshot.</p>
         <p>
-          <a href={again}>Anderen Flyer hochladen</a>
+          <a class="btn solid" href={again}>Anderen Flyer hochladen</a>
         </p>
-      </Layout>,
+      </SitePage>,
     );
   }
   if (s) return c.redirect(`/c/${token}`, 303);
   return c.html(
-    <Layout title="Wird ausgelesen – DanceCalendar" head={<meta http-equiv="refresh" content="2" />}>
+    <SitePage title="Wird ausgelesen" head={<meta http-equiv="refresh" content="2" />}>
       <h1>Flyer wird ausgelesen …</h1>
-      <p>Das dauert meist ein paar Sekunden. Dauert es länger als eine Minute, lade den Flyer nochmal hoch.</p>
-    </Layout>,
+      <div class="panel" style="display:flex;gap:14px;align-items:center">
+        <span class="spin" aria-hidden="true" />
+        <p>Das dauert meist ein paar Sekunden. Danach prüfst du alles, bevor es in den Kalender kommt.</p>
+      </div>
+      <p class="hint">Dauert es länger als eine Minute, lade den Flyer bitte nochmal hoch.</p>
+    </SitePage>,
   );
 }
 

@@ -16,6 +16,7 @@ export default defineConfig(async () => {
             WHATSAPP_VERIFY_TOKEN: "test-verify-token",
             WHATSAPP_ACCESS_TOKEN: "test-access-token",
             WHATSAPP_PHONE_NUMBER_ID: "1000",
+            TELEGRAM_BOT_TOKEN: "123:test-telegram-token",
             ANTHROPIC_API_KEY: "test-anthropic-key",
             ADMIN_SECRET: "test-admin-secret",
             OPERATOR_NAME: "Erika Muster",

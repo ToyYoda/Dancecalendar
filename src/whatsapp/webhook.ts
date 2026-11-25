@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { sendText } from "./graph";
+import { sendText } from "../messenger";
 import type { InboundMessage } from "./types";
 
 // Meta's webhook: https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks
@@ -36,7 +36,7 @@ webhook.post("/", async (c) => {
 // so the sender hears here, at once, that the Flyer arrived: an Organizer's or a remembered Tip number's
 // Flyer, or a tap on "Nein, ist ein Tipp". An unknown sender's Flyer gets "Ist das deine Veranstaltung?"
 // from the queue instead. A failed reply only loses the reply, never the Flyer.
-async function replyReading(env: Env, message: InboundMessage) {
+export async function replyReading(env: Env, message: InboundMessage) {
   const flyer = message.type === "image";
   const tipTap = message.interactive?.button_reply?.id.startsWith("tip:") ?? false;
   if (!flyer && !tipTap) return;
@@ -60,7 +60,11 @@ function inboundMessages(payload: any): InboundMessage[] {
   for (const entry of payload?.entry ?? []) {
     for (const change of entry?.changes ?? []) {
       if (change?.field !== "messages") continue;
-      // Delivery/read statuses arrive in the same field without `messages`; they are ignored.
+      // Delivery/read statuses arrive in the same field without `messages`. Only a failed delivery is
+      // logged (Meta's error code and title, never the number), since it is the only sign a reply got lost.
+      for (const s of change.value?.statuses ?? []) {
+        if (s?.status === "failed") console.error("WhatsApp delivery failed", JSON.stringify((s.errors ?? []).map((e: any) => ({ code: e.code, title: e.title, details: e.error_data?.details }))));
+      }
       for (const m of change.value?.messages ?? []) out.push(m);
     }
   }

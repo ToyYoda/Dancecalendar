@@ -399,6 +399,13 @@ describe("the brand", () => {
     expect(html).toContain("--step:#f2a65a");
   });
 
+  it("points Organizers to @StepdateBot on Telegram", async () => {
+    const html = await page();
+    expect(html).toContain("https://t.me/StepdateBot");
+    expect(html).toContain("@StepdateBot");
+    expect(html).not.toContain("DanceCalBot");
+  });
+
   it("shows its mark, a calendar grid with three steps, beside the name", async () => {
     const html = await page();
     expect(html).toContain('class="mark"');

@@ -21,6 +21,17 @@ import { telegramWebhook } from "./telegram/webhook";
 // Not strict: "/admin/upload/" finds the same page as "/admin/upload".
 const app = new Hono<{ Bindings: Env }>({ strict: false });
 
+// The calendar lives at PUBLIC_URL (stepdate.de). A page asked for on the old workers.dev address or on www.
+// moves there for good, so links shared in WhatsApp groups keep working. Webhook POSTs are answered where they
+// arrive, since Telegram and Meta don't follow redirects.
+app.use("*", async (c, next) => {
+  const home = new URL(c.env.PUBLIC_URL);
+  const url = new URL(c.req.url);
+  const moved = url.host !== home.host && (url.host.endsWith(".workers.dev") || url.host === `www.${home.host}`);
+  if (!moved || (c.req.method !== "GET" && c.req.method !== "HEAD")) return next();
+  return c.redirect(`${home.origin}${url.pathname}${url.search}`, 301);
+});
+
 // "Was ist Stepdate?": the page about the calendar and how Organizers add Events (public/landing),
 // linked from the calendar's header. The calendar itself is the start page; /kalender, its address for a
 // day in November 2026, leads back there.

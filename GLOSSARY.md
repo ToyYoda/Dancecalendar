@@ -1,4 +1,4 @@
-# Stepdate
+# DanceAhead
 
 A shared calendar for the partner-dance community around Kassel and Göttingen, where organizers post their events and dancers browse and filter them.
 

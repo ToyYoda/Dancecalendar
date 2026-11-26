@@ -310,7 +310,7 @@ describe("the daily email", () => {
     expect(box.sent).toHaveLength(1);
     const m = box.sent[0];
     expect(m.to).toBe("admin@example.test");
-    expect(m.from).toEqual({ name: "Stepdate", email: "bot@example.test" });
+    expect(m.from).toEqual({ name: "DanceAhead", email: "bot@example.test" });
     const text = m.text!;
     expect(text).toContain("Kizomba Tip");
     expect(text).toContain("https://dancecalendar.test/admin/tips/tip-token");

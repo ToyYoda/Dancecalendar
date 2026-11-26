@@ -188,7 +188,7 @@ const DROP_SCRIPT = `document.querySelectorAll(".drop input").forEach(function(i
 export function SitePage(props: { title: string; head?: Child; css?: string; nav?: Child; children: Child }) {
   return (
     <Layout
-      title={`${props.title} – Stepdate`}
+      title={`${props.title} – DanceAhead`}
       head={
         <>
           <link rel="preload" href="/fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="" />

@@ -6,7 +6,7 @@ import { Layout } from "./layout";
 // teal, light cards on a pale ground. The bar on top names the two ways to add an Event: the Telegram
 // bot and the Organizer area here.
 
-export const BOT = "DanceCalBot"; // the Telegram bot's username
+export const BOT = "StepdateBot"; // the Telegram bot's username, set with @BotFather
 export const BOT_URL = `https://t.me/${BOT}`;
 
 const FONTS = `@font-face{font-family:"Outfit";font-weight:100 900;font-style:normal;font-display:swap;src:url(/fonts/outfit-latin-wght-normal.woff2) format("woff2");}`;
@@ -42,6 +42,21 @@ export const SITE_CSS = `${FONTS}
   .mast .add svg { vertical-align:-3px; margin-right:4px; }
   @media (min-width:960px) { .mast { padding-top:16px; padding-bottom:16px; } }
 
+  /* the night band: the bar in plum, the type light, "date" and the Telegram link in apricot; on the calendar the
+     ink couple dances in it */
+  .mast.night { position:relative; overflow:hidden; background:var(--ink); color:#f4eef1; border-bottom:0; }
+  .mast.night > :not(.ink) { position:relative; z-index:1; }
+  .mast.night .ink { position:absolute; inset:0; width:100%; height:100%; z-index:0; }
+  .mast.night .name .d { color:var(--step); }
+  .mast.night .mark > rect:first-child { stroke:rgb(255 255 255 / .28); stroke-width:1.5; }
+  .mast.night .sub { color:#c9b9c3; }
+  .mast.night .about { color:#f4eef1; }
+  .mast.night .lang { border-color:rgb(255 255 255 / .25); }
+  .mast.night .lang:hover { background:rgb(255 255 255 / .1); }
+  .mast.night .add { background:rgb(255 255 255 / .08); color:#f4eef1; }
+  .mast.night .add b, .mast.night .add a { color:#fff; }
+  .mast.night :focus-visible { outline-color:var(--step); }
+
   .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font:500 15px var(--sans); height:44px; padding:0 20px; border-radius:99px; border:1px solid rgb(31 20 38 / .2); background:var(--card); color:var(--ink); cursor:pointer; transition:background .15s, transform .15s; }
   .btn:hover { background:var(--wash); }
   .btn:active { transform:scale(.97); }
@@ -65,16 +80,17 @@ const TelegramIcon = () => (
 );
 
 const T = {
-  de: { sub: "wo heute getanzt wird", add: "Neues Event eintragen:", bot: "per Telegram an @DanceCalBot", or: "oder", web: "hier auf der Website" },
-  en: { sub: "where to dance tonight", add: "Add an Event:", bot: "on Telegram via @DanceCalBot", or: "or", web: "here on the website" },
+  de: { sub: "wo heute getanzt wird", add: "Neues Event eintragen:", bot: `per Telegram an @${BOT}`, or: "oder", web: "hier auf der Website" },
+  en: { sub: "where to dance tonight", add: "Add an Event:", bot: `on Telegram via @${BOT}`, or: "or", web: "here on the website" },
 };
 
 // The bar on every page. `home` is where the name leads (the calendar keeps its filters), `children` the
-// links on the right; `add` shows the two ways to add an Event.
-export function Masthead(props: { lang?: "de" | "en"; home?: string; add?: boolean; children?: Child }) {
+// links on the right; `add` shows the two ways to add an Event, `ink` lets the ink couple dance in the band.
+export function Masthead(props: { lang?: "de" | "en"; home?: string; add?: boolean; ink?: boolean; children?: Child }) {
   const t = T[props.lang ?? "de"];
   return (
-    <header class="mast">
+    <header class="mast night">
+      {props.ink && <canvas class="ink" data-ink="/ink/couple.png" aria-hidden="true"></canvas>}
       <a class="home" href={props.home ?? "/"}>
         {/* The mark, a week grid in which three days light up diagonally like the steps of a dance diagram, then the
             name in lower case: "step" in ink, "date" in bordeaux. */}
@@ -112,6 +128,7 @@ export function Masthead(props: { lang?: "de" | "en"; home?: string; add?: boole
           {t.or} <a href="/veranstalter">{t.web}</a>
         </p>
       )}
+      {props.ink && <script src="/ink/couple.js" defer />}
     </header>
   );
 }

@@ -11,14 +11,24 @@ describe("the page about Stepdate", () => {
     expect(html).toContain("Was ist Stepdate?");
   });
 
-  it("shows what the calendar is, with the way back to it and to @DanceCalBot", async () => {
+  it("shows what the calendar is, with the way back to it and to @StepdateBot", async () => {
     const res = await exports.default.fetch("http://dancecalendar.test/ueber");
 
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("Paartanz-Kalender für Kassel und Göttingen");
     expect(html).toContain('href="/"');
-    expect(html).toContain("https://t.me/DanceCalBot");
+    expect(html).toContain("https://t.me/StepdateBot");
+  });
+
+  it("opens under the same night band as the calendar, with the ink couple in the hero", async () => {
+    const html = await (await exports.default.fetch("http://dancecalendar.test/ueber")).text();
+
+    expect(html).toContain('<header class="nav ground-inverse">');
+    expect(html).toContain('<section class="hero hero--collage ground-inverse"');
+    expect(html).toMatch(/<canvas class="ink" data-ink="\/ink\/couple.png"/);
+    expect(html).toContain('<script src="/ink/couple.js" defer></script>');
+    expect(html).not.toContain("#2c3c44"); // the slate of the old design
   });
 
   it("sends a link to /kalender, the calendar's address for a day, back to the start page", async () => {

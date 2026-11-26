@@ -10,15 +10,15 @@
   // Static files served before the Worker: MapLibre for the map at /karte (copied from node_modules/maplibre-gl/dist),
   // and the page about DanceAhead in public/landing, which the Worker serves at /ueber (src/index.tsx).
   "assets": { "directory": "./public", "binding": "ASSETS" },
-  // stepdate.de must be a zone in this Cloudflare account; deploy then creates the DNS records and certificates.
+  // danceahead.de must be a zone in this Cloudflare account; deploy then creates the DNS records and certificates.
   "routes": [
-    { "pattern": "stepdate.de", "custom_domain": true },
-    { "pattern": "www.stepdate.de", "custom_domain": true }
+    { "pattern": "danceahead.de", "custom_domain": true },
+    { "pattern": "www.danceahead.de", "custom_domain": true }
   ],
   "workers_dev": true,
   "vars": {
     // The calendar's address. The old workers.dev address and www. redirect here (src/index.tsx).
-    "PUBLIC_URL": "https://stepdate.de",
+    "PUBLIC_URL": "https://danceahead.de",
     // Geocoders for new Venues (src/geocode.ts); "" switches one off.
     "PHOTON_URL": "https://photon.komoot.io",
     "NOMINATIM_URL": "https://nominatim.openstreetmap.org"

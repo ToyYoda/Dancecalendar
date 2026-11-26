@@ -87,7 +87,7 @@ describe("the calendar's header", () => {
   it("names both ways to add an Event: the Telegram bot and the Organizer area", async () => {
     const html = await (await get("http://dancecalendar.test/")).text();
 
-    expect(html).toContain("https://t.me/StepdateBot");
+    expect(html).toContain("https://t.me/DanceAheadBot");
     expect(html).toContain('href="/veranstalter"');
     expect(html).not.toMatch(/KW \d/);
   });
@@ -109,7 +109,7 @@ describe("logging in with Telegram", () => {
 
     const code = await startLogin(b);
     const waiting = await (await b.get(`/login/telegram?c=${code}`)).text();
-    expect(waiting).toContain(`https://t.me/StepdateBot?start=login-${code}`);
+    expect(waiting).toContain(`https://t.me/DanceAheadBot?start=login-${code}`);
     await start(`login-${code}`);
 
     const question = api.sent.at(-1)!;

@@ -32,6 +32,10 @@ export async function queueUpload(env: Env, file: unknown, organizerId: number |
   return token;
 }
 
+// 15 refreshes every 2 seconds, then every 5 seconds until 35: about two minutes in all.
+const FAST_TRIES = 15;
+const GIVE_UP_AFTER = 35;
+
 // The waiting page: refreshes until the queue consumer is done, then hands over to the confirm page.
 // `again` is where to upload another Flyer.
 export async function waitForUpload(c: Context<{ Bindings: Env }>, token: string, organizerId: number | null, again: string) {
@@ -68,8 +72,24 @@ export async function waitForUpload(c: Context<{ Bindings: Env }>, token: string
     );
   }
   if (s) return c.redirect(`/c/${token}`, 303);
+  // The page counts its own refreshes in `n`, so a forgotten tab stops after about two minutes
+  // instead of costing a Worker request every 2 seconds forever (ADR 0008).
+  const tries = Math.max(0, Number.parseInt(c.req.query("n") ?? "", 10) || 0);
+  const path = c.req.path;
+  if (tries >= GIVE_UP_AFTER) {
+    return c.html(
+      <SitePage title="Dauert lange">
+        <h1>Das dauert ungewöhnlich lange</h1>
+        <p class="lead">Vielleicht wird der Flyer noch ausgelesen. Schau gleich nochmal nach, oder lade ihn nochmal hoch.</p>
+        <p>
+          <a class="btn solid" href={path}>Nochmal nachsehen</a> <a class="btn" href={again}>Nochmal hochladen</a>
+        </p>
+      </SitePage>,
+    );
+  }
+  const seconds = tries < FAST_TRIES ? 2 : 5;
   return c.html(
-    <SitePage title="Wird ausgelesen" head={<meta http-equiv="refresh" content="2" />}>
+    <SitePage title="Wird ausgelesen" head={<meta http-equiv="refresh" content={`${seconds}; url=${path}?n=${tries + 1}`} />}>
       <h1>Flyer wird ausgelesen …</h1>
       <div class="panel" style="display:flex;gap:14px;align-items:center">
         <span class="spin" aria-hidden="true" />

@@ -111,6 +111,8 @@ overview.get("/", async (c) => {
   const byAll = await eventsByDay(c.env.DB, f, all);
   const byDay = new Map(days.map((d) => [d, byAll.get(d) ?? []]));
   const busy = new Set(grid.filter((d) => byAll.get(d)?.length));
+  // Every filter combination is its own URL, and each links to more: crawlers index the plain calendar only (ADR 0008).
+  if (new URL(c.req.url).search) c.header("X-Robots-Tag", "noindex, nofollow");
   return c.html(<FeedPage f={f} today={today} from={from} to={to} month={month} grid={grid} busy={busy} byDay={byDay} />);
 });
 

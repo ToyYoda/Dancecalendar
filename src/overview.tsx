@@ -393,7 +393,7 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
   );
   return (
     <Layout title={props.title ? `${props.title} – Stepdate` : "Stepdate"} lang={props.f.lang} head={head}>
-      <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add ink>
+      <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add>
         <a class="about" href="/ueber" lang="de">{t.about}</a>
         <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
           {props.f.lang === "de" ? "English" : "Deutsch"}
@@ -1117,10 +1117,14 @@ const CSS = `${SITE_CSS}
   .mgrid .c.today { font-weight:600; color:var(--accent-ink); }
   .mgrid .c.busy::after { content:""; position:absolute; bottom:3px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:1px; background:var(--step); }
   .mgrid .c.past.busy::after, .mgrid .c.out.busy::after { background:#b0a6ac; }
-  .mgrid .c.in { background:var(--tint); border-radius:0; }
-  .mgrid .c.first { border-radius:8px 0 0 8px; } .mgrid .c.last { border-radius:0 8px 8px 0; } .mgrid .c.first.last { border-radius:8px; }
-  .mgrid .c.first, .mgrid .c.last { background:var(--accent); color:#fff; font-weight:500; }
-  .mgrid .c.first::after, .mgrid .c.last::after { background:#fff; }
+  .mgrid .c.in { background:var(--step-tint); border-radius:0; }
+  /* the first and the last day stand as small apricot signs, the span runs between them */
+  .mgrid .c.first, .mgrid .c.last { isolation:isolate; color:var(--ink); font-weight:600; border-radius:0; }
+  .mgrid .c.first { background:linear-gradient(to right, transparent 50%, var(--step-tint) 50%); }
+  .mgrid .c.last { background:linear-gradient(to left, transparent 50%, var(--step-tint) 50%); }
+  .mgrid .c.first.last { background:none; }
+  .mgrid .c.first::before, .mgrid .c.last::before { content:""; position:absolute; z-index:-1; top:50%; left:50%; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:4px; background:var(--step); transform:rotate(45deg); }
+  .mgrid .c.first::after, .mgrid .c.last::after { background:var(--ink); }
   .mgrid .c.pend { background:var(--ink); color:#fff; border-radius:0; }
   .mgrid .c.pend::after { background:#fff; }
   .mini .hint { margin:8px 0 0; font-size:13px; color:var(--mute); }
@@ -1137,6 +1141,7 @@ const CSS = `${SITE_CSS}
     .mhead { margin-bottom:2px; }
     .mgrid .dow { padding:0 0 2px; font-size:10px; }
     .mgrid .c { height:26px; font-size:12px; }
+    .mgrid .c.first::before, .mgrid .c.last::before { width:17px; height:17px; margin:-8.5px 0 0 -8.5px; }
     .mgrid .c.busy::after { bottom:1px; width:3px; height:3px; margin-left:-1.5px; }
     .mini .hint { margin-top:4px; font-size:12px; }
     .dates { width:100%; }
@@ -1148,7 +1153,7 @@ const CSS = `${SITE_CSS}
   .types::-webkit-scrollbar { display:none; }
   .types a { flex:none; padding:6px 13px; border-radius:99px; font-size:15px; color:var(--mute); transition:background .15s, color .15s; }
   .types a:hover { color:var(--ink); background:var(--wash); }
-  .types a.on { color:var(--ink); font-weight:500; background:rgb(31 20 38 / .08); }
+  .types a.on { color:var(--ink); font-weight:500; background:var(--step); }
 
   .day { margin-top:24px; }
   .dayhead { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding-bottom:8px; border-bottom:1px solid var(--line); }

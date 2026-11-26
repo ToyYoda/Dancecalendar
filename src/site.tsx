@@ -13,7 +13,7 @@ const FONTS = `@font-face{font-family:"Outfit";font-weight:100 900;font-style:no
 
 export const SITE_CSS = `${FONTS}
   :root { color-scheme:light; --paper:#faf7f4; --card:#fff; --ink:#1f1426; --mute:#6a5f68; --hair:#e6dde1; --line:rgb(31 20 38 / .1); --wash:#f2ecee;
-          --accent:#7a1e3a; --accent-ink:#651830; --tint:#f2e4e8; --step:#f2a65a; --off:#a3271b; --off-tint:#fbe6e3; --warm:#7a4f00; --warm-tint:#fbefd6;
+          --accent:#7a1e3a; --accent-ink:#651830; --tint:#f2e4e8; --step:#f2a65a; --step-tint:#fbe6d2; --off:#a3271b; --off-tint:#fbe6e3; --warm:#7a4f00; --warm-tint:#fbefd6;
           --r:16px; --r-sm:10px; --shadow:0 1px 2px rgb(31 20 38 / .06), 0 18px 44px -24px rgb(31 20 38 / .35);
           --sans:"Outfit", system-ui, sans-serif; --stick:0px; --g:16px; }
   html { background:var(--paper); scroll-padding-top:calc(var(--stick) + 12px); }
@@ -27,9 +27,10 @@ export const SITE_CSS = `${FONTS}
 
   /* the bar: the mark and the name, the ways to add an Event, the links on the right */
   .mast { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 12px; padding:14px var(--g); background:var(--card); border-bottom:1px solid var(--line); }
-  .mast .home { display:flex; flex-direction:column; min-width:0; flex:1 1 15rem; } /* on a phone the links wrap below */
-  .mast .name { display:inline-flex; align-items:center; gap:8px; font:600 26px/1 var(--sans); letter-spacing:-.035em; white-space:nowrap; }
-  .mast .name .mark { flex:none; }
+  .mast .home { display:flex; align-items:center; gap:10px; min-width:0; flex:1 1 15rem; } /* on a phone the links wrap below */
+  .mast .words { display:flex; flex-direction:column; min-width:0; }
+  .mast .name { display:inline-flex; align-items:center; font:700 26px/1 var(--sans); letter-spacing:-.03em; white-space:nowrap; }
+  .mast .sign { flex:none; }
   .mast .name .d { color:var(--accent); }
   .mast .sub { display:block; margin-top:4px; font-size:13px; color:var(--mute); }
   .mast .meta { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; }
@@ -48,13 +49,13 @@ export const SITE_CSS = `${FONTS}
   .mast.night > :not(.ink) { position:relative; z-index:1; }
   .mast.night .ink { position:absolute; inset:0; width:100%; height:100%; z-index:0; }
   .mast.night .name .d { color:var(--step); }
-  .mast.night .mark > rect:first-child { stroke:rgb(255 255 255 / .28); stroke-width:1.5; }
   .mast.night .sub { color:#c9b9c3; }
   .mast.night .about { color:#f4eef1; }
   .mast.night .lang { border-color:rgb(255 255 255 / .25); }
   .mast.night .lang:hover { background:rgb(255 255 255 / .1); }
   .mast.night .add { background:rgb(255 255 255 / .08); color:#f4eef1; }
-  .mast.night .add b, .mast.night .add a { color:#fff; }
+  .mast.night .add a { color:#fff; }
+  .mast.night .add b { color:var(--step); }
   .mast.night :focus-visible { outline-color:var(--step); }
 
   .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font:500 15px var(--sans); height:44px; padding:0 20px; border-radius:99px; border:1px solid rgb(31 20 38 / .2); background:var(--card); color:var(--ink); cursor:pointer; transition:background .15s, transform .15s; }
@@ -80,8 +81,8 @@ const TelegramIcon = () => (
 );
 
 const T = {
-  de: { sub: "wo heute getanzt wird", add: "Neues Event eintragen:", bot: `per Telegram an @${BOT}`, or: "oder", web: "hier auf der Website" },
-  en: { sub: "where to dance tonight", add: "Add an Event:", bot: `on Telegram via @${BOT}`, or: "or", web: "here on the website" },
+  de: { sub: "wo als Nächstes getanzt wird", add: "Neues Event eintragen:", bot: `per Telegram an @${BOT}`, or: "oder", web: "hier auf der Website" },
+  en: { sub: "where to dance next", add: "Add an Event:", bot: `on Telegram via @${BOT}`, or: "or", web: "here on the website" },
 };
 
 // The bar on every page. `home` is where the name leads (the calendar keeps its filters), `children` the
@@ -92,30 +93,20 @@ export function Masthead(props: { lang?: "de" | "en"; home?: string; add?: boole
     <header class="mast night">
       {props.ink && <canvas class="ink" data-ink="/ink/couple.png" aria-hidden="true"></canvas>}
       <a class="home" href={props.home ?? "/"}>
-        {/* The mark, a week grid in which three days light up diagonally like the steps of a dance diagram, then the
-            name in lower case: "step" in ink, "date" in bordeaux. */}
-        <span class="name" role="img" aria-label="Stepdate">
-          <svg class="mark" width="26" height="26" viewBox="0 0 30 30" aria-hidden="true">
-            <rect width="30" height="30" rx="8" fill="#1f1426" />
-            <g fill="#faf7f4" opacity=".35">
-              <rect x="5" y="5" width="5" height="5" rx="1.2" />
-              <rect x="12.5" y="5" width="5" height="5" rx="1.2" />
-              <rect x="5" y="12.5" width="5" height="5" rx="1.2" />
-              <rect x="20" y="12.5" width="5" height="5" rx="1.2" />
-              <rect x="12.5" y="20" width="5" height="5" rx="1.2" />
-              <rect x="20" y="20" width="5" height="5" rx="1.2" />
-            </g>
-            <g fill="#f2a65a">
-              <rect x="20" y="5" width="5" height="5" rx="1.2" />
-              <rect x="12.5" y="12.5" width="5" height="5" rx="1.2" />
-              <rect x="5" y="20" width="5" height="5" rx="1.2" />
-            </g>
-          </svg>
-          <span aria-hidden="true">
-            step<span class="d">date</span>
+        {/* The name in lower case, "dance" in white and "ahead" in apricot, the claim below, and behind both the sign:
+            an apricot road sign with an arrow pointing ahead, to the next dance. */}
+        <span class="words">
+          <span class="name" role="img" aria-label="DanceAhead">
+            <span aria-hidden="true">
+              dance<span class="d">ahead</span>
+            </span>
           </span>
+          <span class="sub">{t.sub}</span>
         </span>
-        <span class="sub">{t.sub}</span>
+        <svg class="sign" width="46" height="46" viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="6" y="6" width="28" height="28" rx="3" transform="rotate(45 20 20)" fill="#f2a65a" />
+          <path d="M20 29V11.5M14 17.5l6-6 6 6" fill="none" stroke="#1f1426" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
       </a>
       {props.children && <span class="meta">{props.children}</span>}
       {props.add && (

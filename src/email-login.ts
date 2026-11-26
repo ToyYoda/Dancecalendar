@@ -41,14 +41,14 @@ export async function sendEmailLink(c: C, email: string): Promise<"sent" | "limi
   const link = `${new URL(c.req.url).origin}/veranstalter/login/email/${token}`;
   const result = await sendMail(c.env, {
     to: email,
-    subject: "Dein Anmeldelink für Stepdate",
+    subject: "Dein Anmeldelink für DanceAhead",
     text: [
       "Hallo!",
-      "Mit diesem Link meldest du dich bei Stepdate an, um deine Events zu sehen und zu bearbeiten:",
+      "Mit diesem Link meldest du dich bei DanceAhead an, um deine Events zu sehen und zu bearbeiten:",
       link,
       `Der Link gilt ${EMAIL_LINK_MINUTES} Minuten und nur einmal.`,
       "Hast du keine Anmeldung gestartet? Dann ignoriere diese E-Mail einfach. Ohne den Link kann sich niemand anmelden.",
-      "Stepdate",
+      "DanceAhead",
     ].join("\n\n"),
   });
   return result === "sent" ? "sent" : "failed";

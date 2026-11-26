@@ -283,7 +283,7 @@ describe("the calendar subscription", () => {
 
     expect(res.headers.get("content-type")).toBe("text/calendar; charset=utf-8");
     expect(body.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
-    expect(body).toContain("X-WR-CALNAME:Stepdate · Bachata");
+    expect(body).toContain("X-WR-CALNAME:DanceAhead · Bachata");
     expect(body).toContain("TZID:Europe/Berlin");
     expect(body).toContain(`DTSTART;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T213000`);
     expect(body).toContain(`DTEND;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T235900`);
@@ -351,19 +351,19 @@ describe("Flyer images", () => {
 });
 
 describe("the brand", () => {
-  it("is called Stepdate, with its claim and no place in it", async () => {
+  it("is called DanceAhead, with its claim and no place in it", async () => {
     const html = await page();
-    expect(html).toContain("<title>Stepdate</title>");
-    expect(html).toContain('aria-label="Stepdate"');
-    expect(html).toContain("wo heute getanzt wird");
+    expect(html).toContain("<title>DanceAhead</title>");
+    expect(html).toContain('aria-label="DanceAhead"');
+    expect(html).toContain("wo als Nächstes getanzt wird");
     expect(html).not.toContain("Taktvoll");
     expect(html).not.toContain("DanceCalendar");
     expect(html).not.toContain("Kassel, Göttingen und drumherum");
-    expect(await page("?lang=en")).toContain("where to dance tonight");
+    expect(await page("?lang=en")).toContain("where to dance next");
   });
 
   it("names the page in the tab after the brand", async () => {
-    expect(await page("karte")).toMatch(/<title>[^<]+ – Stepdate<\/title>/);
+    expect(await page("karte")).toMatch(/<title>[^<]+ – DanceAhead<\/title>/);
   });
 
   it("serves its mark as the favicon on every page", async () => {
@@ -371,15 +371,9 @@ describe("the brand", () => {
     expect(await (await get("http://dancecalendar.test/impressum")).text()).toContain('href="/favicon.svg"');
   });
 
-  it("opens the calendar under a night band in which the ink couple dances", async () => {
+  it("opens the calendar under a night band with nothing over its controls", async () => {
     const html = await page();
     expect(html).toMatch(/<header class="mast night">/);
-    expect(html).toContain('<canvas class="ink" data-ink="/ink/couple.png" aria-hidden="true"></canvas>');
-    expect(html).toContain('<script src="/ink/couple.js" defer=""></script>');
-  });
-
-  it("keeps the ink couple off the pages that are forms", async () => {
-    const html = await (await get("http://dancecalendar.test/veranstalter")).text();
     expect(html).not.toContain('class="ink"');
     expect(html).not.toContain("/ink/couple.js");
   });
@@ -406,10 +400,16 @@ describe("the brand", () => {
     expect(html).not.toContain("DanceCalBot");
   });
 
-  it("shows its mark, a calendar grid with three steps, beside the name", async () => {
+  it("shows the name with the sign behind it, an apricot road sign with an arrow ahead", async () => {
     const html = await page();
-    expect(html).toContain('class="mark"');
-    expect(html).toMatch(/step<span class="d">date<\/span>/);
+    expect(html).toMatch(/dance<span class="d">ahead<\/span>/);
+    expect(html).toContain('class="sign"');
+    expect(html.indexOf('class="sign"')).toBeGreaterThan(html.indexOf('<span class="d">ahead'));
+  });
+
+  it("marks the first and the last day of the span as small signs in the calendar", async () => {
+    const html = await page();
+    expect(html).toMatch(/\.mgrid \.c\.first::before, \.mgrid \.c\.last::before \{[^}]*rotate\(45deg\)/);
   });
 });
 

@@ -29,7 +29,7 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(greetings[0]).toContain("https://dancecalendar.test/nutzungsbedingungen");
     expect(greetings[0]).toContain("Admin");
     expect(greetings[0]).toContain("STOP");
-    expect(greetings[0]).toContain("Stepdate");
+    expect(greetings[0]).toContain("DanceAhead");
   });
 
   it("replies with a summary of the extracted Events and the three buttons", async () => {

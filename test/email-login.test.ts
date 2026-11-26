@@ -45,7 +45,7 @@ describe("logging in with email", () => {
     expect(html).toContain("Link per E-Mail");
   });
 
-  it("sends a link from Stepdate's address and says to check the inbox", async () => {
+  it("sends a link from DanceAhead's address and says to check the inbox", async () => {
     const api = fakeApis();
 
     const res = await askForLink(new Browser(), "ana@example.test");
@@ -55,7 +55,7 @@ describe("logging in with email", () => {
     expect(api.mails).toHaveLength(1);
     const mail = api.mails[0];
     expect(mail).toMatchObject({ from: "anmeldung@dancecalendar.test", to: "ana@example.test", apiKey: "test-brevo-key" });
-    expect(mail.subject).toContain("Stepdate");
+    expect(mail.subject).toContain("DanceAhead");
     expect(mail.text).toContain("15 Minuten");
     expect(mail.text).toMatch(/^http:\/\/dancecalendar\.test\/veranstalter\/login\/email\/[\w-]{32,}$/m);
   });

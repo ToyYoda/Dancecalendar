@@ -87,9 +87,9 @@ async function composeDigest(env: Env, now: Date): Promise<{ subject: string; te
 
   const count = tipRows.length + ruleRows.length + organizerRows.length + ending.length;
   const text = [
-    `Heute (${formatDate(today, today)}) wartet im Stepdate:`,
+    `Heute (${formatDate(today, today)}) wartet im DanceAhead:`,
     ...sections.map((s) => `${s.heading}\n${s.lines.join("\n")}`),
     `Admin: ${url}/admin`,
   ].join("\n\n");
-  return { subject: `Stepdate: ${count} ${count === 1 ? "Punkt" : "Punkte"} für dich`, text };
+  return { subject: `DanceAhead: ${count} ${count === 1 ? "Punkt" : "Punkte"} für dich`, text };
 }

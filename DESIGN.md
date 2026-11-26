@@ -1,5 +1,5 @@
 ---
-name: Stepdate
+name: DanceAhead
 description: The regional partner-dance week, set as a city magazine's "Termine" listings around each Organizer's whole Flyer.
 colors:
   ink: "#111111"
@@ -116,7 +116,7 @@ components:
     padding: "14px"
 ---
 
-# Design System: Stepdate
+# Design System: DanceAhead
 
 ## Overview
 
@@ -152,11 +152,11 @@ A monochrome print palette with a single saturated magenta; the Flyers supply al
 - **Proof Wash** (#f3f3f1): hover fill for chips, index days and month cells; placeholder behind a loading Flyer.
 
 ### Named Rules
-**The Accent Rule.** The palette is "Abendkleid" (ADR 0005): warm Paper (#faf7f4), Plum ink (#1f1426), Bordeaux (#7a1e3a, hover and small text #651830) as the one accent, Rosé (#f2e4e8) as its tint, Grey (#6a5f68) for secondary text, and Apricot (#f2a65a) only for the step cells of the mark and the event dots in the month grid. Bordeaux marks "date" in the wordmark, today, picked days and filters, each Event's type, links, the solid button and focus. No colour fills a page surface or tints a Flyer frame, so the Flyers stay the loudest colour on the page. The live tokens are in `src/site.tsx`.
+**The Accent Rule.** The palette is "Abendkleid" (ADR 0005): warm Paper (#faf7f4), Plum ink (#1f1426), Bordeaux (#7a1e3a, hover and small text #651830) as the one accent, Rosé (#f2e4e8) as its tint, Grey (#6a5f68) for secondary text, and Apricot (#f2a65a, tint #fbe6d2) as the second accent (ADR 0007): the sign, "ahead" in the wordmark, the add line in the band, the active type tab, the chosen span in the month grid (its first and last day as small Apricot diamonds) and the event dots. Bordeaux marks today, the filters, each Event's type, links, the solid button and focus. No colour fills a page surface or tints a Flyer frame, so the Flyers stay the loudest colour on the page. The live tokens are in `src/site.tsx`.
 
-**The Mark.** A 3×3 week grid on Plum with rounded corners, in which three cells light up diagonally in Apricot like the footprints of a step diagram: calendar and dance step in one sign. Beside it the wordmark in Outfit 600, lower case, tight: "step" in ink, "date" in Bordeaux. The claim below is "wo heute getanzt wird" / "where to dance tonight", without a place. The mark alone is the favicon (`public/favicon.svg`) and the bot avatar.
+**The Mark.** An Apricot warning diamond, like an American road sign, with a Plum arrow pointing ahead: look ahead to the next dance. It stands behind the wordmark, as tall as name and claim together. The wordmark is Outfit 700, lower case, tight: "dance" in the band's light type, "ahead" in Apricot. The claim below is "wo als Nächstes getanzt wird" / "where to dance next", without a place. Name, claim and the add line start on one left edge. The sign alone is the favicon (`public/favicon.svg`).
 
-**The Night Band.** The bar at the top of every page is Plum, the one Plum surface: type light, "date" in Apricot, the mark outlined. On the calendar the ink couple dances in it: a couple traced in a few thousand particles from a silhouette (`public/ink/couple.png`, drawn by `public/ink/couple.js`), Bordeaux and Rosé in the shadows, Apricot where the lamp catches the outline. The lamp follows the pointer or finger and drifts on its own otherwise. With reduced motion the couple is drawn once and stands still; it pauses while the band is off screen. It stays in the band, so the Flyers below are still the loudest colour on the page; the Organizer's pages, being forms, get the band without the couple. The page about Stepdate (`/ueber`) opens the same way: header and hero in Plum, the couple dancing in the hero's frame beside the day list (hidden on a phone, where the frame is too narrow).
+**The Night Band.** The bar at the top of every page is Plum, the one Plum surface: type light, "ahead" and the sign in Apricot. Nothing stands over its controls. On /ueber the ink couple dances in the hero: a couple traced in a few thousand particles from a silhouette (`public/ink/couple.png`, drawn by `public/ink/couple.js`), Bordeaux and Rosé in the shadows, Apricot where the lamp catches the outline. The lamp follows the pointer or finger and drifts on its own otherwise. With reduced motion the couple is drawn once and stands still; it pauses while the band is off screen. The page about DanceAhead (`/ueber`) has header and hero in Plum, the couple dancing in the hero's frame beside the day list (hidden on a phone, where the frame is too narrow).
 
 ## Typography
 

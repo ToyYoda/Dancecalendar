@@ -4,7 +4,7 @@ import { Masthead, SITE_CSS } from "./site";
 import { addDays, ruleWords, type Rule } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 
-// The Dancer overview at "/" (what Stepdate is: /ueber): the Events of a span of days as a list by day
+// The Dancer overview at "/" (what DanceAhead is: /ueber): the Events of a span of days as a list by day
 // (the default: today and the next 7 days) or on a map (?view=map). Above both, a small month calendar shows
 // which days have something on and picks the span (a first and a last day, or Von/Bis); beside them one
 // sidebar of filters. All of it stays in the URL (and is subscribable at /kalender.ics), so a link shows the same view on
@@ -47,7 +47,7 @@ const T = {
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
     series: "Serie", link: "Link", styles: "Tanz", day: "Tag", feed: "Liste", back: "Zurück",
     from: "Von", to: "Bis", show: "Zeigen", span: "Zeitraum", nextDays: "Nächste 7 Tage", pickHint: "Tippe den ersten und den letzten Tag.", pickEnd: "Jetzt den letzten Tag tippen.", busy: "Events",
-    today: "Heute", sub: "wo heute getanzt wird", about: "Was ist Stepdate?",
+    today: "Heute", sub: "wo als Nächstes getanzt wird", about: "Was ist DanceAhead?",
     filters: "Filter", week: "KW", prev: "Früher", next: "Später", view: "Ansicht", mapView: "Karte", unplaced: "Nicht auf der Karte", noCoords: "Diese Orte haben noch keine Koordinaten.",
     subscribe: "Abonnieren", subHint: "Die Events mit diesen Filtern erscheinen in deiner Kalender-App und bleiben dort von selbst aktuell.",
     openApp: "In Kalender-App öffnen", copy: "Link kopieren", copied: "Link kopiert",
@@ -62,7 +62,7 @@ const T = {
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
     series: "Series", link: "Link", styles: "Style", day: "Day", feed: "List", back: "Back",
     from: "From", to: "To", show: "Show", span: "Dates", nextDays: "Next 7 days", pickHint: "Tap the first and the last day.", pickEnd: "Now tap the last day.", busy: "events",
-    today: "Today", sub: "where to dance tonight", about: "What is Stepdate?",
+    today: "Today", sub: "where to dance next", about: "What is DanceAhead?",
     filters: "Filters", week: "Week", prev: "Earlier", next: "Later", view: "View", mapView: "Map", unplaced: "Not on the map", noCoords: "These places have no coordinates yet.",
     subscribe: "Subscribe", subHint: "The Events for these filters show up in your calendar app and stay up to date there on their own.",
     openApp: "Open in calendar app", copy: "Copy link", copied: "Link copied",
@@ -168,12 +168,12 @@ function calendar(events: Shown[], f: Filters, origin: string): string {
     ...STYLES.filter(([k]) => f.styles.includes(k)).map(([, n]) => n),
     ...(f.type ? [t[PLURAL[f.type as keyof typeof PLURAL]]] : []),
   ];
-  const name = ["Stepdate", ...(picked.length ? [picked.join(", ")] : [])].join(" · ");
+  const name = ["DanceAhead", ...(picked.length ? [picked.join(", ")] : [])].join(" · ");
   const local = (iso: string) => iso.replace(/[-:]/g, "") + "00";
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Stepdate//Kalender//DE",
+    "PRODID:-//DanceAhead//Kalender//DE",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${text(name)}`,
@@ -392,8 +392,8 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
     </>
   );
   return (
-    <Layout title={props.title ? `${props.title} – Stepdate` : "Stepdate"} lang={props.f.lang} head={head}>
-      <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add ink>
+    <Layout title={props.title ? `${props.title} – DanceAhead` : "DanceAhead"} lang={props.f.lang} head={head}>
+      <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add>
         <a class="about" href="/ueber" lang="de">{t.about}</a>
         <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
           {props.f.lang === "de" ? "English" : "Deutsch"}
@@ -1117,10 +1117,14 @@ const CSS = `${SITE_CSS}
   .mgrid .c.today { font-weight:600; color:var(--accent-ink); }
   .mgrid .c.busy::after { content:""; position:absolute; bottom:3px; left:50%; width:4px; height:4px; margin-left:-2px; border-radius:1px; background:var(--step); }
   .mgrid .c.past.busy::after, .mgrid .c.out.busy::after { background:#b0a6ac; }
-  .mgrid .c.in { background:var(--tint); border-radius:0; }
-  .mgrid .c.first { border-radius:8px 0 0 8px; } .mgrid .c.last { border-radius:0 8px 8px 0; } .mgrid .c.first.last { border-radius:8px; }
-  .mgrid .c.first, .mgrid .c.last { background:var(--accent); color:#fff; font-weight:500; }
-  .mgrid .c.first::after, .mgrid .c.last::after { background:#fff; }
+  .mgrid .c.in { background:var(--step-tint); border-radius:0; }
+  /* the first and the last day stand as small apricot signs, the span runs between them */
+  .mgrid .c.first, .mgrid .c.last { isolation:isolate; color:var(--ink); font-weight:600; border-radius:0; }
+  .mgrid .c.first { background:linear-gradient(to right, transparent 50%, var(--step-tint) 50%); }
+  .mgrid .c.last { background:linear-gradient(to left, transparent 50%, var(--step-tint) 50%); }
+  .mgrid .c.first.last { background:none; }
+  .mgrid .c.first::before, .mgrid .c.last::before { content:""; position:absolute; z-index:-1; top:50%; left:50%; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:4px; background:var(--step); transform:rotate(45deg); }
+  .mgrid .c.first::after, .mgrid .c.last::after { background:var(--ink); }
   .mgrid .c.pend { background:var(--ink); color:#fff; border-radius:0; }
   .mgrid .c.pend::after { background:#fff; }
   .mini .hint { margin:8px 0 0; font-size:13px; color:var(--mute); }
@@ -1137,6 +1141,7 @@ const CSS = `${SITE_CSS}
     .mhead { margin-bottom:2px; }
     .mgrid .dow { padding:0 0 2px; font-size:10px; }
     .mgrid .c { height:26px; font-size:12px; }
+    .mgrid .c.first::before, .mgrid .c.last::before { width:17px; height:17px; margin:-8.5px 0 0 -8.5px; }
     .mgrid .c.busy::after { bottom:1px; width:3px; height:3px; margin-left:-1.5px; }
     .mini .hint { margin-top:4px; font-size:12px; }
     .dates { width:100%; }
@@ -1148,7 +1153,7 @@ const CSS = `${SITE_CSS}
   .types::-webkit-scrollbar { display:none; }
   .types a { flex:none; padding:6px 13px; border-radius:99px; font-size:15px; color:var(--mute); transition:background .15s, color .15s; }
   .types a:hover { color:var(--ink); background:var(--wash); }
-  .types a.on { color:var(--ink); font-weight:500; background:rgb(31 20 38 / .08); }
+  .types a.on { color:var(--ink); font-weight:500; background:var(--step); }
 
   .day { margin-top:24px; }
   .dayhead { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding-bottom:8px; border-bottom:1px solid var(--line); }

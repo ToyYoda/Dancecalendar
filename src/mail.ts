@@ -11,7 +11,7 @@ export const mailReady = (env: Env) => Boolean(env.EMAIL_FROM && (env.BREVO_API_
 // "sent", "unconfigured" when no service is set up, "failed" when the service refused or was unreachable.
 export async function sendMail(env: Env, mail: Mail): Promise<"sent" | "unconfigured" | "failed"> {
   if (!mailReady(env)) return "unconfigured";
-  const from = { name: "Stepdate", email: env.EMAIL_FROM! };
+  const from = { name: "DanceAhead", email: env.EMAIL_FROM! };
   try {
     if (env.BREVO_API_KEY) {
       const res = await fetch("https://api.brevo.com/v3/smtp/email", {

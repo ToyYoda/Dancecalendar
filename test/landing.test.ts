@@ -11,14 +11,14 @@ describe("the page about DanceAhead", () => {
     expect(html).toContain("Was ist DanceAhead?");
   });
 
-  it("shows what the calendar is, with the way back to it and to @StepdateBot", async () => {
+  it("shows what the calendar is, with the way back to it and to @DanceAheadBot", async () => {
     const res = await exports.default.fetch("http://dancecalendar.test/ueber");
 
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("Paartanz-Kalender für Kassel und Göttingen");
     expect(html).toContain('href="/"');
-    expect(html).toContain("https://t.me/StepdateBot");
+    expect(html).toContain("https://t.me/DanceAheadBot");
   });
 
   it("opens under the same night band as the calendar, with the ink couple in the hero", async () => {

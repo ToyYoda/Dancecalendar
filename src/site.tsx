@@ -6,7 +6,7 @@ import { Layout } from "./layout";
 // teal, light cards on a pale ground. The bar on top names the two ways to add an Event: the Telegram
 // bot and the Organizer area here.
 
-export const BOT = "StepdateBot"; // the Telegram bot's username, set with @BotFather
+export const BOT = "DanceAheadBot"; // the Telegram bot's username, set with @BotFather
 export const BOT_URL = `https://t.me/${BOT}`;
 
 const FONTS = `@font-face{font-family:"Outfit";font-weight:100 900;font-style:normal;font-display:swap;src:url(/fonts/outfit-latin-wght-normal.woff2) format("woff2");}`;

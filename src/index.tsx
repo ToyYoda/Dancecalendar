@@ -32,7 +32,7 @@ app.use("*", async (c, next) => {
   return c.redirect(`${home.origin}${url.pathname}${url.search}`, 301);
 });
 
-// "Was ist Stepdate?": the page about the calendar and how Organizers add Events (public/landing),
+// "Was ist DanceAhead?": the page about the calendar and how Organizers add Events (public/landing),
 // linked from the calendar's header. The calendar itself is the start page; /kalender, its address for a
 // day in November 2026, leads back there.
 app.get("/ueber", async (c) => (await c.env.ASSETS.fetch(new URL("/landing/", c.req.url))) as unknown as Response);

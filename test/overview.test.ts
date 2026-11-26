@@ -283,7 +283,7 @@ describe("the calendar subscription", () => {
 
     expect(res.headers.get("content-type")).toBe("text/calendar; charset=utf-8");
     expect(body.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
-    expect(body).toContain("X-WR-CALNAME:Stepdate · Bachata");
+    expect(body).toContain("X-WR-CALNAME:DanceAhead · Bachata");
     expect(body).toContain("TZID:Europe/Berlin");
     expect(body).toContain(`DTSTART;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T213000`);
     expect(body).toContain(`DTEND;TZID=Europe/Berlin:${berlinDate(1).replace(/-/g, "")}T235900`);
@@ -351,9 +351,9 @@ describe("Flyer images", () => {
 });
 
 describe("the brand", () => {
-  it("is called Stepdate, with its claim and no place in it", async () => {
+  it("is called DanceAhead, with its claim and no place in it", async () => {
     const html = await page();
-    expect(html).toContain("<title>Stepdate</title>");
+    expect(html).toContain("<title>DanceAhead</title>");
     expect(html).toContain('aria-label="DanceAhead"');
     expect(html).toContain("wo als Nächstes getanzt wird");
     expect(html).not.toContain("Taktvoll");
@@ -363,7 +363,7 @@ describe("the brand", () => {
   });
 
   it("names the page in the tab after the brand", async () => {
-    expect(await page("karte")).toMatch(/<title>[^<]+ – Stepdate<\/title>/);
+    expect(await page("karte")).toMatch(/<title>[^<]+ – DanceAhead<\/title>/);
   });
 
   it("serves its mark as the favicon on every page", async () => {

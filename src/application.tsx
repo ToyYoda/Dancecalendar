@@ -150,7 +150,7 @@ async function load(db: D1Database, token: string) {
 
 function ApplyForm(props: { name?: string; error?: string }) {
   return (
-    <Layout title="Anmelden – Stepdate" head={<style>{CSS}</style>}>
+    <Layout title="Anmelden – DanceAhead" head={<style>{CSS}</style>}>
       <h1>Als Veranstalter*in anmelden</h1>
       <p>Einmal kurz, dann trägst du deine Flyer selbst über den Bot ein.</p>
       {props.error && <p class="error">{props.error}</p>}
@@ -163,7 +163,7 @@ function ApplyForm(props: { name?: string; error?: string }) {
           <a href="/nutzungsbedingungen" target="_blank">
             Nutzungsbedingungen
           </a>{" "}
-          und erlaube Stepdate, meine Flyer und Events öffentlich zu zeigen. Ich habe die Rechte daran. Wie wir mit deinen Daten umgehen, steht im{" "}
+          und erlaube DanceAhead, meine Flyer und Events öffentlich zu zeigen. Ich habe die Rechte daran. Wie wir mit deinen Daten umgehen, steht im{" "}
           <a href="/datenschutz" target="_blank">
             Datenschutz
           </a>
@@ -177,7 +177,7 @@ function ApplyForm(props: { name?: string; error?: string }) {
 
 function Done() {
   return (
-    <Layout title="Fertig – Stepdate">
+    <Layout title="Fertig – DanceAhead">
       <h1>Fertig! Zurück zum Chat</h1>
       <p>Dort geht's direkt mit deinem Flyer weiter. Ab jetzt schickst du Flyer einfach an den Bot.</p>
     </Layout>
@@ -186,7 +186,7 @@ function Done() {
 
 function Expired() {
   return (
-    <Layout title="Link abgelaufen – Stepdate">
+    <Layout title="Link abgelaufen – DanceAhead">
       <h1>Der Link ist abgelaufen</h1>
       <p>Schick den Flyer einfach nochmal an den Bot.</p>
     </Layout>

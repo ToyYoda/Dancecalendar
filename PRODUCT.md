@@ -38,9 +38,9 @@ The calendar is built from the Flyers the scene already makes. An AI reads each 
 
 ## Brand Commitments
 
-- The name is **Stepdate** at stepdate.de, with the claim "wo heute getanzt wird" (EN "where to dance tonight"). Neither names a place, and the name is a coined word so it can be registered as a trademark (ADR 0005). The Telegram bot is @StepdateBot.
+- The name is **DanceAhead**, with the claim "wo als Nächstes getanzt wird" (EN "where to dance next"). Neither names a place (ADR 0007). Until danceahead.de and a new bot exist, the calendar stays at stepdate.de and the Telegram bot is @StepdateBot.
 - German first, English second.
-- The mark is a week grid with three diagonal step cells, and the palette is "Abendkleid" with Bordeaux as the one accent (DESIGN.md, The Accent Rule and The Mark).
+- The mark is an Apricot road sign with an arrow ahead, and the palette is "Abendkleid" with Bordeaux and Apricot as accents (DESIGN.md, The Accent Rule and The Mark).
 
 ## Evidence on Hand
 

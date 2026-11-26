@@ -35,7 +35,7 @@ for (const [path, page] of Object.entries(PAGES)) {
     const lang: Lang = c.req.query("lang") === "en" ? "en" : "de";
     const op = operator(c.env);
     return c.html(
-      <Layout title={`${page[lang]} – Stepdate`} lang={lang} head={<style>{CSS}</style>}>
+      <Layout title={`${page[lang]} – DanceAhead`} lang={lang} head={<style>{CSS}</style>}>
         <a class="lang" href={lang === "en" ? path : `${path}?lang=en`}>
           {lang === "en" ? "Deutsch" : "English"}
         </a>
@@ -97,7 +97,7 @@ function ImpressumDe(props: { op: Operator }) {
       <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
       <Address op={props.op} />
       <p>
-        Stepdate ist ein privates, kostenloses und nicht kommerzielles Angebot. Die Events tragen Veranstalter*innen selbst ein oder die Community
+        DanceAhead ist ein privates, kostenloses und nicht kommerzielles Angebot. Die Events tragen Veranstalter*innen selbst ein oder die Community
         schickt sie als Tipp; für ihre Angaben sind die Veranstalter*innen verantwortlich.
       </p>
       <h2 id="melden">Event melden oder entfernen lassen</h2>
@@ -121,7 +121,7 @@ function ImprintEn(props: { op: Operator }) {
       <h2>Responsible for content under § 18(2) MStV</h2>
       <Address op={props.op} />
       <p>
-        Stepdate is a private, free and non-commercial service. Events are added by their Organizers or sent in by the community as Tips; Organizers are
+        DanceAhead is a private, free and non-commercial service. Events are added by their Organizers or sent in by the community as Tips; Organizers are
         responsible for what they post.
       </p>
       <h2 id="melden">Report an Event or have it removed</h2>
@@ -141,7 +141,7 @@ function PrivacyDe(props: { op: Operator }) {
   return (
     <>
       <p>
-        Stepdate zeigt Paartanz-Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz …) rund um Kassel und Göttingen. Hier steht, welche
+        DanceAhead zeigt Paartanz-Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz …) rund um Kassel und Göttingen. Hier steht, welche
         personenbezogenen Daten dabei verarbeitet werden, warum und wie lange.
       </p>
 
@@ -303,7 +303,7 @@ function PrivacyEn(props: { op: Operator }) {
   return (
     <>
       <p>
-        Stepdate lists partner-dance Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz …) around Kassel and Göttingen. This page explains which
+        DanceAhead lists partner-dance Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz …) around Kassel and Göttingen. This page explains which
         personal data is processed, why, and for how long. The German version is the binding one.
       </p>
 
@@ -461,7 +461,7 @@ function TermsDe(props: { op: Operator }) {
     <>
       <h2>1. Worum es geht</h2>
       <p>
-        Stepdate ist ein kostenloser Community-Kalender für Paartanz-Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz und andere Paartänze),
+        DanceAhead ist ein kostenloser Community-Kalender für Paartanz-Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz und andere Paartänze),
         betrieben privat von {props.op.name}. Es gibt keinen Anspruch darauf, dass ein Event erscheint oder der Kalender jederzeit erreichbar ist.
       </p>
 
@@ -483,7 +483,7 @@ function TermsDe(props: { op: Operator }) {
           einverstanden sind.
         </li>
         <li>
-          Du erlaubst Stepdate kostenlos und nicht exklusiv, den Flyer und seine Inhalte im Kalender zu zeigen und ihn dafür mit KI auszulesen. Die Erlaubnis
+          Du erlaubst DanceAhead kostenlos und nicht exklusiv, den Flyer und seine Inhalte im Kalender zu zeigen und ihn dafür mit KI auszulesen. Die Erlaubnis
           endet für die Zukunft, wenn du das Event löschst oder es uns schreibst.
         </li>
         <li>Machen Dritte wegen deines Flyers Ansprüche geltend, stellst du den Betreiber davon frei.</li>
@@ -528,7 +528,7 @@ function TermsEn(props: { op: Operator }) {
       <p>This translation is for convenience; the German version is the binding one.</p>
       <h2>1. What this is</h2>
       <p>
-        Stepdate is a free community calendar for partner-dance Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz and other partner dances), run
+        DanceAhead is a free community calendar for partner-dance Events (Salsa, Bachata, West Coast Swing, Kizomba, Urban Kiz and other partner dances), run
         privately by {props.op.name}. There is no right to have an Event listed or to the calendar being available at all times.
       </p>
 
@@ -545,7 +545,7 @@ function TermsEn(props: { op: Operator }) {
       <ul>
         <li>You confirm that you hold the necessary rights to every Flyer you send – design, text and photos – and that the people shown have agreed.</li>
         <li>
-          You allow Stepdate, free of charge and non-exclusively, to show the Flyer and its contents in the calendar and to read it with AI for that purpose.
+          You allow DanceAhead, free of charge and non-exclusively, to show the Flyer and its contents in the calendar and to read it with AI for that purpose.
           The permission ends for the future when you delete the Event or tell us.
         </li>
         <li>If third parties make claims because of your Flyer, you indemnify the operator against them.</li>

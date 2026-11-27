@@ -5,9 +5,9 @@ import { addDays, ruleWords, type Rule } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 
 // The Dancer overview at "/" (what DanceAhead is: /ueber): the Events of a span of days as a list by day
-// (the default: today and the next 7 days) or on a map (?view=map). Above both, a small month calendar shows
-// which days have something on and picks the span (a first and a last day, or Von/Bis); beside them one
-// sidebar of filters. All of it stays in the URL (and is subscribable at /kalender.ics), so a link shows the same view on
+// (the default: today and the next 7 days), each day a grid of whole Flyers, or on a map (?view=map). The
+// Flyers come first: the small month calendar that shows which days have something on and picks the span
+// (a first and a last day, or Von/Bis) sits in the sidebar of filters, folded into "Zeitraum" on a phone. All of it stays in the URL (and is subscribable at /kalender.ics), so a link shows the same view on
 // any phone. No accounts, no cookies. Distances are measured from the Dancer's position (the browser is
 // asked on a visit without one) or a place picked on the map at /karte; without either, every Event shows
 // and no km. Decisions: .scratch/dance-calendar-mvp/issues/07-dancer-overview-prototype.md (variant D),
@@ -601,7 +601,16 @@ function FeedPage(props: { f: Filters; today: string; from: string; to: string; 
           <EventMap f={f} today={today} byDay={byDay} />
         ) : (
           <>
-            {[...byDay].map(([d, list]) => (list.length ? <Day f={f} d={d} today={today} list={list} /> : null))}
+            {(() => {
+              // The first Flyers show without scrolling, so they load at once; the rest when they come near.
+              let before = 0;
+              return [...byDay].map(([d, list]) => {
+                if (!list.length) return null;
+                const day = <Day f={f} d={d} today={today} list={list} eager={Math.max(0, EAGER - before)} />;
+                before += list.length;
+                return day;
+              });
+            })()}
             {!any && <p class="empty">{t.none}</p>}
           </>
         )}
@@ -835,7 +844,9 @@ const EVMAP_SCRIPT = `(() => {
 })();`;
 
 // A day's heading with its count, then one row per Event.
-function Day(props: { f: Filters; d: string; today: string; list: OnDay[] }) {
+const EAGER = 4;
+
+function Day(props: { f: Filters; d: string; today: string; list: OnDay[]; eager?: number }) {
   const { f, d, today, list } = props;
   const t = T[f.lang];
   return (
@@ -850,8 +861,8 @@ function Day(props: { f: Filters; d: string; today: string; list: OnDay[] }) {
         </span>
       </header>
       <div class="rows">
-        {list.map((o) => (
-          <Entry f={f} o={o} />
+        {list.map((o, i) => (
+          <Entry f={f} o={o} eager={i < (props.eager ?? 0)} />
         ))}
       </div>
     </section>
@@ -860,7 +871,7 @@ function Day(props: { f: Filters; d: string; today: string; list: OnDay[] }) {
 
 // One Flyer card: the whole Flyer as large as the column allows (never cropped: a blurred copy fills the
 // frame around it), then the time and the type, the title, the place and the small print.
-function Entry(props: { f: Filters; o: OnDay }) {
+function Entry(props: { f: Filters; o: OnDay; eager?: boolean }) {
   const { f, o } = props;
   const { e } = o;
   const t = T[f.lang];
@@ -871,8 +882,8 @@ function Entry(props: { f: Filters; o: OnDay }) {
         <span class="frame">
           {e.flyer_key ? (
             <>
-              <img class="blur" src={`/${e.flyer_key}`} alt="" loading="lazy" decoding="async" aria-hidden="true" />
-              <img class="thumb" src={`/${e.flyer_key}`} alt="" width="250" height="350" loading="lazy" decoding="async" />
+              <img class="blur" src={`/${e.flyer_key}`} alt="" loading={props.eager ? "eager" : "lazy"} decoding="async" aria-hidden="true" />
+              <img class="thumb" src={`/${e.flyer_key}`} alt="" width="250" height="350" loading={props.eager ? "eager" : "lazy"} decoding="async" />
             </>
           ) : (
             <span class="thumb none" aria-hidden="true" />
@@ -1263,9 +1274,6 @@ const CSS = `${SITE_CSS}
     .day { margin-top:18px; }
   }
   @media (prefers-reduced-motion: reduce) { .pick .chev, .frame { transition:none; } }
-  /* mock only: the Flyers of each day as one row to swipe */
-  body.rail .rows { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:12px; margin-right:calc(-1 * var(--g)); padding-right:var(--g); scrollbar-width:none; }
-  body.rail .entry { flex:none; width:44%; max-width:200px; scroll-snap-align:start; }
 
   /* the map */
   .evmap { height:min(64vh, 620px); min-height:360px; margin-top:16px; border-radius:var(--r-sm); overflow:hidden; box-shadow:0 0 0 1px var(--line); background:var(--wash); }

@@ -60,6 +60,25 @@ async function add(e: Ev) {
 const page = async (query = "") => (await get(`http://dancecalendar.test/${query}`)).text();
 
 describe("the Flyer feed", () => {
+  it("puts the Flyers first: the month calendar folds into Zeitraum in the sidebar, the first Flyers load at once", async () => {
+    for (let i = 0; i < 6; i++) await add({ title: `Party ${i}`, day: 1, flyer: `flyers/f${i}.jpg` });
+
+    const html = await page();
+
+    const side = html.slice(html.indexOf('<aside class="side"'), html.indexOf("</aside>"));
+    expect(side).toMatch(/<details class="pick span" data-span[^>]*>[\s\S]*Nächste 7 Tage[\s\S]*data-mini/);
+    const pane = html.slice(html.indexOf('<main class="pane"'));
+    expect(pane).not.toContain("data-mini");
+    expect(pane).toMatch(/class="entry"><a [^>]*><span class="frame">/);
+    expect(html.match(/class="thumb"[^>]*loading="eager"/g)).toHaveLength(4);
+    expect(html.match(/class="thumb"[^>]*loading="lazy"/g)).toHaveLength(2);
+  });
+
+  it("names a picked span on the Zeitraum button", async () => {
+    const html = await page(`?von=${berlinDate(2)}&bis=${berlinDate(4)}`);
+    expect(html).toMatch(/<summary class="set">[\s\S]{0,400}\d+\. \w+\.? – \d+\. \w+/);
+  });
+
   it("shows today and the next 7 days everywhere, without km, until a place is known", async () => {
     await add({ title: "Gestern Party", day: -1 });
     await add({ title: "Heute Party", day: 0, time: "23:30" });

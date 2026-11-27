@@ -50,7 +50,7 @@ const T = {
     radius: "Umkreis", none: "Keine Events für diese Filter.", cancelled: "Abgesagt", tip: "von der Community hinzugefügt",
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
     series: "Serie", link: "Link", styles: "Tanz", day: "Tag", feed: "Liste", back: "Zurück",
-    from: "Von", to: "Bis", show: "Zeigen", span: "Zeitraum", nextDays: "Nächste 7 Tage", pickHint: "Tippe den ersten und den letzten Tag.", pickEnd: "Jetzt den letzten Tag tippen.", busy: "Events",
+    from: "Von", to: "Bis", show: "Zeigen", span: "Zeitraum", nextDays: "Nächste 7 Tage", more: "Weitere 7 Tage", until: "bis", pickHint: "Tippe den ersten und den letzten Tag.", pickEnd: "Jetzt den letzten Tag tippen.", busy: "Events",
     today: "Heute", sub: "wo als Nächstes getanzt wird", about: "Was ist DanceAhead?", aboutShort: "Über",
     filters: "Filter", week: "KW", prev: "Früher", next: "Später", view: "Ansicht", mapView: "Karte", unplaced: "Nicht auf der Karte", noCoords: "Diese Orte haben noch keine Koordinaten.",
     subscribe: "Abonnieren", subHint: "Die Events mit diesen Filtern erscheinen in deiner Kalender-App und bleiben dort von selbst aktuell.",
@@ -67,7 +67,7 @@ const T = {
     radius: "Radius", none: "No events for these filters.", cancelled: "Cancelled", tip: "added by the community",
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
     series: "Series", link: "Link", styles: "Style", day: "Day", feed: "List", back: "Back",
-    from: "From", to: "To", show: "Show", span: "Dates", nextDays: "Next 7 days", pickHint: "Tap the first and the last day.", pickEnd: "Now tap the last day.", busy: "events",
+    from: "From", to: "To", show: "Show", span: "Dates", nextDays: "Next 7 days", more: "7 more days", until: "until", pickHint: "Tap the first and the last day.", pickEnd: "Now tap the last day.", busy: "events",
     today: "Today", sub: "where to dance next", about: "What is DanceAhead?", aboutShort: "About",
     filters: "Filters", week: "Week", prev: "Earlier", next: "Later", view: "View", mapView: "Map", unplaced: "Not on the map", noCoords: "These places have no coordinates yet.",
     subscribe: "Subscribe", subHint: "The Events for these filters show up in your calendar app and stay up to date there on their own.",
@@ -633,24 +633,91 @@ function FeedPage(props: { f: Filters; today: string; from: string; to: string; 
         {f.view === "map" ? (
           <EventMap f={f} today={today} byDay={byDay} />
         ) : (
-          <>
+          <div class="list" data-list data-to={to}>
+            {!any && <p class="empty">{t.none}</p>}
             {(() => {
               // The first Flyers show without scrolling, so they load at once; the rest when they come near.
+              // Each day has an anchor, even without Events, so "7 more days" can land on the first new one.
               let before = 0;
               return [...byDay].map(([d, list]) => {
-                if (!list.length) return null;
-                const day = <Day f={f} d={d} today={today} list={list} eager={Math.max(0, EAGER - before)} />;
+                const day = list.length ? <Day f={f} d={d} today={today} list={list} eager={Math.max(0, EAGER - before)} /> : null;
                 before += list.length;
-                return day;
+                return (
+                  <div class="ab" id={`ab-${d}`} data-d={d}>
+                    {day}
+                  </div>
+                );
               });
             })()}
-            {!any && <p class="empty">{t.none}</p>}
-          </>
+            <More f={f} from={from} to={to} />
+            <script dangerouslySetInnerHTML={{ __html: MORE_SCRIPT }} />
+          </div>
         )}
       </Shell>
     </Page>
   );
 }
+
+// The end of the list: the same span and 7 more days, up to MAX_DAYS. Without script it opens that span on
+// the first new day; with it the new days are added below without leaving the page (MORE_SCRIPT). Like
+// every filter link it is nofollow: crawlers stay on the plain calendar (ADR 0008, robots.txt).
+function More(props: { f: Filters; from: string; to: string }) {
+  const { f, from, to } = props;
+  const t = T[f.lang];
+  const last = addDays(from, MAX_DAYS - 1);
+  if (to >= last) return null;
+  const bis = addDays(to, 7) > last ? last : addDays(to, 7);
+  return (
+    <a class="more" href={`${href(f, { von: from, bis, m: "" })}#ab-${addDays(to, 1)}`} rel="nofollow">
+      {t.more}
+      <span class="until">
+        {t.until} {short(bis, f.lang)}
+      </span>
+    </a>
+  );
+}
+
+// "7 more days" with script: fetch the longer list, add its new days below, and take over its link, its
+// dates and the Zeitraum picker's marks, so the page stays where it is and its URL is the longer span.
+const MORE_SCRIPT = `(() => {
+  const list = document.querySelector("[data-list]");
+  if (!list || !window.fetch || !window.DOMParser) return;
+  list.addEventListener("click", async (ev) => {
+    const a = ev.target.closest("a.more");
+    if (!a || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button) return;
+    ev.preventDefault();
+    if (a.getAttribute("aria-busy")) return;
+    a.setAttribute("aria-busy", "true");
+    const u = new URL(a.href);
+    u.hash = "";
+    try {
+      const r = await fetch(u);
+      if (!r.ok) throw r.status;
+      const doc = new DOMParser().parseFromString(await r.text(), "text/html");
+      const next = doc.querySelector("[data-list]");
+      if (!next) throw 0;
+      const last = list.dataset.to;
+      const days = [...next.querySelectorAll(":scope > [data-d]")].filter((n) => n.dataset.d > last);
+      const link = next.querySelector("a.more");
+      a.replaceWith(...days, ...(link ? [link] : []));
+      list.dataset.to = next.dataset.to;
+      if (list.querySelector(".day")) list.querySelector(".empty")?.remove();
+      const range = document.querySelector(".pane .range"), nr = doc.querySelector(".pane .range");
+      if (range && nr) range.textContent = nr.textContent;
+      const sum = document.querySelector("[data-span] > summary"), ns = doc.querySelector("[data-span] > summary");
+      if (sum && ns) { sum.className = ns.className; sum.innerHTML = ns.innerHTML; }
+      document.querySelectorAll(".mini a[data-day]").forEach((c) => {
+        const n = doc.querySelector('.mini a[data-day="' + c.dataset.day + '"]');
+        if (n) { c.className = n.className; n.hasAttribute("aria-current") ? c.setAttribute("aria-current", "date") : c.removeAttribute("aria-current"); }
+      });
+      const form = document.querySelector(".spanpick .dates"), nf = doc.querySelector(".spanpick .dates");
+      if (form && nf) form.replaceChildren(...nf.childNodes);
+      history.replaceState(null, "", u.pathname + u.search);
+    } catch {
+      location.href = a.href;
+    }
+  });
+})();`;
 
 // The small month calendar above the list and the map: a dot under each day with something on, the shown
 // span marked. Without script a tap shows that day; with it the first tap marks the first day and the
@@ -1292,6 +1359,12 @@ const CSS = `${SITE_CSS}
   .cancelled h3, .detail.cancelled h1 { text-decoration:line-through; text-decoration-thickness:1.5px; color:var(--mute); }
   .cancelled .thumb, .cancelled .blur { filter:grayscale(1); opacity:.5; }
   .empty { margin:0; padding:48px 0; color:var(--mute); }
+  .more { display:flex; flex-direction:column; align-items:center; gap:2px; margin:32px auto 8px; padding:12px 22px; width:max-content; max-width:100%;
+    border-radius:99px; box-shadow:inset 0 0 0 1px var(--line); font-weight:500; font-size:16px; color:var(--ink); transition:background .15s, transform .15s; }
+  .more:hover { background:var(--wash); }
+  .more:active { transform:scale(.97); }
+  .more .until { font-size:13px; font-weight:400; color:var(--mute); }
+  .more[aria-busy] { opacity:.6; pointer-events:none; }
   @media (max-width:599px) {
     .mast { flex-wrap:wrap; padding-top:10px; padding-bottom:10px; row-gap:8px; }
     .mast .home { flex:1 1 auto; gap:8px; }

@@ -81,8 +81,8 @@ const TelegramIcon = () => (
 );
 
 const T = {
-  de: { sub: "wo als Nächstes getanzt wird", add: "Neues Event eintragen:", bot: `per Telegram an @${BOT}`, or: "oder", web: "hier auf der Website" },
-  en: { sub: "where to dance next", add: "Add an Event:", bot: `on Telegram via @${BOT}`, or: "or", web: "here on the website" },
+  de: { sub: "wo als Nächstes getanzt wird", add: "Neues Event eintragen:", bot: ["per ", "Telegram", ` an @${BOT}`], or: "oder", web: ["hier auf der ", "Website"] },
+  en: { sub: "where to dance next", add: "Add an Event:", bot: ["on ", "Telegram", ` via @${BOT}`], or: "or", web: ["here on the ", "website"] },
 };
 
 // The bar on every page. `home` is where the name leads (the calendar keeps its filters), `children` the
@@ -114,9 +114,15 @@ export function Masthead(props: { lang?: "de" | "en"; home?: string; add?: boole
           <b>{t.add}</b>{" "}
           <a href={BOT_URL}>
             <TelegramIcon />
-            {t.bot}
+            <span class="long">{t.bot[0]}</span>
+            {t.bot[1]}
+            <span class="long">{t.bot[2]}</span>
           </a>{" "}
-          {t.or} <a href="/veranstalter">{t.web}</a>
+          {t.or}{" "}
+          <a href="/veranstalter">
+            <span class="long">{t.web[0]}</span>
+            {t.web[1]}
+          </a>
         </p>
       )}
       {props.ink && <script src="/ink/couple.js" defer />}

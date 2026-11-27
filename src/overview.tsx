@@ -47,7 +47,7 @@ const T = {
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
     series: "Serie", link: "Link", styles: "Tanz", day: "Tag", feed: "Liste", back: "Zurück",
     from: "Von", to: "Bis", show: "Zeigen", span: "Zeitraum", nextDays: "Nächste 7 Tage", pickHint: "Tippe den ersten und den letzten Tag.", pickEnd: "Jetzt den letzten Tag tippen.", busy: "Events",
-    today: "Heute", sub: "wo als Nächstes getanzt wird", about: "Was ist DanceAhead?",
+    today: "Heute", sub: "wo als Nächstes getanzt wird", about: "Was ist DanceAhead?", aboutShort: "Über",
     filters: "Filter", week: "KW", prev: "Früher", next: "Später", view: "Ansicht", mapView: "Karte", unplaced: "Nicht auf der Karte", noCoords: "Diese Orte haben noch keine Koordinaten.",
     subscribe: "Abonnieren", subHint: "Die Events mit diesen Filtern erscheinen in deiner Kalender-App und bleiben dort von selbst aktuell.",
     openApp: "In Kalender-App öffnen", copy: "Link kopieren", copied: "Link kopiert",
@@ -62,7 +62,7 @@ const T = {
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
     series: "Series", link: "Link", styles: "Style", day: "Day", feed: "List", back: "Back",
     from: "From", to: "To", show: "Show", span: "Dates", nextDays: "Next 7 days", pickHint: "Tap the first and the last day.", pickEnd: "Now tap the last day.", busy: "events",
-    today: "Today", sub: "where to dance next", about: "What is DanceAhead?",
+    today: "Today", sub: "where to dance next", about: "What is DanceAhead?", aboutShort: "About",
     filters: "Filters", week: "Week", prev: "Earlier", next: "Later", view: "View", mapView: "Map", unplaced: "Not on the map", noCoords: "These places have no coordinates yet.",
     subscribe: "Subscribe", subHint: "The Events for these filters show up in your calendar app and stay up to date there on their own.",
     openApp: "Open in calendar app", copy: "Copy link", copied: "Link copied",
@@ -396,9 +396,13 @@ function Page(props: { f: Filters; title?: string; head?: any; children: any }) 
   return (
     <Layout title={props.title ? `${props.title} – DanceAhead` : "DanceAhead"} lang={props.f.lang} head={head}>
       <Masthead lang={props.f.lang} home={href(props.f, { von: "", bis: "", m: "" })} add>
-        <a class="about" href="/ueber" lang="de">{t.about}</a>
+        <a class="about" href="/ueber" lang="de">
+          <span class="long">{t.about}</span>
+          <span class="short">{t.aboutShort}</span>
+        </a>
         <a class="lang" href={href(props.f, { lang: props.f.lang === "de" ? "en" : "de" })} lang={props.f.lang === "de" ? "en" : "de"}>
-          {props.f.lang === "de" ? "English" : "Deutsch"}
+          <span class="long">{props.f.lang === "de" ? "English" : "Deutsch"}</span>
+          <span class="short">{props.f.lang === "de" ? "EN" : "DE"}</span>
         </a>
       </Masthead>
       {props.children}
@@ -432,6 +436,13 @@ const PinIcon = () => (
   </svg>
 );
 
+const CalIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+    <rect x="2" y="3" width="12" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6" />
+    <path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+  </svg>
+);
+
 const FeedIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
     <rect x="2" y="3" width="12" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6" />
@@ -442,16 +453,16 @@ const FeedIcon = () => (
 // The calendar's frame: the sidebar with the view, the place, the styles and the subscription, beside
 // the pane with the dates, the type tabs and the Events. On a phone the sidebar folds into a sticky bar
 // of menus above the pane. Every choice is a link, so it works without script and stays in the URL.
-function Shell(props: { f: Filters; children: any }) {
+function Shell(props: { f: Filters; span?: any; spanLabel?: string; children: any }) {
   return (
     <div class="app">
-      <Sidebar f={props.f} />
+      <Sidebar f={props.f} span={props.span} spanLabel={props.spanLabel} />
       <main class="pane">{props.children}</main>
     </div>
   );
 }
 
-function Sidebar(props: { f: Filters }) {
+function Sidebar(props: { f: Filters; span?: any; spanLabel?: string }) {
   const { f } = props;
   const t = T[f.lang];
   const r = f.r || DEFAULT_RADIUS;
@@ -469,14 +480,27 @@ function Sidebar(props: { f: Filters }) {
       <div class="views" aria-label={t.view}>
         <a class={f.view ? "" : "on"} href={href(f, { view: "" })} aria-current={f.view ? undefined : "page"}>
           <ListIcon />
-          {t.feed}
+          <span class="vt">{t.feed}</span>
         </a>
         <a class={f.view === "map" ? "on" : ""} href={href(f, { view: "map" })} aria-current={f.view === "map" ? "page" : undefined}>
           <PinIcon />
-          {t.mapView}
+          <span class="vt">{t.mapView}</span>
         </a>
       </div>
       <span class="br" aria-hidden="true" />
+      {props.span && (
+        <div class="grp span">
+          <p class="lbl">{t.span}</p>
+          <details class="pick span" data-span>
+            <summary class={f.von ? "set" : ""}>
+              <CalIcon />
+              {props.spanLabel}
+              <Chevron />
+            </summary>
+            <div class="menu">{props.span}</div>
+          </details>
+        </div>
+      )}
       <div class="grp place">
         <p class="lbl">{t.venue}</p>
         <details class="pick place" {...(f.c ? {} : { "data-autogeo": "" })}>
@@ -541,7 +565,8 @@ function Sidebar(props: { f: Filters }) {
 // A tap elsewhere closes a menu; the sticky bar's height keeps day anchors clear of it on a phone; the
 // subscribe link opens the calendar app (webcal:), and the copy button puts the feed's https address on
 // the clipboard for apps that ask for one.
-const SIDE_SCRIPT = `document.addEventListener("click",(e)=>document.querySelectorAll(".side .pick[open]").forEach((d)=>{if(!d.contains(e.target))d.open=false;}));
+const SIDE_SCRIPT = `document.addEventListener("click",(e)=>document.querySelectorAll(".side .pick[open]").forEach((d)=>{if(!d.contains(e.target)&&!(d.matches(".span")&&innerWidth>=860))d.open=false;}));
+(()=>{const d=document.querySelector("[data-span]");if(!d)return;const w=matchMedia("(min-width:860px)");const s=()=>{if(w.matches)d.open=true;};s();w.addEventListener("change",s);})();
 (()=>{const n=document.querySelector(".side");if(!n)return;const s=()=>document.documentElement.style.setProperty("--stick",(innerWidth<860?n.offsetHeight:0)+"px");s();addEventListener("resize",s);
 document.querySelectorAll("[data-webcal]").forEach((a)=>{a.href="webcal://"+location.host+a.getAttribute("href");});
 document.querySelectorAll("[data-copy]").forEach((b)=>{if(!navigator.clipboard)return;b.hidden=false;b.addEventListener("click",()=>navigator.clipboard.writeText(location.origin+b.dataset.copy).then(()=>{b.textContent=b.dataset.done;}));});})();`;
@@ -569,8 +594,7 @@ function FeedPage(props: { f: Filters; today: string; from: string; to: string; 
   const any = [...byDay.values()].some((l) => l.length);
   return (
     <Page f={f} head={f.view === "map" ? MAP_HEAD : undefined}>
-      <Shell f={f}>
-        <SpanPicker {...props} />
+      <Shell f={f} span={<SpanPicker {...props} />} spanLabel={f.von ? (from === to ? dayShort(from, f.lang) : `${dayShort(from, f.lang)} – ${dayShort(to, f.lang)}`) : t.nextDays}>
         <h2 class="range">{from === to ? longDay(from, f.lang) : `${short(from, f.lang)} – ${short(to, f.lang)}`}</h2>
         <TypeTabs f={f} />
         {f.view === "map" ? (
@@ -834,7 +858,8 @@ function Day(props: { f: Filters; d: string; today: string; list: OnDay[] }) {
   );
 }
 
-// One row: the whole Flyer small, title and place with the small print, the time and the type.
+// One Flyer card: the whole Flyer as large as the column allows (never cropped: a blurred copy fills the
+// frame around it), then the time and the type, the title, the place and the small print.
 function Entry(props: { f: Filters; o: OnDay }) {
   const { f, o } = props;
   const { e } = o;
@@ -843,21 +868,26 @@ function Entry(props: { f: Filters; o: OnDay }) {
   return (
     <article class={e.cancelled ? "entry cancelled" : "entry"}>
       <a href={href(f, {}, `/events/${e.id}`)}>
-        {e.flyer_key ? (
-          <img class="thumb" src={`/${e.flyer_key}`} alt="" width="88" height="116" loading="lazy" decoding="async" />
-        ) : (
-          <span class="thumb none" aria-hidden="true" />
-        )}
-        <div class="what">
-          <h3>{e.title}</h3>
-          <p class="where">
-            {e.venue}
-            {km(e)}
-          </p>
-          <Notes f={f} e={e} lead={styleNames(e)} by={e.posted_by && e.posted_by !== e.title && e.posted_by !== e.venue ? e.posted_by : null} quiet />
-        </div>
-        <span class="time">{when}</span>
-        <span class="tag">{e.cancelled ? <span class="kind off">{t.cancelled}</span> : <TypeLabel f={f} e={e} />}</span>
+        <span class="frame">
+          {e.flyer_key ? (
+            <>
+              <img class="blur" src={`/${e.flyer_key}`} alt="" loading="lazy" decoding="async" aria-hidden="true" />
+              <img class="thumb" src={`/${e.flyer_key}`} alt="" width="250" height="350" loading="lazy" decoding="async" />
+            </>
+          ) : (
+            <span class="thumb none" aria-hidden="true" />
+          )}
+        </span>
+        <h3>{e.title}</h3>
+        <p class="where">
+          {e.venue}
+          {km(e)}
+        </p>
+        <p class="line">
+          <span class="time">{when}</span>
+          <span class="tag">{e.cancelled ? <span class="kind off">{t.cancelled}</span> : <TypeLabel f={f} e={e} />}</span>
+        </p>
+        <Notes f={f} e={e} lead={styleNames(e)} by={e.posted_by && e.posted_by !== e.title && e.posted_by !== e.venue ? e.posted_by : null} quiet />
       </a>
     </article>
   );
@@ -1016,6 +1046,7 @@ const asDate = (iso: string) => new Date(`${iso}T12:00:00Z`);
 const fmt = (iso: string, lang: Lang, o: Intl.DateTimeFormatOptions) => asDate(iso).toLocaleDateString(locale(lang), { ...o, timeZone: "UTC" });
 const longDay = (iso: string, lang: Lang) => fmt(iso, lang, { weekday: "long", day: "numeric", month: "long" });
 const short = (iso: string, lang: Lang) => fmt(iso, lang, { weekday: "short", day: "numeric", month: "short" });
+const dayShort = (iso: string, lang: Lang) => fmt(iso, lang, { day: "numeric", month: "short" });
 const weekdayShort = (iso: string, lang: Lang) => fmt(iso, lang, { weekday: "short" });
 const dayMonth = (iso: string, lang: Lang) => fmt(iso, lang, { day: "numeric", month: "long" });
 const longWeekday = (iso: string, lang: Lang) => fmt(iso, lang, { weekday: "long" });
@@ -1057,7 +1088,14 @@ const CSS = `${SITE_CSS}
   .side .br { order:3; flex-basis:100%; height:0; }
   .side .grp.place { order:4; }
   .side .pick.styles { order:5; }
+  .side .grp.span { order:2; }
+  .side .pick.abo { order:3; }
+  .pick.span summary svg:first-child { color:var(--accent); }
+  .pick.span .menu { max-width:360px; }
+  .pick.span .spanpick { padding:0; border:0; }
   .side .grp > .lbl, .side .styles-open { display:none; }
+  .mast .short { display:none; }
+  @media (max-width:599px) { .mast .short { display:inline; } }
   .pick summary { box-sizing:border-box; list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:500; font-size:15px; padding:7px 14px;
     border-radius:99px; border:1px solid var(--line); background:var(--card); white-space:nowrap; transition:border-color .15s, background .15s; }
   .pick summary:hover { border-color:rgb(31 20 38 / .3); }
@@ -1085,7 +1123,7 @@ const CSS = `${SITE_CSS}
   .pane { padding:16px var(--g) 32px; min-width:0; }
 
   @media (min-width:860px) {
-    .app { display:grid; grid-template-columns:232px minmax(0, 1fr); margin:24px var(--g) 0; background:var(--card); border-radius:var(--r); box-shadow:var(--shadow), 0 0 0 1px var(--line); }
+    .app { display:grid; grid-template-columns:284px minmax(0, 1fr); margin:24px var(--g) 0; background:var(--card); border-radius:var(--r); box-shadow:var(--shadow), 0 0 0 1px var(--line); }
     aside.side { top:0; display:block; align-self:start; padding:16px 12px 20px; background:none; border-bottom:0; }
     .side .views { display:grid; gap:2px; padding:0; background:none; border-radius:0; }
     .side .views a { gap:10px; padding:8px 10px; border-radius:8px; font-size:15px; color:var(--ink); }
@@ -1102,6 +1140,17 @@ const CSS = `${SITE_CSS}
     .side .pick.abo summary { width:100%; justify-content:flex-start; border:0; background:none; padding:8px 10px; border-radius:8px; color:var(--accent-ink); }
     .side .pick.abo summary:hover { background:var(--wash); }
     .pane { padding:20px 28px 28px; border-left:1px solid var(--line); }
+    .side .grp.span > .lbl { display:none; }
+    .side .pick.span summary { display:none; }
+    .side .pick.span .menu { padding:4px 4px 0; box-shadow:none; }
+    .side .pick.span .mini { width:100%; }
+    .side .pick.span .spanpick { gap:0; }
+    .side .pick.span .dates { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-top:10px; }
+    .side .pick.span .dates label { min-width:0; }
+    .side .pick.span .dates input { width:100%; min-width:0; box-sizing:border-box; padding:0 4px; font-size:13px; }
+    .side .pick.span .dates .reset { grid-column:1 / -1; }
+    .side .pick.span .dates .reset { flex-basis:auto; }
+    .side .grp.place > .lbl { margin-top:24px; padding-top:16px; border-top:1px solid var(--line); }
   }
 
   /* the pane: the small calendar with Von and Bis, the shown span, the type tabs, the days */
@@ -1163,18 +1212,22 @@ const CSS = `${SITE_CSS}
   .dayhead .date { margin-left:4px; font-size:15px; font-weight:400; color:var(--mute); }
   .dayhead .now { display:inline-block; margin-left:8px; padding:1px 9px; border-radius:99px; background:var(--accent); color:#fff; font-size:12px; vertical-align:2px; }
   .dayhead .count { font-size:14px; color:var(--mute); white-space:nowrap; }
-  .entry > a { display:grid; grid-template-columns:88px minmax(0, 1fr) auto 112px; column-gap:20px; align-items:center; padding:14px 8px; border-bottom:1px solid var(--line); border-radius:10px; transition:background .15s; }
-  .entry:last-child > a { border-bottom-color:transparent; }
-  .entry > a:hover { background:var(--wash); }
-  .thumb { display:block; width:88px; height:116px; object-fit:contain; border-radius:8px; background:var(--wash); }
-  .thumb.none { box-shadow:inset 0 0 0 1px var(--hair); background:none; }
-  .what { min-width:0; }
-  .what h3 { margin:0; font:500 18px/1.3 var(--sans); }
-  .where { margin:2px 0 0; font-size:15px; color:var(--mute); }
-  .what .notes { margin:4px 0 0; font-size:14px; color:#6a5f68; }
-  .what .marks { margin:6px 0 0; }
-  .time { font-size:16px; text-align:right; white-space:nowrap; }
-  .tag { justify-self:end; }
+  .rows { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(168px, calc(50% - 8px)), 1fr)); gap:22px 16px; margin-top:14px; }
+  .entry > a { display:flex; flex-direction:column; height:100%; }
+  .frame { position:relative; display:block; aspect-ratio:5 / 7; overflow:hidden; border-radius:var(--r-sm); background:var(--wash);
+    box-shadow:0 0 0 1px var(--line); transition:transform .2s cubic-bezier(.2,.7,.2,1), box-shadow .2s; }
+  .entry > a:hover .frame { transform:translateY(-3px); box-shadow:0 0 0 1px var(--line), 0 18px 34px -18px rgb(31 20 38 / .5); }
+  .frame .blur { position:absolute; inset:-12%; width:124%; height:124%; object-fit:cover; filter:blur(18px) saturate(1.1); opacity:.55; }
+  .thumb { position:relative; display:block; width:100%; height:100%; object-fit:contain; }
+  .thumb.none { box-shadow:inset 0 0 0 1px var(--hair); }
+  .entry h3 { order:2; margin:6px 0 0; font:500 17px/1.25 var(--sans); overflow-wrap:anywhere; }
+  .entry .line { order:1; display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; margin:10px 0 0; }
+  .entry .where { order:3; margin:2px 0 0; font-size:14px; color:var(--mute); }
+  .entry .notes { order:4; margin:3px 0 0; font-size:13px; color:#6a5f68; }
+  .entry .marks { order:5; margin:6px 0 0; }
+  .entry:hover h3 { color:var(--accent-ink); }
+  .time { font-size:15px; font-weight:500; white-space:nowrap; }
+  .entry .kind { height:22px; padding:0 8px; font-size:12px; }
   .kind { display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 10px; border-radius:99px; background:var(--tint); color:var(--accent-ink); font-size:13px; font-weight:500; white-space:nowrap; }
   .kind::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
   .kind.k-workshop { background:var(--warm-tint); color:var(--warm); }
@@ -1186,16 +1239,33 @@ const CSS = `${SITE_CSS}
   .mark.reg { box-shadow:inset 0 0 0 1px rgb(31 20 38 / .25); }
   .mark.tip { padding:0; height:auto; font-weight:400; font-style:italic; color:var(--mute); }
   .cancelled h3, .detail.cancelled h1 { text-decoration:line-through; text-decoration-thickness:1.5px; color:var(--mute); }
-  .cancelled .thumb { filter:grayscale(1); opacity:.5; }
+  .cancelled .thumb, .cancelled .blur { filter:grayscale(1); opacity:.5; }
   .empty { margin:0; padding:48px 0; color:var(--mute); }
   @media (max-width:599px) {
-    .entry > a { grid-template-columns:96px auto minmax(0, 1fr); grid-template-areas:"thumb time tag" "thumb what what"; column-gap:14px; row-gap:4px; align-items:start; padding:14px 4px; }
-    .thumb { grid-area:thumb; width:96px; height:128px; }
-    .time { grid-area:time; text-align:left; font-weight:500; line-height:24px; }
-    .tag { grid-area:tag; justify-self:start; }
-    .what { grid-area:what; }
+    .mast { flex-wrap:wrap; padding-top:10px; padding-bottom:10px; row-gap:8px; }
+    .mast .home { flex:1 1 auto; gap:8px; }
+    .mast .name { font-size:23px; }
+    .mast .sub { font-size:12px; margin-top:3px; }
+    .mast .sign { width:34px; height:34px; }
+    .mast .meta { gap:8px; }
+    .mast .about, .mast .lang { font-size:13px; }
+    .mast .lang { padding:4px 9px; }
+    .mast .add { padding:5px 10px; font-size:13px; line-height:1.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .mast .long, .side .grp > .lbl { display:none; }
+    .side .br { display:none; }
+    .side .views a { padding:6px 10px; }
+    .vt { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    .rows { gap:20px 12px; }
+    .entry h3 { font-size:16px; }
+    .entry .notes { display:none; }
+    .range { display:none; }
+    .types { margin-top:0; }
+    .day { margin-top:18px; }
   }
-  @media (prefers-reduced-motion: reduce) { .pick .chev, .entry > a { transition:none; } }
+  @media (prefers-reduced-motion: reduce) { .pick .chev, .frame { transition:none; } }
+  /* mock only: the Flyers of each day as one row to swipe */
+  body.rail .rows { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:12px; margin-right:calc(-1 * var(--g)); padding-right:var(--g); scrollbar-width:none; }
+  body.rail .entry { flex:none; width:44%; max-width:200px; scroll-snap-align:start; }
 
   /* the map */
   .evmap { height:min(64vh, 620px); min-height:360px; margin-top:16px; border-radius:var(--r-sm); overflow:hidden; box-shadow:0 0 0 1px var(--line); background:var(--wash); }

@@ -393,10 +393,10 @@ describe("the brand", () => {
     expect(html).toContain("--step:#f2a65a");
   });
 
-  it("points Organizers to @StepdateBot on Telegram", async () => {
+  it("points Organizers to @DanceAheadBot on Telegram", async () => {
     const html = await page();
-    expect(html).toContain("https://t.me/StepdateBot");
-    expect(html).toContain("@StepdateBot");
+    expect(html).toContain("https://t.me/DanceAheadBot");
+    expect(html).toContain("@DanceAheadBot");
     expect(html).not.toContain("DanceCalBot");
   });
 

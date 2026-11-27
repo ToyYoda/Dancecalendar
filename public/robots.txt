@@ -1,0 +1,13 @@
+User-agent: *
+Disallow: /admin
+Disallow: /veranstalter
+Disallow: /a/
+Disallow: /c/
+Disallow: /e/
+Disallow: /s/
+Disallow: /webhook
+Disallow: /telegram
+Disallow: /flyers/
+Disallow: /kalender.ics
+Disallow: /karte
+Disallow: /*?

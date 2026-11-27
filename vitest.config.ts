@@ -19,6 +19,8 @@ export default defineConfig(async () => {
             TELEGRAM_BOT_TOKEN: "123:test-telegram-token",
             ANTHROPIC_API_KEY: "test-anthropic-key",
             ADMIN_SECRET: "test-admin-secret",
+            BREVO_API_KEY: "test-brevo-key",
+            EMAIL_FROM: "anmeldung@dancecalendar.test",
             OPERATOR_NAME: "Erika Muster",
             OPERATOR_ADDRESS: "Teststraße 1, 34117 Kassel",
             CONTACT_EMAIL: "kontakt@dancecalendar.test",

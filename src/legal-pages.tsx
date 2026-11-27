@@ -19,7 +19,7 @@ const PAGES: Record<string, { de: string; en: string; body: (op: Operator, lang:
   "/datenloeschung": { de: "Datenlöschung", en: "Data deletion", body: (op, lang) => (lang === "en" ? <DeletionEn op={op} /> : <DeletionDe op={op} />) },
 };
 
-const UPDATED = { de: "Stand: 1. November 2026", en: "Last updated: 1 November 2026" }; // bump when the text changes
+const UPDATED = { de: "Stand: 25. November 2026", en: "Last updated: 25 November 2026" }; // bump when the text changes
 
 const CSS = `
   main li { border: 0; padding: .25rem 0; }
@@ -213,7 +213,10 @@ function PrivacyDe(props: { op: Operator }) {
       <p>
         <strong>Anmelden auf der Website</strong> (/veranstalter): Meldest du dich mit Telegram an, schickt dir der Bot eine Rückfrage, und erst dein „Ja“ meldet
         den Browser an. Meldest du dich mit Google an, bekommen wir von Google eine Kennung deines Google-Kontos und deine E-Mail-Adresse; beides sehen nur
-        du und der Admin, nie die Öffentlichkeit. Google (Google Ireland Ltd.) ist dabei selbst verantwortlich. Danach hält ein Cookie („dc_session“) dich
+        du und der Admin, nie die Öffentlichkeit. Google (Google Ireland Ltd.) ist dabei selbst verantwortlich. Meldest du dich mit deiner E-Mail-Adresse an,
+        speichern wir die Adresse und schicken dir über unseren E-Mail-Dienst Brevo einen Anmeldelink, der 15 Minuten und einmal gilt. Die Adresse sehen nur
+        du und der Admin, nie die Öffentlichkeit; sie bleibt, solange du angemeldet bist. Wann wir einen Link geschickt haben, speichern wir einen Tag lang,
+        damit niemand massenhaft Links anfordern kann. Danach hält ein Cookie („dc_session“) dich
         angemeldet, bis du dich abmeldest, höchstens 90 Tage. Während der Anmeldung setzen wir für 10 Minuten ein zweites Cookie, damit nur dein Browser die
         Anmeldung abschließen kann. Die Cookies enthalten nur Zufallswerte; wir speichern davon nur eine Prüfsumme. Rechtsgrundlage: Art. 6 Abs. 1 lit. b
         DSGVO und § 25 Abs. 2 Nr. 2 TDDDG.
@@ -266,6 +269,11 @@ function PrivacyDe(props: { op: Operator }) {
           <td>Nur wenn du „Mit Google anmelden“ wählst: Anmeldung</td>
           <td>Kein Auftragsverarbeiter: Google ist selbst verantwortlich, du meldest dich dort an</td>
         </tr>
+        <tr>
+          <td>Brevo (Sendinblue SAS, Frankreich)</td>
+          <td>E-Mails verschicken: Anmeldelinks, die tägliche E-Mail an den Admin</td>
+          <td>Auftragsverarbeitungsvertrag, Verarbeitung in der EU</td>
+        </tr>
       </table>
 
       <h2>11. Speicherdauer</h2>
@@ -273,6 +281,7 @@ function PrivacyDe(props: { op: Operator }) {
         <li>Events und ihre Flyer: bis 90 Tage nach dem Termin.</li>
         <li>Eingereichte Flyer, die veröffentlicht oder verworfen wurden: 90 Tage; nie bestätigte Flyer: 30 Tage.</li>
         <li>Flyer einer nicht abgeschlossenen Anmeldung: 24 Stunden.</li>
+        <li>Wann wir einen Anmeldelink per E-Mail geschickt haben: 1 Tag.</li>
         <li>Tipps und die Antwort „ist ein Tipp“: 30 Tage.</li>
         <li>„Admin“-Anfragen: 90 Tage. Kennungen eingehender Nachrichten (gegen doppelte Zustellung): 7 Tage.</li>
         <li>Dass wir dich begrüßt haben und ob du STOP geschrieben hast: solange der Bot läuft, auf Wunsch löschen wir es.</li>
@@ -372,7 +381,9 @@ function PrivacyEn(props: { op: Operator }) {
       <p>
         <strong>Logging in on the website</strong> (/veranstalter): with Telegram, the bot asks you first, and only your "yes" logs the browser in. With Google,
         Google gives us an ID of your Google account and your email address; only you and the Admin see them, never the public. Google (Google Ireland Ltd.)
-        is a controller itself here. A cookie ("dc_session") then keeps you logged in until you log out, for at most 90 days. While you log in, a second
+        is a controller itself here. With your email address, we store the address and send you a login link through our email service Brevo; the link
+        works once and for 15 minutes. Only you and the Admin see the address, never the public; it is kept while you are registered. We keep when we sent
+        a link for one day, so that nobody can request links in bulk. A cookie ("dc_session") then keeps you logged in until you log out, for at most 90 days. While you log in, a second
         cookie lasts 10 minutes so that only your browser can finish the login. The cookies hold only random values, of which we store only a checksum. Legal
         basis: Art. 6(1)(b) GDPR and Section 25(2) no. 2 TDDDG.
       </p>
@@ -423,6 +434,11 @@ function PrivacyEn(props: { op: Operator }) {
           <td>Only if you choose "Log in with Google": the login</td>
           <td>Not a processor: Google is a controller itself; you log in there</td>
         </tr>
+        <tr>
+          <td>Brevo (Sendinblue SAS, France)</td>
+          <td>Sending email: login links, the daily email to the Admin</td>
+          <td>Data processing agreement, processing in the EU</td>
+        </tr>
       </table>
 
       <h2>11. How long we keep data</h2>
@@ -430,6 +446,7 @@ function PrivacyEn(props: { op: Operator }) {
         <li>Events and their Flyers: up to 90 days after the date.</li>
         <li>Submitted Flyers that were published or discarded: 90 days; Flyers never confirmed: 30 days.</li>
         <li>The Flyer of an unfinished sign-up: 24 hours.</li>
+        <li>When we sent a login link by email: 1 day.</li>
         <li>Tips and the answer "it's a Tip": 30 days.</li>
         <li>"Admin" requests: 90 days. Ids of incoming messages (against double delivery): 7 days.</li>
         <li>That we greeted you and whether you sent STOP: while the bot runs; we delete it on request.</li>

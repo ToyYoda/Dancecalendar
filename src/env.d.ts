@@ -1,5 +1,6 @@
 // Secrets that live only as Worker secrets (not in .dev.vars), so `wrangler types` can't see them.
-// The Admin's daily email (src/admin-email.ts) needs all three; until then it's skipped with a warning.
+// Email (src/mail.ts): BREVO_API_KEY and EMAIL_FROM send the email login's links and the Admin's daily
+// email (which also needs ADMIN_EMAIL); until then both are off, the daily email with a warning.
 // The operator's name, address and email for the legal pages (src/legal-pages.tsx) stay out of the public repo.
 interface Env {
   ASSETS: Fetcher; // public/, also the page about DanceAhead at /ueber
@@ -9,6 +10,7 @@ interface Env {
   GOOGLE_CLIENT_SECRET?: string;
   ADMIN_SECRET: string; // /admin password until Cloudflare Access is set up at Deploy
   EMAIL?: SendEmail; // a send_email binding, once Cloudflare Email is set up on a domain
+  BREVO_API_KEY?: string; // Brevo's transactional email API (ADR 0006)
   ADMIN_EMAIL?: string;
   EMAIL_FROM?: string;
   OPERATOR_NAME: string;
@@ -24,6 +26,7 @@ declare namespace Cloudflare {
     GOOGLE_CLIENT_SECRET?: string;
     ADMIN_SECRET: string;
     EMAIL?: SendEmail;
+    BREVO_API_KEY?: string;
     ADMIN_EMAIL?: string;
     EMAIL_FROM?: string;
     OPERATOR_NAME: string;

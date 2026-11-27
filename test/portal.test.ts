@@ -2,14 +2,13 @@ import { env, exports } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { webhookSecret } from "../src/telegram/api";
 import { fakeApis, knownVenue } from "./fake-apis";
-import { get, post } from "./flow";
+import { Browser, get } from "./flow";
 
 // The Organizer area at /veranstalter: logging in with Telegram (the bot asks first), the overview of
 // one's Events, signing up, adding a Flyer as one's own or as a Tip, and logging out.
 
 const CHAT = 4242;
 const ADDRESS = `tg:${CHAT}`;
-const BASE = "http://dancecalendar.test/veranstalter";
 let updateId = 1000;
 
 const chat = { id: CHAT, type: "private", first_name: "Ana" };
@@ -27,34 +26,11 @@ async function telegram(update: object) {
 const start = (payload: string) => telegram({ message: { message_id: updateId, date: 0, chat, from: chat, text: `/start ${payload}` } });
 const tap = (data: string) => telegram({ callback_query: { id: `cq${updateId}`, from: chat, message: { message_id: 1, chat }, data } });
 
-// A browser's cookies, kept across requests like a real one would.
-class Browser {
-  jar = new Map<string, string>();
-  get cookie() {
-    return [...this.jar].map(([k, v]) => `${k}=${v}`).join("; ");
-  }
-  take(res: Response) {
-    for (const line of res.headers.getSetCookie()) {
-      const [pair, ...attrs] = line.split(";");
-      const [name, value] = [pair.slice(0, pair.indexOf("=")), pair.slice(pair.indexOf("=") + 1)];
-      if (!value || attrs.some((a) => /max-age=0\b/i.test(a.trim()))) this.jar.delete(name);
-      else this.jar.set(name, value);
-    }
-    return res;
-  }
-  async get(path: string) {
-    return this.take(await get(`${BASE}${path}`, { cookie: this.cookie }));
-  }
-  async post(path: string, body: BodyInit = "", headers: Record<string, string> = {}) {
-    return this.take(await post(`${BASE}${path}`, body, { cookie: this.cookie, ...headers }));
-  }
-}
-
 // Starts a Telegram login; returns the code from the bot link.
 async function startLogin(b: Browser) {
   const res = await b.post("/login/telegram");
   expect(res.status).toBe(303);
-  return new URL(res.headers.get("location")!, BASE).searchParams.get("c")!;
+  return new URL(res.headers.get("location")!, b.base).searchParams.get("c")!;
 }
 
 async function logIn(b: Browser) {

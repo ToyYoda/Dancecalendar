@@ -2,18 +2,19 @@ import { vi } from "vitest";
 
 // Plays Meta's Graph API, Telegram's Bot API, the Anthropic API and the geocoders (Photon, Nominatim) at the fetch boundary.
 // `sent` collects every WhatsApp and Telegram message the bot sends, in order (a Telegram chat as "tg:<id>");
-// `telegramCalls` every other Bot API call. `places` maps the start of a geocoder
+// `telegramCalls` every other Bot API call. `mails` every email sent through Brevo; `brevoDown` makes Brevo fail. `places` maps the start of a geocoder
 // query to what Photon finds for it; anything else isn't found. `photonDown` makes Photon fail.
 
 export type SentMessage = { to: string; text: string; buttons: { id: string; title: string }[] };
 
 export type FakePlace = { name: string; street: string; housenumber: string; postcode: string; city: string; lat: number; lng: number };
 
-export function fakeApis(options: { extraction?: object; anthropicError?: string; places?: Record<string, FakePlace>; photonDown?: boolean } = {}) {
+export function fakeApis(options: { extraction?: object; anthropicError?: string; places?: Record<string, FakePlace>; photonDown?: boolean; brevoDown?: boolean } = {}) {
   const sent: SentMessage[] = [];
   const anthropicCalls: any[] = [];
   const geocoded: string[] = [];
   const telegramCalls: { method: string; body: any }[] = [];
+  const mails: { from: string; to: string; subject: string; text: string; apiKey: string | null }[] = [];
   // Like the real Photon, an unknown name in front of a findable address finds nothing.
   const find = (q: string) => Object.entries(options.places ?? {}).find(([word]) => q.toLowerCase().startsWith(word.toLowerCase()))?.[1];
 
@@ -71,6 +72,12 @@ export function fakeApis(options: { extraction?: object; anthropicError?: string
       const address = { road: p.street, house_number: p.housenumber, postcode: p.postcode, city: p.city };
       return Response.json([{ lat: String(p.lat), lon: String(p.lng), name: p.name, address }]);
     }
+    if (url.hostname === "api.brevo.com" && req.method === "POST" && url.pathname === "/v3/smtp/email") {
+      if (options.brevoDown) return Response.json({ code: "unauthorized", message: "Key not found" }, { status: 401 });
+      const body: any = await req.json();
+      for (const to of body.to) mails.push({ from: body.sender.email, to: to.email, subject: body.subject, text: body.textContent, apiKey: req.headers.get("api-key") });
+      return Response.json({ messageId: `<${mails.length}@smtp-relay.mailin.fr>` }, { status: 201 });
+    }
     if (url.hostname === "api.anthropic.com") {
       anthropicCalls.push(await req.json());
       if (options.anthropicError) {
@@ -90,7 +97,7 @@ export function fakeApis(options: { extraction?: object; anthropicError?: string
     throw new Error(`Unexpected fetch in test: ${req.method} ${req.url}`);
   });
 
-  return { sent, anthropicCalls, geocoded, telegramCalls, fetchSpy, texts: () => sent.map((m) => m.text) };
+  return { sent, anthropicCalls, geocoded, telegramCalls, mails, fetchSpy, texts: () => sent.map((m) => m.text) };
 }
 
 // What the model returns for a Flyer, in the schema of src/extraction/schema.json.

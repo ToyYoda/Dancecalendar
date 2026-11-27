@@ -1,5 +1,7 @@
 import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import { addressForEmail, EMAIL_LINK_MINUTES, emailOfLink, normalizeEmail, sendEmailLink, useEmailLink } from "./email-login";
+import { mailReady } from "./mail";
 import { randomToken } from "./publish";
 import { ruleWords, type Rule } from "./series";
 import { BOT, BOT_URL, SitePage } from "./site";
@@ -17,10 +19,9 @@ import {
 } from "./web-login";
 
 // The Organizer area at /veranstalter: what the bot does, on a website. Log in with Telegram (the bot
-// asks "Warst du das?") or Google, then see all of one's Events, Series and Flyers waiting to be checked
+// asks "Warst du das?"), a link by email, or Google, then see all of one's Events, Series and Flyers waiting to be checked
 // in one place, open each one's edit page, and add a Flyer, as one's own Event or as a Tip. Someone the
 // bot doesn't know yet signs up here with the same form as the bot's /a/<token> link.
-// Email login needs a domain to send from and is not offered yet.
 
 type C = Context<{ Bindings: Env }>;
 export const portal = new Hono<{ Bindings: Env }>();
@@ -31,15 +32,24 @@ const organizerOf = (db: D1Database, address: string) =>
   db.prepare("SELECT id, name, blocked_at FROM organizer WHERE whatsapp_number = ?").bind(address).first<Organizer>();
 
 const google = (env: Env) => Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+const ways = (env: Env) => ({ google: google(env), email: mailReady(env) });
 
 portal.get("/", async (c) => {
   const address = await sessionAddress(c);
-  if (!address) return c.html(<LoginPage google={google(c.env)} expired={c.req.query("abgelaufen") !== undefined} />);
+  if (!address) return c.html(<LoginPage {...ways(c.env)} expired={c.req.query("abgelaufen") !== undefined} />);
   const o = await organizerOf(c.env.DB, address);
   if (!o) return c.html(<SignUp address={address} />);
   if (o.blocked_at) return c.html(<Blocked />);
-  return c.html(<Dashboard o={o} address={address} data={await dashboard(c.env.DB, o.id)} google={google(c.env)} />);
+  return dashboardPage(c, o, address);
 });
+
+async function dashboardPage(c: C, o: Organizer, address: string, error = false) {
+  const email = await c.env.DB.prepare("SELECT email FROM web_login WHERE provider = 'email' AND address = ? ORDER BY created_at LIMIT 1")
+    .bind(address)
+    .first<{ email: string }>();
+  const data = await dashboard(c.env.DB, o.id);
+  return c.html(<Dashboard o={o} address={address} data={data} {...ways(c.env)} loginEmail={email?.email ?? null} error={error} />, error ? 400 : 200);
+}
 
 // ---- Telegram ----
 
@@ -61,6 +71,38 @@ portal.get("/login/telegram", async (c) => {
 });
 
 portal.get("/login/telegram/status", async (c) => c.json({ state: (await telegramLoginState(c, c.req.query("c") ?? "")).state }));
+
+// ---- Email (src/email-login.ts) ----
+
+portal.get("/login/email", (c) => (mailReady(c.env) ? c.html(<EmailLoginPage />) : c.notFound()));
+
+portal.post("/login/email", async (c) => {
+  if (!mailReady(c.env)) return c.notFound();
+  const raw = String((await c.req.formData()).get("email") ?? "");
+  const email = normalizeEmail(raw);
+  if (!email) return c.html(<EmailLoginPage email={raw} error="Bitte eine gültige E-Mail-Adresse eingeben." />, 422);
+  const result = await sendEmailLink(c, email);
+  if (result === "failed") {
+    return c.html(<EmailLoginPage email={raw} error="Leider konnten wir gerade keine E-Mail schicken. Versuch es später nochmal oder melde dich mit Telegram an." />, 502);
+  }
+  return c.html(<EmailSent email={email} />);
+});
+
+portal.get("/login/email/:token", async (c) => {
+  const email = await emailOfLink(c.env.DB, c.req.param("token"));
+  if (!email) return c.redirect("/veranstalter?abgelaufen", 303);
+  return c.html(<EmailConfirm email={email} token={c.req.param("token")} />);
+});
+
+portal.post("/login/email/:token", async (c) => {
+  const email = await useEmailLink(c.env.DB, c.req.param("token"));
+  if (!email) return c.redirect("/veranstalter?abgelaufen", 303);
+  // Logged in already (with Telegram or Google): the address is added to that account.
+  const address = await addressForEmail(c.env.DB, email, (await sessionAddress(c)) ?? `web:${randomToken()}`);
+  await endSession(c);
+  await startSession(c, address);
+  return c.redirect("/veranstalter", 303);
+});
 
 // ---- Google (OpenID Connect, authorization code flow) ----
 
@@ -170,7 +212,7 @@ portal.post("/flyer", async (c) => {
   const body = await c.req.parseBody();
   const tip = body.kind === "tip";
   const token = await queueUpload(c.env, body.flyer, tip ? null : o.id, tip ? "tip" : "web");
-  if (!token) return c.html(<Dashboard o={o} address={address} data={await dashboard(c.env.DB, o.id)} google={google(c.env)} error />, 400);
+  if (!token) return dashboardPage(c, o, address, true);
   if (tip) return c.html(<TipThanks />);
   return c.redirect(`/veranstalter/flyer/${token}`, 303);
 });
@@ -260,7 +302,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-function LoginPage(props: { google: boolean; expired?: boolean }) {
+function LoginPage(props: { google: boolean; email: boolean; expired?: boolean }) {
   return (
     <SitePage title="Für Veranstalter" nav={<Nav />}>
       <h1>Deine Events auf einen Blick</h1>
@@ -276,6 +318,12 @@ function LoginPage(props: { google: boolean; expired?: boolean }) {
           </button>
         </form>
         <p class="hint">Du bestätigst die Anmeldung mit einem Tipp im Chat mit @{BOT}. Ein Passwort brauchst du nicht.</p>
+        {props.email && (
+          <>
+            <div class="or">oder</div>
+            <EmailForm />
+          </>
+        )}
         {props.google && (
           <>
             <div class="or">oder</div>
@@ -332,6 +380,65 @@ function TelegramWait(props: { code: string; digits: string }) {
   );
 }
 
+const EmailForm = (props: { email?: string }) => (
+  <form method="post" action="/veranstalter/login/email" class="stack">
+    <label for="email">Deine E-Mail-Adresse</label>
+    <input id="email" name="email" type="email" value={props.email ?? ""} required maxlength={254} autocomplete="email" inputmode="email" />
+    <button class="btn wide" type="submit">
+      Link per E-Mail schicken
+    </button>
+    <p class="hint">Wir schicken dir einen Link, mit dem du dich ohne Passwort anmeldest. Deine Adresse sieht niemand außer dir und dem Admin.</p>
+  </form>
+);
+
+function EmailLoginPage(props: { email?: string; error?: string }) {
+  return (
+    <SitePage title="Mit E-Mail anmelden" nav={<Nav />}>
+      <h1>Mit E-Mail anmelden</h1>
+      {props.error && <p class="note bad">{props.error}</p>}
+      <div class="panel">
+        <EmailForm email={props.email} />
+      </div>
+    </SitePage>
+  );
+}
+
+function EmailSent(props: { email: string }) {
+  return (
+    <SitePage title="Schau in dein Postfach" nav={<Nav />}>
+      <h1>Schau in dein Postfach</h1>
+      <div class="panel stack">
+        <p>
+          Wir haben einen Anmeldelink an <b>{props.email}</b> geschickt. Öffne ihn auf diesem oder einem anderen Gerät.
+        </p>
+        <p class="hint">
+          Der Link gilt {EMAIL_LINK_MINUTES} Minuten und nur einmal. Nichts angekommen? Schau im Spam-Ordner nach oder{" "}
+          <a class="about" href="/veranstalter/login/email">
+            schick ihn nochmal
+          </a>
+          .
+        </p>
+      </div>
+    </SitePage>
+  );
+}
+
+function EmailConfirm(props: { email: string; token: string }) {
+  return (
+    <SitePage title="Anmelden" nav={<Nav />}>
+      <h1>Anmelden</h1>
+      <form method="post" action={`/veranstalter/login/email/${props.token}`} class="panel stack">
+        <p>
+          Anmelden als <b>{props.email}</b>?
+        </p>
+        <button class="btn solid wide" type="submit">
+          Jetzt anmelden
+        </button>
+      </form>
+    </SitePage>
+  );
+}
+
 function SignUp(props: { address: string; name?: string; error?: string }) {
   return (
     <SitePage title="Als Veranstalter*in anmelden" nav={<Nav loggedIn />}>
@@ -378,7 +485,7 @@ portal.get("/telegram-verbinden", (c) =>
   c.html(
     <SitePage title="Telegram verbinden" nav={<Nav loggedIn />}>
       <h1>Mit Telegram verbinden</h1>
-      <p class="lead">Melde dich einmal mit Telegram an. Danach führt auch Google zu deinen Events.</p>
+      <p class="lead">Melde dich einmal mit Telegram an. Danach führt auch deine Anmeldung mit Google oder E-Mail zu deinen Events.</p>
       <form method="post" action="/veranstalter/login/telegram">
         <button class="btn solid wide tg" type="submit">
           <TelegramIcon /> Mit Telegram anmelden
@@ -456,7 +563,15 @@ function EventList(props: { events: EventRow[] }) {
 }
 
 
-function Dashboard(props: { o: Organizer; address: string; data: Awaited<ReturnType<typeof dashboard>>; google: boolean; error?: boolean }) {
+function Dashboard(props: {
+  o: Organizer;
+  address: string;
+  data: Awaited<ReturnType<typeof dashboard>>;
+  google: boolean;
+  email: boolean;
+  loginEmail: string | null;
+  error?: boolean;
+}) {
   const { o, data } = props;
   const waiting = data.waiting.map((w) => {
     const x = JSON.parse(w.extraction) as { events?: { title?: string; start_date?: string }[] };
@@ -568,12 +683,17 @@ function Dashboard(props: { o: Organizer; address: string; data: Awaited<ReturnT
       )}
 
       <p class="hint" style="margin-top:28px">
-        {props.address.startsWith("tg:") ? "Angemeldet mit Telegram." : "Angemeldet mit Google."}{" "}
+        {props.address.startsWith("tg:") ? "Angemeldet mit Telegram." : props.loginEmail ? `Angemeldet mit E-Mail (${props.loginEmail}).` : "Angemeldet mit Google."}{" "}
         {props.address.startsWith("web:") && (
           <a class="about" href="/veranstalter/telegram-verbinden">
             Telegram verbinden
           </a>
         )}
+        {props.email && !props.loginEmail && (
+          <a class="about" href="/veranstalter/login/email">
+            E-Mail zusätzlich verbinden
+          </a>
+        )}{" "}
         {props.address.startsWith("tg:") && props.google && (
           <a class="about" href="/veranstalter/login/google">
             Google zusätzlich verbinden

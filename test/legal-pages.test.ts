@@ -43,6 +43,16 @@ describe("legal pages", () => {
     }
   });
 
+  it("names Brevo and the email login, in both languages", async () => {
+    const de = await page("/datenschutz");
+    const en = await page("/datenschutz?lang=en");
+
+    expect(de).toContain("Brevo (Sendinblue SAS, Frankreich)");
+    expect(de).toContain("Anmeldelink, der 15 Minuten und einmal gilt");
+    expect(en).toContain("Brevo (Sendinblue SAS, France)");
+    expect(en).toContain("works once and for 15 minutes");
+  });
+
   it("serves the data-deletion instructions with the contact email", async () => {
     const html = await page("/datenloeschung");
 

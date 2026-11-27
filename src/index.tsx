@@ -21,7 +21,7 @@ import { telegramWebhook } from "./telegram/webhook";
 // Not strict: "/admin/upload/" finds the same page as "/admin/upload".
 const app = new Hono<{ Bindings: Env }>({ strict: false });
 
-// The calendar lives at PUBLIC_URL (stepdate.de). A page asked for on the old workers.dev address or on www.
+// The calendar lives at PUBLIC_URL (danceahead.de). A page asked for on the old workers.dev address or on www.
 // moves there for good, so links shared in WhatsApp groups keep working. Webhook POSTs are answered where they
 // arrive, since Telegram and Meta don't follow redirects.
 app.use("*", async (c, next) => {

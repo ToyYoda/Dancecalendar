@@ -1,7 +1,7 @@
 import { exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
-// The calendar lives at PUBLIC_URL (stepdate.de; https://dancecalendar.test in tests). Old links to the
+// The calendar lives at PUBLIC_URL (danceahead.de; https://dancecalendar.test in tests). Old links to the
 // workers.dev address and the www. address lead there; the webhooks keep working at every address.
 describe("the address", () => {
   it("sends a page on the old workers.dev address to the same page at PUBLIC_URL", async () => {

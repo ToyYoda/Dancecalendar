@@ -96,13 +96,14 @@ describe("a registered Organizer forwards a Flyer", () => {
     expect(html).not.toContain("Ort unbekannt");
   });
 
-  it("publishes a Party whose start was taken from the end of its intro class in one tap, asking to check the time", async () => {
-    const api = fakeApis({ extraction: flyer([{ intro_class_time: "21:15", start_time: "22:00", uncertain_fields: ["start_time"] }]) });
+  it("starts a Party when its intro class begins, without asking to check the time", async () => {
+    const api = fakeApis({ extraction: flyer([{ intro_class_time: "21:00", start_time: "21:30" }]) });
 
     await deliver(imageMessage("media1"));
+    expect(api.sent.at(-1)!.text).not.toMatch(/bitte prüfen: Uhrzeit/);
+    await deliver(buttonReply(api.sent.at(-1)!.buttons[0].id));
 
-    expect(api.sent.at(-1)!.text).toMatch(/⚠️ bitte prüfen: Uhrzeit/);
-    expect(api.sent.at(-1)!.buttons[0].title).toBe("Veröffentlichen");
+    expect(await env.DB.prepare("SELECT starts_at FROM event").first<{ starts_at: string }>()).toEqual({ starts_at: expect.stringMatching(/T21:00$/) });
   });
 
   it("leaves out an Event without a date, says so, and publishes the rest", async () => {

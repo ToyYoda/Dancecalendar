@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Card, CARD_CSS, fromForm, missing, RuleSelect } from "./event-card";
+import { Card, CARD_CSS, fromForm, missing, RULE_PREVIEW_SCRIPT, RuleSelect } from "./event-card";
 import type { ExtractedEvent } from "./extraction/extract";
 import { SitePage } from "./site";
 import { columns, findVenue, venueQuery } from "./publish";
@@ -162,7 +162,7 @@ function SeriesPage(props: {
           red={props.red ?? {}}
           yellow={new Map()}
           hidden={["city", "end_date"]}
-          series={<RuleSelect i={0} e={event} rule={event.series_rule ?? null} />}
+          series={<RuleSelect i={0} e={event} rule={event.series_rule ?? null} today={props.today} />}
         />
         <p class="hint">„Datum“ ist der nächste Termin. Änderst du es oder die Wiederholung, beginnt die Serie dort neu.</p>
         <button type="submit" name="save" class="publish">
@@ -193,6 +193,7 @@ function SeriesPage(props: {
         </button>
       </form>
       <p class="hint">Dieser Link ist privat – nicht weiterleiten.</p>
+      <script dangerouslySetInnerHTML={{ __html: RULE_PREVIEW_SCRIPT }} />
     </SitePage>
   );
 }

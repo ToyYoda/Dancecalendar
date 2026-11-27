@@ -121,7 +121,7 @@ export function flyerEvent() {
     weekday_on_flyer: "",
     year_on_flyer: "",
     start_time: "21:00",
-    intro_class_time: "20:00",
+    intro_class_time: "21:00",
     end_date: "",
     end_time: "02:00",
     venue_name: "Kulturfabrik Salzmann",

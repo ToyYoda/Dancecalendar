@@ -45,6 +45,7 @@ const T = {
     anywhere: "überall", me: "Mein Standort", noGeo: "Standort nicht verfügbar", map: "Auf Karte wählen", here: "Ab hier",
     noPlace: "Alle Orte", hint: "Für Entfernungen: Standort freigeben, einen Ort eingeben oder auf der Karte wählen.",
     ort: "Stadt oder Adresse", ortGo: "Suchen", ortMissing: (q: string) => `„${q}“ nicht gefunden. Versuch es mit Stadt oder Straße und Ort.`,
+    ortAll: (q: string) => `Ort „${q}“ nicht gefunden. Es werden alle Orte gezeigt, ohne Entfernungen.`, ortRetry: "Anderen Ort suchen",
     pick: "Tippe auf die Karte, um den Ort zu wählen.", use: "Von hier messen",
     radius: "Umkreis", none: "Keine Events für diese Filter.", cancelled: "Abgesagt", tip: "von der Community hinzugefügt",
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
@@ -61,6 +62,7 @@ const T = {
     anywhere: "anywhere", me: "My location", noGeo: "Location not available", map: "Pick on map", here: "From here",
     noPlace: "All places", hint: "For distances: allow your location, type a place or pick one on the map.",
     ort: "City or address", ortGo: "Search", ortMissing: (q: string) => `“${q}” not found. Try a city, or a street and town.`,
+    ortAll: (q: string) => `Place “${q}” not found. Showing every place, without distances.`, ortRetry: "Search another place",
     pick: "Tap the map to pick the place.", use: "Measure from here",
     radius: "Radius", none: "No events for these filters.", cancelled: "Cancelled", tip: "added by the community",
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
@@ -469,7 +471,15 @@ function Shell(props: { f: Filters; span?: any; spanLabel?: string; children: an
   return (
     <div class="app">
       <Sidebar f={props.f} span={props.span} spanLabel={props.spanLabel} />
-      <main class="pane">{props.children}</main>
+      <main class="pane">
+        {!props.f.c && props.f.ort && (
+          // A typed place nobody found: said above the Events, since on a wide screen the place filter sits far down the sidebar.
+          <p class="notfound" role="alert">
+            {T[props.f.lang].ortAll(props.f.ort)} <a href="#ort">{T[props.f.lang].ortRetry}</a>
+          </p>
+        )}
+        {props.children}
+      </main>
     </div>
   );
 }
@@ -529,7 +539,7 @@ function Sidebar(props: { f: Filters; span?: any; spanLabel?: string }) {
               {typeKeep.map(([k, v]) => (
                 <input type="hidden" name={k} value={v} />
               ))}
-              <input type="search" name="ort" value={f.ort} placeholder={t.ort} aria-label={t.ort} enterkeyhint="search" autocomplete="address-level2" required />
+              <input type="search" id="ort" name="ort" value={f.ort} placeholder={t.ort} aria-label={t.ort} enterkeyhint="search" autocomplete="address-level2" required />
               <button class="btn" type="submit">{t.ortGo}</button>
             </form>
             {missing && <p class="hint miss" role="alert">{t.ortMissing(f.ort)}</p>}
@@ -1160,6 +1170,8 @@ const CSS = `${SITE_CSS}
   .box.on i { background:var(--accent); border-color:var(--accent); }
   .box.on i::after { content:""; width:4px; height:8px; margin-top:-2px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
   .pane { padding:16px var(--g) 32px; min-width:0; }
+  .notfound { margin:0 0 16px; padding:12px 14px; border-radius:10px; background:var(--off-tint); color:var(--off); font-size:15px; line-height:1.45; }
+  .notfound a { color:inherit; font-weight:500; }
 
   @media (min-width:860px) {
     .app { display:grid; grid-template-columns:284px minmax(0, 1fr); margin:24px var(--g) 0; background:var(--card); border-radius:var(--r); box-shadow:var(--shadow), 0 0 0 1px var(--line); }

@@ -387,6 +387,18 @@ describe("a place typed as text", () => {
     expect(html).not.toMatch(/\d km/);
   });
 
+  it("says so above the Events too, where it can't be missed on a wide screen, with a way back to a search", async () => {
+    fakeApis({ places: { Göttingen: goettingen } });
+
+    const html = await page("?ort=Atlantis&styles=salsa");
+    const pane = html.slice(html.indexOf('<main class="pane"'));
+
+    expect(pane).toMatch(/^<main class="pane"><p class="notfound" role="alert">[^<]*„Atlantis“ nicht gefunden/);
+    expect(pane).toContain("Es werden alle Orte gezeigt");
+    expect(await page("?ort=Atlantis&lang=en")).toContain("Showing every place");
+    expect(await page("?c=51.54,9.92&ort=G%C3%B6ttingen")).not.toContain('class="notfound"');
+  });
+
   it("asks Nominatim when Photon is down", async () => {
     const api = fakeApis({ places: { Göttingen: goettingen }, photonDown: true });
 

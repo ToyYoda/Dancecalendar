@@ -18,6 +18,14 @@ export async function geocode(env: Env, venue: { name: string; address: string; 
   return place && byAddress ? { ...place, label: place.address } : place;
 }
 
+// A place a Dancer typed (a city, a district, an address) to measure distances from. Only the typed
+// text goes to the geocoders, from the Worker: nothing about the Dancer, not even their IP.
+export async function findPlace(env: Env, text: string): Promise<Place | null> {
+  const query = text.trim();
+  if (!query) return null;
+  return (await photon(env, query).catch(failed("photon"))) ?? (await nominatim(env, query).catch(failed("nominatim")));
+}
+
 const failed = (service: string) => (err: unknown) => {
   console.error(`${service} geocoding failed`, err);
   return null;

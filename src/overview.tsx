@@ -3,24 +3,26 @@ import { Layout } from "./layout";
 import { Masthead, SITE_CSS } from "./site";
 import { addDays, ruleWords, type Rule } from "./series";
 import { berlinDate } from "./whatsapp/bot";
+import { findPlace } from "./geocode";
 
 // The Dancer overview at "/" (what DanceAhead is: /ueber): the Events of a span of days as a list by day
 // (the default: today and the next 7 days), each day a grid of whole Flyers, or on a map (?view=map). The
 // Flyers come first: the small month calendar that shows which days have something on and picks the span
 // (a first and a last day, or Von/Bis) sits in the sidebar of filters, folded into "Zeitraum" on a phone. All of it stays in the URL (and is subscribable at /kalender.ics), so a link shows the same view on
 // any phone. No accounts, no cookies. Distances are measured from the Dancer's position (the browser is
-// asked on a visit without one) or a place picked on the map at /karte; without either, every Event shows
+// asked on a visit without one), a place typed into the place filter (a city or an address) or one picked on the map at /karte; without either, every Event shows
 // and no km. Decisions: .scratch/dance-calendar-mvp/issues/07-dancer-overview-prototype.md (variant D),
 // 10-region-boundary.md, 23-dancer-overview.md and 33-distance-from-my-position.md.
 
 type Lang = "de" | "en";
 
 // URL parameters, all optional:
-// c = "lat,lng" (without it: no distances, every Event), r = 10|25|50|100|all (default 50, only with c),
+// c = "lat,lng" (without it: no distances, every Event), ort = the name of a typed place (looked up once, then
+// kept beside c to name it; without c it is looked up and the page reopens with c), r = 10|25|50|100|all (default 50, only with c),
 // styles = salsa,bachata,…, type = party|workshop|course|festival, view = map, von and bis = the first and last day
 // shown, m = the month the small calendar shows (YYYY-MM, else von's month), lang = en. Older links' w (a week)
 // and d (one day) still open that span.
-type Filters = { c: string; r: string; styles: string[]; type: string; view: string; von: string; bis: string; m: string; lang: Lang };
+type Filters = { c: string; ort: string; r: string; styles: string[]; type: string; view: string; von: string; bis: string; m: string; lang: Lang };
 
 const DEFAULT_DAYS = 8; // today and the next 7 days
 const MAX_DAYS = 92;
@@ -41,7 +43,8 @@ const T = {
     all: "Alle", party: "Party", workshop: "Workshop", course: "Kurs", festival: "Festival",
     parties: "Partys", workshops: "Workshops", courses: "Kurse", festivals: "Festivals",
     anywhere: "überall", me: "Mein Standort", noGeo: "Standort nicht verfügbar", map: "Auf Karte wählen", here: "Ab hier",
-    noPlace: "Alle Orte", hint: "Für Entfernungen: Standort freigeben oder einen Ort auf der Karte wählen.",
+    noPlace: "Alle Orte", hint: "Für Entfernungen: Standort freigeben, einen Ort eingeben oder auf der Karte wählen.",
+    ort: "Stadt oder Adresse", ortGo: "Suchen", ortMissing: (q: string) => `„${q}“ nicht gefunden. Versuch es mit Stadt oder Straße und Ort.`,
     pick: "Tippe auf die Karte, um den Ort zu wählen.", use: "Von hier messen",
     radius: "Umkreis", none: "Keine Events für diese Filter.", cancelled: "Abgesagt", tip: "von der Community hinzugefügt",
     reg: "Anmeldung nötig", intro: "Einsteigerkurs", level: "Level", price: "Eintritt", venue: "Ort", by: "Veranstaltet von",
@@ -56,7 +59,8 @@ const T = {
     all: "All", party: "Party", workshop: "Workshop", course: "Course", festival: "Festival",
     parties: "Parties", workshops: "Workshops", courses: "Courses", festivals: "Festivals",
     anywhere: "anywhere", me: "My location", noGeo: "Location not available", map: "Pick on map", here: "From here",
-    noPlace: "All places", hint: "For distances: allow your location or pick a place on the map.",
+    noPlace: "All places", hint: "For distances: allow your location, type a place or pick one on the map.",
+    ort: "City or address", ortGo: "Search", ortMissing: (q: string) => `“${q}” not found. Try a city, or a street and town.`,
     pick: "Tap the map to pick the place.", use: "Measure from here",
     radius: "Radius", none: "No events for these filters.", cancelled: "Cancelled", tip: "added by the community",
     reg: "Registration required", intro: "Intro class", level: "Level", price: "Price", venue: "Venue", by: "Organized by",
@@ -101,6 +105,12 @@ export const overview = new Hono<{ Bindings: Env }>();
 
 overview.get("/", async (c) => {
   const f = filters(new URL(c.req.url).searchParams);
+  // A typed place: looked up once, then the page reopens measured from there, rounded like a shared location.
+  // Not found: every Event, and the place filter says so.
+  if (f.ort && !f.c) {
+    const place = await findPlace(c.env, f.ort);
+    if (place) return c.redirect(href(f, { c: `${place.lat.toFixed(2)},${place.lng.toFixed(2)}` }), 302);
+  }
   const today = berlinDate(new Date());
   const [from, to] = span(f, today);
   const days = range(from, daysBetween(from, to) + 1);
@@ -268,6 +278,7 @@ function filters(p: URLSearchParams): Filters {
   if (!isDate(von) && isDate(d)) [von, bis] = [d, d];
   return {
     c: coordinates(c) ? c : "",
+    ort: (p.get("ort") ?? "").trim().slice(0, 80),
     r: RADII.includes(r) ? r : "",
     styles: list("styles").filter((s) => STYLES.some(([k]) => k === s)),
     type: (TYPES as readonly string[]).includes(p.get("type") ?? "") ? p.get("type")! : "",
@@ -302,6 +313,7 @@ function href(f: Filters, changes: Partial<Filters> = {}, path = "/"): string {
   const p = new URLSearchParams();
   if (g.view) p.set("view", g.view);
   if (g.c) p.set("c", g.c);
+  if (g.c && g.ort) p.set("ort", g.ort);
   if (g.r && g.r !== DEFAULT_RADIUS) p.set("r", g.r);
   if (g.styles.length) p.set("styles", g.styles.join(","));
   if (g.type) p.set("type", g.type);
@@ -475,6 +487,9 @@ function Sidebar(props: { f: Filters; span?: any; spanLabel?: string }) {
   ));
   const picked = STYLES.filter(([k]) => f.styles.includes(k)).map(([, name]) => name);
   const feed = href({ ...f, view: "", von: "", bis: "", m: "" }, {}, "/kalender.ics");
+  const missing = !f.c && f.ort; // a typed place the geocoders didn't find
+  const here = f.c && f.ort ? f.ort : t.here;
+  const typeKeep = [...new URLSearchParams(href(f, { c: "", ort: "" }).split("?")[1] ?? "")];
   return (
     <aside class="side" aria-label={t.filters}>
       <div class="views" aria-label={t.view}>
@@ -503,18 +518,26 @@ function Sidebar(props: { f: Filters; span?: any; spanLabel?: string }) {
       )}
       <div class="grp place">
         <p class="lbl">{t.venue}</p>
-        <details class="pick place" {...(f.c ? {} : { "data-autogeo": "" })}>
+        <details class="pick place" {...(f.c || missing ? {} : { "data-autogeo": "" })} {...(missing ? { open: true } : {})}>
           <summary class={f.c ? "set" : ""}>
-            {!f.c ? t.noPlace : r === "all" ? `${t.here} · ${t.anywhere}` : `${t.here} · ${r} km`}
+            {!f.c ? t.noPlace : r === "all" ? `${here} · ${t.anywhere}` : `${here} · ${r} km`}
             <Chevron />
           </summary>
           <div class="menu">
-            {!f.c && <p class="hint">{t.hint}</p>}
+            {!f.c && !missing && <p class="hint">{t.hint}</p>}
+            <form class="ort" method="get" action="/" role="search">
+              {typeKeep.map(([k, v]) => (
+                <input type="hidden" name={k} value={v} />
+              ))}
+              <input type="search" name="ort" value={f.ort} placeholder={t.ort} aria-label={t.ort} enterkeyhint="search" autocomplete="address-level2" required />
+              <button class="btn" type="submit">{t.ortGo}</button>
+            </form>
+            {missing && <p class="hint miss" role="alert">{t.ortMissing(f.ort)}</p>}
             <div class="opts">
               <a class="opt" href={href(f, { c: "" })} data-geo data-fail={t.noGeo}>
                 {t.me}
               </a>
-              <a class="opt" href={href(f, {}, "/karte")}>
+              <a class="opt" href={href(f, { ort: "" }, "/karte")}>
                 {t.map}
               </a>
             </div>
@@ -634,6 +657,7 @@ function SpanPicker(props: { f: Filters; today: string; from: string; to: string
   const keep: [string, string][] = [
     ["view", f.view],
     ["c", f.c],
+    ["ort", f.c ? f.ort : ""],
     ["r", f.r],
     ["styles", f.styles.join(",")],
     ["type", f.type],
@@ -1122,6 +1146,10 @@ const CSS = `${SITE_CSS}
   .pick.abo .btn { display:grid; place-items:center; height:auto; min-height:40px; padding:8px 14px; font-size:14px; line-height:1.25; text-align:center; }
   .opts { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
   .opts + .opts { margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .ort { display:flex; gap:6px; margin:0 0 12px; }
+  .ort input[type=search] { flex:1; min-width:0; height:38px; padding:0 12px; border:1px solid rgb(31 20 38 / .18); border-radius:10px; background:var(--card); color:var(--ink); font:400 16px var(--sans); }
+  .ort .btn { height:38px; flex:none; }
+  .pick .menu .hint.miss { color:var(--accent); }
   .opts .lbl { margin-right:4px; }
   .opt { display:inline-block; padding:6px 12px; border-radius:99px; border:1px solid rgb(31 20 38 / .18); font-size:14px; line-height:1.3; white-space:nowrap; transition:background .15s; }
   .opt:hover { background:var(--wash); }

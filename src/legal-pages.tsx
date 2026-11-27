@@ -174,6 +174,11 @@ function PrivacyDe(props: { op: Operator }) {
         gespeichert. Ohne Freigabe siehst du alle Events ohne Entfernungen.
       </p>
       <p>
+        Gibst du einen Ort ein (eine Stadt oder Adresse), schicken wir nur diesen Text, ohne deine IP-Adresse oder sonst etwas über dich, an die Geodienste
+        Photon und Nominatim (siehe 9). Der Text und die auf etwa einen Kilometer gerundeten Koordinaten stehen danach in der Adresse der Seite und werden
+        nicht gespeichert. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (Entfernungen vom gewählten Ort anzeigen).
+      </p>
+      <p>
         Öffnest du die Ansicht „Karte“ oder „Auf Karte wählen“, lädt dein Browser Kartenbilder von OpenFreeMap (openfreemap.org). Dabei erhält OpenFreeMap deine IP-Adresse und die
         Kartenausschnitte, die du ansiehst. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (die von dir gewählte Karte anzeigen). Ohne Öffnen der Karte wird
         nichts dorthin übertragen.
@@ -238,7 +243,7 @@ function PrivacyDe(props: { op: Operator }) {
 
       <h2>9. Orte finden</h2>
       <p>
-        Um die Entfernung zu einem Ort zu berechnen, schicken wir Name und Adresse des Veranstaltungsorts (keine Daten über dich) an die Geodienste Photon
+        Um die Entfernung zu einem Ort zu berechnen, schicken wir Name und Adresse des Veranstaltungsorts (keine Daten über dich) und einen von dir eingegebenen Ort an die Geodienste Photon
         (komoot GmbH, Deutschland) und Nominatim (OpenStreetMap Foundation, Vereinigtes Königreich, für das ein Angemessenheitsbeschluss der EU gilt).
       </p>
 
@@ -345,6 +350,11 @@ function PrivacyEn(props: { op: Operator }) {
         see every Event, without distances.
       </p>
       <p>
+        If you type a place (a city or an address), we send only that text, without your IP address or anything else about you, to the geocoding services
+        Photon and Nominatim (see 9). The text and the coordinates, rounded to about a kilometre, then sit in the page address and are not stored. Legal basis:
+        Art. 6(1)(f) GDPR (showing distances from the place you chose).
+      </p>
+      <p>
         If you open the "Map" view or "Pick on map", your browser loads map images from OpenFreeMap (openfreemap.org), which receives your IP address and the map areas you view.
         Legal basis: Art. 6(1)(f) GDPR (showing the map you chose). Nothing is sent there unless you open the map.
       </p>
@@ -403,7 +413,7 @@ function PrivacyEn(props: { op: Operator }) {
 
       <h2>9. Finding Venues</h2>
       <p>
-        To work out distances, we send a Venue's name and address (no data about you) to the geocoding services Photon (komoot GmbH, Germany) and Nominatim
+        To work out distances, we send a Venue's name and address (no data about you), and a place you type, to the geocoding services Photon (komoot GmbH, Germany) and Nominatim
         (OpenStreetMap Foundation, United Kingdom, covered by an EU adequacy decision).
       </p>
 

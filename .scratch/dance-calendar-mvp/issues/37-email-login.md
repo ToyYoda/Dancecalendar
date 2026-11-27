@@ -2,7 +2,7 @@
 
 Status: ready-for-human
 
-Requested by the Admin on 2026-11-25, once stepdate.de existed: Organizers without Telegram or Google need a way into /veranstalter.
+Requested by the Admin on 2026-11-25, once the project had its own domain: Organizers without Telegram or Google need a way into /veranstalter.
 
 ## Decisions
 
@@ -13,7 +13,7 @@ Requested by the Admin on 2026-11-25, once stepdate.de existed: Organizers witho
 
 ## What the Admin sets up before merging
 
-1. Brevo account (free), accept its DPA, add stepdate.de as sender domain and put Brevo's DNS records (DKIM, Brevo code, DMARC) into the Cloudflare zone; verify the sender `anmeldung@stepdate.de`.
+1. Brevo account (free), accept its DPA, add danceahead.de as sender domain and put Brevo's DNS records (DKIM, Brevo code, DMARC) into the Cloudflare zone; verify the sender `anmeldung@danceahead.de`.
 2. Create an API key (SMTP & API → API keys) and store it: `npx wrangler secret put BREVO_API_KEY`.
-3. `EMAIL_FROM` (`anmeldung@stepdate.de`) and `ADMIN_EMAIL` as Worker secrets or vars.
+3. `EMAIL_FROM` (`anmeldung@danceahead.de`) and `ADMIN_EMAIL` as Worker secrets or vars.
 4. Merge; the migration 0011 runs with the deploy. Try it at /veranstalter and use „Tägliche E-Mail jetzt senden“ in /admin for the daily email.

@@ -38,7 +38,7 @@ The calendar is built from the Flyers the scene already makes. An AI reads each 
 
 ## Brand Commitments
 
-- The name is **DanceAhead**, with the claim "wo als Nächstes getanzt wird" (EN "where to dance next"). Neither names a place (ADR 0007). Until danceahead.de and a new bot exist, the calendar stays at stepdate.de and the Telegram bot is @StepdateBot.
+- The name is **DanceAhead**, with the claim "wo als Nächstes getanzt wird" (EN "where to dance next"). Neither names a place (ADR 0007). The calendar lives at danceahead.de and the Telegram bot is @DanceAheadBot.
 - German first, English second.
 - The mark is an Apricot road sign with an arrow ahead, and the palette is "Abendkleid" with Bordeaux and Apricot as accents (DESIGN.md, The Accent Rule and The Mark).
 

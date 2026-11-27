@@ -522,3 +522,43 @@ describe("the brand", () => {
 function plusDays(iso: string, days: number): string {
   return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 }
+
+describe("more days at the end of the list", () => {
+  const more = (html: string) => /<a class="more"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/.exec(html);
+
+  it("ends the list with a link that keeps the shown days and adds the next 7, landing on the first new day", async () => {
+    await add({ title: "Bald", day: 1 });
+    await add({ title: "Danach", day: 10 });
+
+    const html = await page("?styles=salsa");
+
+    expect(html).toContain("Bald");
+    expect(html).not.toContain("Danach");
+    const m = more(html)!;
+    expect(m[1]).toBe(`/?styles=salsa&amp;von=${berlinDate(0)}&amp;bis=${berlinDate(14)}#ab-${berlinDate(8)}`);
+    expect(m[0]).toContain('rel="nofollow"');
+    expect(m[2]).toContain("Weitere 7 Tage");
+    expect(html.indexOf('class="more"')).toBeGreaterThan(html.indexOf("Bald"));
+
+    const longer = await page(m[1].replace(/&amp;/g, "&").split("#")[0].slice(1));
+    expect(longer).toContain("Bald");
+    expect(longer).toContain("Danach");
+    expect(longer).toContain(`id="ab-${berlinDate(8)}"`);
+    expect(more(longer)![1]).toBe(`/?styles=salsa&amp;von=${berlinDate(0)}&amp;bis=${berlinDate(21)}#ab-${berlinDate(15)}`);
+  });
+
+  it("is there when the shown days have no Events, and in English", async () => {
+    const html = await page("?lang=en");
+    expect(html).toContain("No events for these filters.");
+    expect(more(html)![2]).toContain("7 more days");
+    expect(more(html)![1]).toContain("lang=en");
+  });
+
+  it("stops at the longest span, and is not on the map", async () => {
+    const longest = await page(`?von=${berlinDate(0)}&bis=${berlinDate(91)}`);
+    expect(more(longest)).toBeNull();
+    const nearly = await page(`?von=${berlinDate(0)}&bis=${berlinDate(88)}`);
+    expect(more(nearly)![1]).toContain(`bis=${berlinDate(91)}#ab-${berlinDate(89)}`);
+    expect(more(await page("?view=map"))).toBeNull();
+  });
+});

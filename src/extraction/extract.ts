@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import prompt from "./prompt.md";
 import schema from "./schema.json";
 import type { Place } from "../geocode";
+import { startAtIntroClass } from "./checks";
 import type { Rule } from "../series";
 
 // One Sonnet 5.5 call per Flyer at effort medium, v4 prompt (v2 plus: a party without a printed start begins when its intro class ends; year_on_flyer) and the v2 schema plus year_on_flyer
@@ -39,6 +40,7 @@ export type HeldAnswers = {
   replaces_tip?: number; // "Ja, dasselbe": the Tip Event this one replaces, deleted on publish
   venue_guess?: { query: string; place: Place | null }; // the geocoder's answer for these venue fields
   series_rule?: Rule | null; // the Series rule the Organizer chose; null = just this date (src/series.ts `heldRule`)
+  date_from_rule?: string; // a Series Flyer without a printed date: the date the confirm page worked out from its rule
 };
 
 export type Extraction = {
@@ -73,7 +75,9 @@ export async function extractFlyer(apiKey: string, image: ArrayBuffer, mediaType
 
   if (response.stop_reason !== "end_turn") return NOT_A_FLYER;
   const text = response.content.find((b) => b.type === "text");
-  return text?.type === "text" ? (JSON.parse(text.text) as Extraction) : NOT_A_FLYER;
+  if (text?.type !== "text") return NOT_A_FLYER;
+  const extraction = JSON.parse(text.text) as Extraction;
+  return { ...extraction, events: extraction.events.map(startAtIntroClass) };
 }
 
 function toBase64(bytes: ArrayBuffer): string {

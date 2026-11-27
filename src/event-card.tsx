@@ -1,16 +1,18 @@
 import type { Child } from "hono/jsx";
 import type { ExtractedEvent } from "./extraction/extract";
-import { ruleFromValue, ruleOptions, ruleValue, type Rule } from "./series";
+import { firstDates, ruleFromValue, ruleOptions, ruleValue, type Rule } from "./series";
+import { formatDate } from "./whatsapp/summary";
 
 // The Event card shared by the confirm page (/c/<token>) and the edit page (/e/<token>):
 // yellow = check, red = missing, plus warnings such as a likely duplicate.
 
+// The intro class has no field: the Event starts when it begins (extraction/checks.ts `startAtIntroClass`),
+// and the stored time is kept as it was read.
 export const TEXT_FIELDS = [
   "title",
   "start_date",
   "start_time",
   "end_time",
-  "intro_class_time",
   "end_date",
   "venue_name",
   "venue_address",
@@ -26,6 +28,8 @@ const STYLES = { salsa: "Salsa", bachata: "Bachata", kizomba: "Kizomba", urban_k
 export function fromForm(form: FormData, i: number, original: ExtractedEvent): ExtractedEvent {
   const e = { ...original };
   for (const f of TEXT_FIELDS) e[f] = String(form.get(`${f}.${i}`) ?? "").trim();
+  // The intro class has no field; it starts the Event, so it moves with the start time.
+  if (original.intro_class_time && original.intro_class_time === original.start_time) e.intro_class_time = e.start_time;
   const type = String(form.get(`type.${i}`));
   if (type in TYPES) e.type = type as ExtractedEvent["type"];
   e.styles = form.getAll(`styles.${i}`).map(String).filter((s) => s in STYLES);
@@ -107,10 +111,7 @@ export function Card(props: {
         {field("start_time", "Beginn", "time", true)}
         {field("end_time", "Ende", "time")}
       </div>
-      <div class="row">
-        {field("intro_class_time", "Einsteigerkurs", "time")}
-        {field("end_date", "Bis (mehrtägig)", "date")}
-      </div>
+      {field("end_date", "Bis (mehrtägig)", "date")}
       {props.series}
       {field("venue_name", "Ort")}
       {field("venue_address", "Adresse")}
@@ -132,11 +133,13 @@ export function Card(props: {
   );
 }
 
-// The "Wiederholung" select of a Series' first Event (confirm page) or of a Series (Series page).
-// `none` labels the option that publishes just this date; the Series page has none.
-export function RuleSelect(props: { i: number; e: ExtractedEvent; rule: Rule | null; none?: string; note?: string }) {
+// The "Wiederholung" select of a Series' first Event (confirm page) or of a Series (Series page), with
+// the next dates it gives. `none` labels the option that publishes just this date; the Series page has
+// none. `value` pre-selects an option when there's no rule yet (no date). `own`: the Flyer's listed dates.
+export function RuleSelect(props: { i: number; e: ExtractedEvent; rule: Rule | null; none?: string; note?: string; value?: string; own?: string[]; today: string }) {
   const { i, e } = props;
-  const value = ruleValue(props.rule);
+  const value = props.rule ? ruleValue(props.rule) : (props.value ?? "none");
+  const dates = props.rule ? firstDates(props.rule, props.own ?? [props.rule.anchor], 4) : [];
   return (
     <div>
       <label for={`repeat.${i}`}>Wiederholung{e.series.rule_text ? ` (Flyer: „${e.series.rule_text}“)` : ""}</label>
@@ -153,9 +156,49 @@ export function RuleSelect(props: { i: number; e: ExtractedEvent; rule: Rule | n
         ))}
       </select>
       {props.note && <div class="why">⚠️ {props.note}</div>}
+      <p class="series" data-rule-preview={String(i)} data-year={props.today.slice(0, 4)} hidden={dates.length < 2}>
+        🔁 Nächste Termine: <span>{dates.map((d) => formatDate(d, props.today)).join(" · ")}</span>
+        <br />
+        <small>Eingetragen wird immer 12 Wochen im Voraus.</small>
+      </p>
     </div>
   );
 }
+
+// Updates a RuleSelect's next dates when its rule or the date changes; series.ts `ruleDates` in short.
+export const RULE_PREVIEW_SCRIPT = `(() => {
+  const DAY = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  const add = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const wd = (iso) => new Date(iso + "T00:00:00Z").getUTCDay();
+  const pos = (iso) => Math.ceil(Number(iso.slice(8, 10)) / 7);
+  const nth = (y, m, w, n) => {
+    if (n === -1) { const l = new Date(Date.UTC(y, m + 1, 0)); l.setUTCDate(l.getUTCDate() - ((l.getUTCDay() - w + 7) % 7)); return l.toISOString().slice(0, 10); }
+    const f = new Date(Date.UTC(y, m, 1)), d = new Date(Date.UTC(y, m, 1 + ((w - f.getUTCDay() + 7) % 7) + 7 * (n - 1)));
+    return d.getUTCMonth() === m ? d.toISOString().slice(0, 10) : null;
+  };
+  const dates = (value, anchor) => {
+    const [kind, arg] = value.split(":"), out = [];
+    if (kind === "weekly" || kind === "every") {
+      for (let d = anchor; out.length < 4; d = add(d, 7 * (kind === "weekly" ? 1 : Number(arg) || 2))) out.push(d);
+    } else if (kind === "nth") {
+      const n = Number(arg) || (pos(anchor) <= 4 ? pos(anchor) : -1);
+      let y = Number(anchor.slice(0, 4)), m = Number(anchor.slice(5, 7)) - 1;
+      for (let k = 0; k < 24 && out.length < 4; k++) { const d = nth(y, m, wd(anchor), n); if (d && d >= anchor) out.push(d); [y, m] = m === 11 ? [y + 1, 0] : [y, m + 1]; }
+    }
+    return out;
+  };
+  for (const p of document.querySelectorAll("[data-rule-preview]")) {
+    const i = p.dataset.rulePreview, select = document.getElementById("repeat." + i), date = document.getElementById("start_date." + i);
+    const show = () => {
+      const anchor = date ? date.value : "";
+      const list = /^\\d{4}-\\d{2}-\\d{2}$/.test(anchor) ? dates(select.value, anchor) : [];
+      p.hidden = list.length < 2;
+      p.querySelector("span").textContent = list.map((d) => DAY[wd(d)] + " " + d.slice(8) + "." + d.slice(5, 7) + "." + (d.slice(0, 4) === p.dataset.year ? "" : d.slice(0, 4))).join(" · ");
+    };
+    select.addEventListener("change", show);
+    if (date) date.addEventListener("input", show);
+  }
+})();`;
 
 // In the site's look (src/site.tsx): its tokens, with yellow (--warm) to check and red (--off) for what's missing.
 export const CARD_CSS = `

@@ -145,7 +145,7 @@ describe("an ambiguous Series rule", () => {
 
 describe("a Series Flyer without a date", () => {
   it("asks for the next date first, then for the time", async () => {
-    const api = fakeApis({ extraction: flyer([seriesEvent("jeden Freitag", "weekly", { start_date: "", start_time: "" })]) });
+    const api = fakeApis({ extraction: flyer([seriesEvent("jeden Freitag", "weekly", { start_date: "", start_time: "", intro_class_time: "" })]) });
     const next = berlinDate(5);
 
     await deliver(imageMessage("media1"));

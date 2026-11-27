@@ -120,6 +120,47 @@ export function ruleFromFlyer(e: ExtractedEvent): Rule | null {
   }
 }
 
+// The next date on or after `from` that a rule printed without a date gives, read from its words
+// ("jeden letzten Donnerstag im Monat", "every Friday"); null when the words don't name one weekday,
+// or name two positions ("jeden 1. und 3. Freitag").
+export function nextDateFromRule(series: ExtractedEvent["series"], from: string): string | null {
+  if (!series.is_series || !DATE.test(from)) return null;
+  const text = series.rule_text.toLowerCase();
+  const days = [...new Set(WEEKDAY_WORDS.flatMap(([re, day]) => (re.test(text) ? [day] : [])))];
+  if (days.length !== 1) return null;
+  const [weekday] = days;
+  if (series.frequency === "weekly" || series.frequency === "every_n_weeks") return addDays(from, (weekday - weekdayOf(from) + 7) % 7);
+  if (series.frequency !== "nth_weekday_of_month" || /\d\.?\s*(und|&|\+|,|and|y)\s*\d/.test(text)) return null;
+  const n = ordinalIn(text);
+  if (n === null) return null;
+  let [y, m] = [Number(from.slice(0, 4)), Number(from.slice(5, 7)) - 1];
+  for (let i = 0; i < 24; i++) {
+    const d = nthWeekday(y, m, weekday, n);
+    if (d && d >= from) return d;
+    [y, m] = m === 11 ? [y + 1, 0] : [y, m + 1];
+  }
+  return null;
+}
+
+const WEEKDAY_WORDS: [RegExp, number][] = [
+  [/sonntag|sunday|domingo/, 0],
+  [/montag|monday|lunes/, 1],
+  [/dienstag|tuesday|martes/, 2],
+  [/mittwoch|wednesday|mi[ée]rcoles/, 3],
+  [/donnerstag|thursday|jueves/, 4],
+  [/freitag|friday|viernes/, 5],
+  [/samstag|sonnabend|saturday|s[áa]bado/, 6],
+];
+
+// "letzten" = -1, "2." / "zweiten" / "2nd" = 2.
+function ordinalIn(text: string): number | null {
+  if (/letzt|last|[úu]ltim/.test(text)) return -1;
+  const digit = /\b([1-4])(\.|st\b|nd\b|rd\b|th\b)/.exec(text);
+  if (digit) return Number(digit[1]);
+  const words: [RegExp, number][] = [[/erst|first|primer/, 1], [/zweit|second|segund/, 2], [/dritt|third|tercer/, 3], [/viert|fourth|cuart/, 4]];
+  return words.find(([re]) => re.test(text))?.[1] ?? null;
+}
+
 function weeksIn(text: string): number | null {
   const m = /(\d)\s*(wochen|weeks|semanas)/.exec(text);
   if (m && Number(m[1]) >= 2) return Number(m[1]);
@@ -140,7 +181,8 @@ export function ruleFromValue(value: string, anchor: string, current: Rule | nul
   const [kind, n] = value.split(":");
   if (kind === "weekly") return { freq: "weekly", anchor };
   if (kind === "every") return { freq: "every_n_weeks", n: Number(n) || 2, anchor };
-  if (kind === "nth") return { freq: "nth_weekday", n: Number(n) || position(anchor), anchor };
+  // "Einmal im Monat (wie das Datum)": on a 5th weekday that's the last one in the month.
+  if (kind === "nth") return { freq: "nth_weekday", n: Number(n) || (position(anchor) <= 4 ? position(anchor) : -1), anchor };
   if (kind === "custom" && current?.freq === "custom") return { ...current, anchor };
   return null;
 }
@@ -152,6 +194,7 @@ export function ruleOptions(anchor: string, current: Rule | null): { value: stri
       { value: "weekly", label: "Jede Woche" },
       { value: "every:2", label: "Alle 2 Wochen" },
       { value: "nth:0", label: "Einmal im Monat (wie das Datum)" },
+      { value: "nth:-1", label: "Am letzten Wochentag im Monat (wie das Datum)" },
     ];
   }
   const rules: Rule[] = [
@@ -163,6 +206,21 @@ export function ruleOptions(anchor: string, current: Rule | null): { value: stri
     ...(current?.freq === "custom" ? [{ ...current, anchor }] : []),
   ];
   return rules.map((r) => ({ value: ruleValue(r), label: r.freq === "custom" ? `${ruleWords(r)} (prüft der Admin)` : ruleWords(r) }));
+}
+
+// The select's value for what the Flyer states, before a date is known.
+export function flyerRuleValue(e: ExtractedEvent): string {
+  const text = e.series.rule_text.toLowerCase();
+  switch (e.series.frequency) {
+    case "weekly":
+      return "weekly";
+    case "every_n_weeks":
+      return `every:${weeksIn(text) ?? 2}`;
+    case "nth_weekday_of_month":
+      return /letzt|last|[úu]ltim/.test(text) ? "nth:-1" : "nth:0";
+    default:
+      return "none";
+  }
 }
 
 // The chat's rule question offers "every N weeks" and "nth weekday of the month" for the Event's date.

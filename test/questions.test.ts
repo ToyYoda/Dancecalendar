@@ -27,7 +27,7 @@ const reply = (text: string) => deliver(textMessage(text));
 const publish = (api: Api) => tap(api, "Veröffentlichen");
 
 describe("a missing start time", () => {
-  const twoEvents = flyer([{}, { title: "Bachata Sunday", start_date: berlinDate(4), start_time: "" }]);
+  const twoEvents = flyer([{}, { title: "Bachata Sunday", start_date: berlinDate(4), start_time: "", intro_class_time: "" }]);
 
   it("is asked about before the summary, suggesting the Flyer's other start time", async () => {
     const api = fakeApis({ extraction: twoEvents });
@@ -46,7 +46,7 @@ describe("a missing start time", () => {
   });
 
   it("takes a typed time, and asks again when it can't read it", async () => {
-    const api = fakeApis({ extraction: flyer([{ start_time: "" }]) });
+    const api = fakeApis({ extraction: flyer([{ start_time: "", intro_class_time: "" }]) });
     await deliver(imageMessage("media1"));
     expect(last(api).buttons.map((b) => b.title)).toEqual(["Andere Uhrzeit", "Event weglassen"]);
     await tap(api, "Andere Uhrzeit");
@@ -198,7 +198,7 @@ describe("a new Venue", () => {
   });
 
   it("comes after the missing start time", async () => {
-    const api = fakeApis({ extraction: flyer([{ venue_name: "Musa", venue_address: "", start_time: "" }]), places: { musa: MUSA } });
+    const api = fakeApis({ extraction: flyer([{ venue_name: "Musa", venue_address: "", start_time: "", intro_class_time: "" }]), places: { musa: MUSA } });
     await deliver(imageMessage("media1"));
     expect(last(api).text).toContain("Anfangszeit");
 

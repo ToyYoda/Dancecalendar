@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstDates, ruleButtons, ruleDates, ruleFromFlyer, ruleOptions, ruleWords, type Rule } from "../src/series";
+import { firstDates, nextDateFromRule, ruleButtons, ruleDates, ruleFromFlyer, ruleFromValue, ruleOptions, ruleWords, type Rule } from "../src/series";
 import { flyerEvent } from "./fake-apis";
 
 // 2026-10-14 is the 2nd Wednesday of October; 2026-10-30 the last Friday.
@@ -60,5 +60,29 @@ describe("a Series rule", () => {
       "Alle 2 Wochen freitags",
       "Jeden letzten Freitag im Monat",
     ]);
+  });
+
+  it("gives the next date of a rule printed without a date, from its words", () => {
+    const next = (rule_text: string, frequency: string, from: string) => nextDateFromRule({ is_series: true, rule_text, frequency, explicit_dates: [] }, from);
+    // 2026-11-26 is the last Thursday of November, 2026-12-31 that of December.
+    expect(next("jeden letzten Donnerstag im Monat", "nth_weekday_of_month", "2026-11-27")).toBe("2026-12-31");
+    expect(next("jeden letzten Donnerstag im Monat", "nth_weekday_of_month", "2026-11-26")).toBe("2026-11-26");
+    expect(next("Every last Thursday of the month", "nth_weekday_of_month", "2026-11-01")).toBe("2026-11-26");
+    expect(next("jeden 2. Mittwoch im Monat", "nth_weekday_of_month", "2026-10-15")).toBe("2026-11-11");
+    expect(next("jeden ersten Freitag im Monat", "nth_weekday_of_month", "2026-10-01")).toBe("2026-10-02");
+    expect(next("jeden Freitag", "weekly", "2026-11-27")).toBe("2026-11-27");
+    expect(next("immer mittwochs", "weekly", "2026-11-27")).toBe("2026-12-02");
+    expect(next("jeden 1. und 3. Freitag", "nth_weekday_of_month", "2026-10-01")).toBeNull();
+    expect(next("einmal im Monat", "nth_weekday_of_month", "2026-10-01")).toBeNull();
+    expect(next("jeden 2. Mittwoch", "unclear", "2026-10-01")).toBeNull();
+  });
+
+  it("takes \"once a month like the date\" on a 5th weekday as the last one in the month", () => {
+    expect(ruleFromValue("nth:0", "2026-12-31", null)).toEqual({ freq: "nth_weekday", n: -1, anchor: "2026-12-31" });
+    expect(ruleFromValue("nth:0", "2026-12-10", null)).toEqual({ freq: "nth_weekday", n: 2, anchor: "2026-12-10" });
+  });
+
+  it("offers the last weekday in the month before a date is known", () => {
+    expect(ruleOptions("", null).map((o) => o.value)).toContain("nth:-1");
   });
 });

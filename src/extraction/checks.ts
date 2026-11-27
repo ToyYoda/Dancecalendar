@@ -44,3 +44,12 @@ function parseDate(iso: string): Date | null {
   const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
   return d.toISOString().slice(0, 10) === iso ? d : null;
 }
+
+// A Party's intro class is part of it (GLOSSARY: Intro class), so the Event starts when the class begins.
+// That time is printed, so the start is no longer a guess. Times before 6:00 count as after midnight.
+export function startAtIntroClass<E extends { intro_class_time: string; start_time: string; uncertain_fields: string[] }>(e: E): E {
+  const late = (t: string) => (t < "06:00" ? `1${t}` : `0${t}`);
+  if (!/^\d{2}:\d{2}$/.test(e.intro_class_time)) return e;
+  if (e.start_time && late(e.intro_class_time) >= late(e.start_time)) return e;
+  return { ...e, start_time: e.intro_class_time, uncertain_fields: e.uncertain_fields.filter((f) => f !== "start_time") };
+}

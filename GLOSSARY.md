@@ -41,7 +41,7 @@ A set of Events that repeat on a schedule (e.g. "every Friday").
 _Avoid_: Recurrence, repeating event
 
 **Intro class**:
-A short class at the start of a Party, open to everyone; part of the Party, not an Event of its own.
+A short class at the start of a Party, open to everyone; part of the Party, not an Event of its own. The Party starts when its Intro class starts.
 _Avoid_: Taster class, Schnupperkurs, open class, warm-up
 
 **Course**:

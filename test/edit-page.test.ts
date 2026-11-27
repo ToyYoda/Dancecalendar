@@ -72,6 +72,17 @@ describe("an Event's private edit link", () => {
     expect(await env.DB.prepare("SELECT starts_at, ends_at, intro_class_at, venue_id FROM event").first()).toEqual(before);
   });
 
+  it("moves the Intro class with the start time, since the class starts the Party", async () => {
+    const api = fakeApis();
+    const [link] = await publishFlyer(api);
+    const fields = formFrom(await (await get(link)).text());
+    fields.set("start_time.0", "20:30");
+
+    await post(link, ...form(fields));
+
+    expect(await env.DB.prepare("SELECT substr(starts_at, 12) AS starts, substr(intro_class_at, 12) AS intro FROM event").first()).toEqual({ starts: "20:30", intro: "20:30" });
+  });
+
   it("refuses to save without a title or with a date in the past", async () => {
     const api = fakeApis();
     const [link] = await publishFlyer(api);

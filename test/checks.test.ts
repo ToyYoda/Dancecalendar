@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { codeFlags, lastYearsFlyer } from "../src/extraction/checks";
+import { codeFlags, lastYearsFlyer, startAtIntroClass } from "../src/extraction/checks";
 
 // Worked examples, received on Saturday 2026-10-31.
 const received = "2026-10-31";
@@ -51,5 +51,16 @@ describe("a likely forwarded Flyer from last year", () => {
 
   it("is not a date within half a year", () => {
     expect(lastYearsFlyer(dated("2027-05-02", ""), received)).toBe(false);
+  });
+});
+
+describe("an intro class", () => {
+  it("starts the Party: the Event begins when the class begins", () => {
+    const party = (intro_class_time: string, start_time: string, uncertain_fields: string[] = []) => ({ intro_class_time, start_time, uncertain_fields });
+    expect(startAtIntroClass(party("21:00", "21:30"))).toMatchObject({ start_time: "21:00" });
+    expect(startAtIntroClass(party("21:00", "", ["start_time"]))).toEqual({ intro_class_time: "21:00", start_time: "21:00", uncertain_fields: [] });
+    expect(startAtIntroClass(party("23:30", "00:30"))).toMatchObject({ start_time: "23:30" });
+    expect(startAtIntroClass(party("", "21:30"))).toMatchObject({ start_time: "21:30" });
+    expect(startAtIntroClass(party("22:00", "21:00"))).toMatchObject({ start_time: "21:00" });
   });
 });

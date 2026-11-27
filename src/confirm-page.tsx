@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { duplicatesOfExtracted } from "./duplicates";
 import { lastYearsFlyer } from "./extraction/checks";
-import { Card, CARD_CSS, fromForm, missing, RuleSelect } from "./event-card";
+import { Card, CARD_CSS, fromForm, missing, RULE_PREVIEW_SCRIPT, RuleSelect } from "./event-card";
 import type { ExtractedEvent, Extraction } from "./extraction/extract";
 import { SitePage } from "./site";
 import { findVenue, publishSubmission, venueQuery, type Entry, type Held } from "./publish";
-import { heldRule, seriesLeads } from "./series";
+import { flyerRuleValue, heldRule, nextDateFromRule, ruleValue, seriesLeads } from "./series";
 import { berlinDate } from "./whatsapp/bot";
 import { sendText } from "./messenger";
 import { guessVenue } from "./whatsapp/questions";
@@ -80,6 +80,12 @@ export async function openCards(env: Env, s: Submission): Promise<PageProps> {
   const today = berlinDate(new Date());
   const extraction = JSON.parse(s.extraction) as Extraction;
   const events = extraction.events;
+  // A Series Flyer without a printed date: the next date its rule gives, marked to check.
+  for (const e of events) {
+    if (e.start_date || e.dropped || e.answered?.date) continue;
+    const date = nextDateFromRule(e.series, today);
+    if (date) [e.start_date, e.date_from_rule] = [date, date];
+  }
   // A past Event can't be fixed on the page, and one left out in the chat stays out, so both start unticked.
   const include = events.map((e) => !e.dropped && !(e.start_date && e.start_date < today));
   const notes = await cardNotes(env, s, events);
@@ -130,6 +136,9 @@ const blocked = (events: ExtractedEvent[], include: boolean[], today: string) =>
 function uncertain(e: ExtractedEvent, receivedOn: string): Map<string, string> {
   const out = new Map<string, string>();
   for (const f of uncertainFields(e, receivedOn)) out.set(f, "bitte prüfen");
+  if (e.date_from_rule && e.date_from_rule === e.start_date) {
+    out.set("start_date", `aus „${e.series.rule_text}“ berechnet – bitte prüfen`);
+  }
   // Same hint as the chat's "Flyer vom letzten Jahr?", but here the Organizer can fix the date.
   if (lastYearsFlyer(e, receivedOn)) {
     out.set("start_date", "fast ein Jahr entfernt – stimmt das Jahr?");
@@ -173,7 +182,7 @@ export function ConfirmPage(props: PageProps & { tip?: { shownAs: string; error?
             yellow={uncertain(e, s.received_on)}
             warnings={props.notes[i].warnings}
             venue={props.notes[i].venue}
-            series={<SeriesField events={events} i={i} />}
+            series={<SeriesField events={events} i={i} today={today} />}
           />
         ))}
         <button name="publish" type="submit" class="publish" disabled={isBlocked} data-verb={verb}>
@@ -189,19 +198,35 @@ export function ConfirmPage(props: PageProps & { tip?: { shownAs: string; error?
         )}
       </form>
       <script dangerouslySetInnerHTML={{ __html: SCRIPT }} />
+      <script dangerouslySetInnerHTML={{ __html: RULE_PREVIEW_SCRIPT }} />
     </SitePage>
   );
 }
 
 // The first Event of a Series chooses the rule; the Flyer's other dates of it follow.
-function SeriesField(props: { events: ExtractedEvent[]; i: number }) {
+function SeriesField(props: { events: ExtractedEvent[]; i: number; today: string }) {
   const e = props.events[props.i];
   if (e.update_of && e.update_series) return <p class="series">🔁 {e.series.is_series ? "verlängert deine Serie" : "ändert nur diesen Termin deiner Serie"}</p>;
   if (!e.series.is_series) return null;
   if (seriesLeads(props.events)[props.i] !== props.i) return <p class="series">🔁 gehört zur Serie oben</p>;
   const rule = heldRule(e);
   const unclear = !rule && e.series_rule === undefined;
-  return <RuleSelect i={props.i} e={e} rule={rule} none="Nur dieser Termin" note={unclear ? "Wie oft? Bitte wählen – sonst nur dieser Termin." : undefined} />;
+  // Without a date there's no rule yet: the select keeps what was chosen, or shows what the Flyer states.
+  const value = e.series_rule ? ruleValue(e.series_rule) : e.series_rule === null ? "none" : flyerRuleValue(e);
+  const leads = seriesLeads(props.events);
+  const own = props.events.filter((o, k) => leads[k] === props.i && /^\d{4}-\d{2}-\d{2}$/.test(o.start_date)).map((o) => o.start_date);
+  return (
+    <RuleSelect
+      i={props.i}
+      e={e}
+      rule={rule}
+      value={value}
+      own={own}
+      today={props.today}
+      none="Nur dieser Termin"
+      note={unclear ? "Wie oft? Bitte wählen – sonst nur dieser Termin." : undefined}
+    />
+  );
 }
 
 export function Done(props: { s: Submission; entries: Entry[]; skipped: ExtractedEvent[] }) {

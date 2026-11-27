@@ -31,6 +31,11 @@ describe("legal pages", () => {
     }
   });
 
+  it("says a typed place goes to the geocoders without anything else about the Dancer, in both languages", async () => {
+    expect(await page("/datenschutz")).toContain("Gibst du einen Ort ein");
+    expect(await page("/datenschutz?lang=en")).toContain("If you type a place");
+  });
+
   it("says the Organizer's name is published with their Events, in both languages, and nothing about shared names", async () => {
     const de = await page("/datenschutz");
     const en = await page("/datenschutz?lang=en");

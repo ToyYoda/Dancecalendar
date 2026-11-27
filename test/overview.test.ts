@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it } from "vitest";
-import { berlinDate } from "./fake-apis";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { berlinDate, fakeApis, type FakePlace } from "./fake-apis";
 import { get } from "./flow";
 
 // Venues: 1 Kassel, 2 Göttingen, 3 Fulda (about 80 km from both), 4 without coordinates.
@@ -319,6 +319,81 @@ describe("the calendar subscription", () => {
     const body = await (await ics()).text();
     for (const line of body.split("\r\n")) expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
     expect(body).toContain("\r\n "); // folded
+  });
+});
+
+describe("a place typed as text", () => {
+  const goettingen: FakePlace = { name: "Göttingen", street: "", housenumber: "", postcode: "37073", city: "Göttingen", lat: 51.5413, lng: 9.9158 };
+  afterEach(() => vi.restoreAllMocks());
+
+  it("can be typed into the place filter, keeping the other filters but not the old place", async () => {
+    const html = await page("?styles=salsa&c=51.31,9.48&r=25");
+    const form = html.match(/<form class="ort"[\s\S]*?<\/form>/)![0];
+
+    expect(form).toContain('method="get"');
+    expect(form).toContain('action="/"');
+    expect(form).toMatch(/<input[^>]*type="search"[^>]*name="ort"/);
+    expect(form).toContain('name="styles" value="salsa"');
+    expect(form).toContain('name="r" value="25"');
+    expect(form).not.toContain('name="c"');
+  });
+
+  it("is looked up once and opens the calendar measured from there, named as typed", async () => {
+    const api = fakeApis({ places: { Göttingen: goettingen } });
+
+    const res = await get("http://dancecalendar.test/?ort=+G%C3%B6ttingen+&styles=salsa");
+
+    expect(res.status).toBe(302);
+    const to = new URL(res.headers.get("location")!, "http://dancecalendar.test");
+    expect(to.pathname).toBe("/");
+    expect(to.searchParams.get("c")).toBe("51.54,9.92"); // rounded to about a kilometre, like a shared location
+    expect(to.searchParams.get("ort")).toBe("Göttingen");
+    expect(to.searchParams.get("styles")).toBe("salsa");
+    expect(api.geocoded).toEqual(["photon: Göttingen"]);
+  });
+
+  it("names the typed place on the place filter and measures from it", async () => {
+    await add({ title: "Göttingen Party", venue: 2 });
+    await add({ title: "Kassel Party", venue: 1 });
+
+    const html = await page("?c=51.54,9.92&ort=G%C3%B6ttingen&r=10");
+
+    expect(html).toContain("Göttingen · 10 km");
+    expect(html).toContain("Göttingen Party");
+    expect(html).not.toContain("Kassel Party");
+    expect(html).toMatch(/href="\/\?c=51\.54,9\.92&amp;ort=G%C3%B6ttingen&amp;r=25"/); // the radius chips keep it
+  });
+
+  it("is dropped by my location and the map, which name no place", async () => {
+    const html = await page("?c=51.54,9.92&ort=G%C3%B6ttingen");
+    const map = await page("karte?c=51.54,9.92&ort=G%C3%B6ttingen");
+
+    expect(html).toMatch(/<a class="opt" href="\/" data-geo/);
+    expect(html).toContain('href="/karte?c=51.54,9.92"');
+    expect(map).toContain('data-back="/"');
+  });
+
+  it("shows every Event and says so when nothing is found", async () => {
+    fakeApis({ places: { Göttingen: goettingen } });
+    await add({ title: "Fulda Party", venue: 3 });
+
+    const res = await get("http://dancecalendar.test/?ort=Atlantis");
+    const html = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(html).toContain("„Atlantis“ nicht gefunden");
+    expect(html).toContain('value="Atlantis"');
+    expect(html).toContain("Fulda Party");
+    expect(html).not.toMatch(/\d km/);
+  });
+
+  it("asks Nominatim when Photon is down", async () => {
+    const api = fakeApis({ places: { Göttingen: goettingen }, photonDown: true });
+
+    const res = await get("http://dancecalendar.test/?ort=G%C3%B6ttingen");
+
+    expect(new URL(res.headers.get("location")!, "http://dancecalendar.test").searchParams.get("c")).toBe("51.54,9.92");
+    expect(api.geocoded).toEqual(["photon: Göttingen", "nominatim: Göttingen"]);
   });
 });
 
